@@ -1,0 +1,9 @@
+name: 'ezcache'
+description: ''
+inputs:
+  name:
+    description: 'Your name'
+    required: true
+runs:
+  using: 'node12'
+  main: 'dist/index.js'

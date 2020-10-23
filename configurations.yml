@@ -1,0 +1,4 @@
+npm:
+  path: $(npm config get cache)
+  hash: '**/package-lock.json'
+  allow-partial-restore: true
