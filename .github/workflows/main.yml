@@ -41,19 +41,19 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-  test-last:
+  test-diff:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - name: Cache by diff
         uses: ./
         with:
-          type: last
+          type: diff
           path: ~/.npm
       - name: Install dependencies
         run: npm ci
 
-  test-last:
+  test-auto:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
