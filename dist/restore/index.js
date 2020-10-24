@@ -1793,7 +1793,7 @@ class Cargo extends handler_1.CacheHandler {
         });
     }
 }
-registry_1.registry.add("cargo", new Cargo());
+registry_1.registry.add('cargo', new Cargo());
 
 
 /***/ }),
@@ -3711,7 +3711,7 @@ class REnv extends handler_1.CacheHandler {
         return __awaiter(this, void 0, void 0, function* () {
             switch (expressions_1.runner.os) {
                 case 'Windows':
-                    return ['~\AppData\Local\renv'];
+                    return ['~AppDataLocal\renv'];
                 case 'Linux':
                     return ['~/.local/share/renv'];
                 case 'macOS':
@@ -3735,7 +3735,7 @@ class REnv extends handler_1.CacheHandler {
         });
     }
 }
-registry_1.registry.add("renv", new REnv());
+registry_1.registry.add('renv', new REnv());
 
 
 /***/ }),
@@ -3854,7 +3854,7 @@ function matches(matchPatterns, followSymbolicLinks = false) {
     var e_1, _a;
     return __awaiter(this, void 0, void 0, function* () {
         if (Array.isArray(matchPatterns)) {
-            matchPatterns = matchPatterns.join("\n");
+            matchPatterns = matchPatterns.join('\n');
         }
         const globber = yield glob.create(matchPatterns, { followSymbolicLinks });
         try {
@@ -3874,36 +3874,30 @@ function matches(matchPatterns, followSymbolicLinks = false) {
     });
 }
 exports.matches = matches;
-function hashFiles(matchPatterns, followSymbolicLinks = false) {
+function hashFiles(matchPatterns, followSymbolicLinks = false, verbose = false) {
     var e_2, _a;
     return __awaiter(this, void 0, void 0, function* () {
-        console.log('Computing hash...');
+        verbose && console.log('Computing hash...');
         let hasMatch = false;
-        const githubWorkspace = process.cwd();
         const result = crypto.createHash('sha256');
         if (Array.isArray(matchPatterns)) {
-            matchPatterns = matchPatterns.join("\n");
+            matchPatterns = matchPatterns.join('\n');
         }
         const globber = yield glob.create(matchPatterns, { followSymbolicLinks });
         try {
             for (var _b = __asyncValues(globber.globGenerator()), _c; _c = yield _b.next(), !_c.done;) {
                 const file = _c.value;
-                console.log(` > Processing ${file}`);
-                //if (!file.startsWith(`${githubWorkspace}${path.sep}`)) {
-                //  console.log(`Ignore '${file}' since it is not under GITHUB_WORKSPACE.`)
-                //  continue
-                //}
+                verbose && console.log(` > Processing ${file}`);
                 if (fs.statSync(file).isDirectory()) {
-                    console.log(`Skip directory '${file}'.`);
-                    continue;
+                    verbose && console.log(`Skip directory '${file}'.`);
                 }
-                const hash = crypto.createHash('sha256');
-                const pipeline = util.promisify(stream.pipeline);
-                yield pipeline(fs.createReadStream(file), hash);
-                result.write(hash.digest());
-                if (!hasMatch) {
-                    hasMatch = true;
+                else {
+                    const hash = crypto.createHash('sha256');
+                    const pipeline = util.promisify(stream.pipeline);
+                    yield pipeline(fs.createReadStream(file), hash);
+                    result.write(hash.digest());
                 }
+                hasMatch = true;
             }
         }
         catch (e_2_1) { e_2 = { error: e_2_1 }; }
@@ -8218,7 +8212,10 @@ const handler_1 = __webpack_require__(895);
 class PerRunCache extends handler_1.CacheHandler {
     getPaths() {
         return __awaiter(this, void 0, void 0, function* () {
-            return core.getInput('path').split('\n').map(s => s.trim());
+            return core
+                .getInput('path')
+                .split('\n')
+                .map((s) => s.trim());
         });
     }
     getKey(version) {
@@ -8227,7 +8224,7 @@ class PerRunCache extends handler_1.CacheHandler {
         });
     }
 }
-registry_1.registry.add("run", new PerRunCache());
+registry_1.registry.add('run', new PerRunCache());
 
 
 /***/ }),
@@ -35505,7 +35502,7 @@ class Sbt extends handler_1.CacheHandler {
         });
     }
 }
-registry_1.registry.add("sbt", new Sbt());
+registry_1.registry.add('sbt', new Sbt());
 
 
 /***/ }),
@@ -38984,10 +38981,19 @@ const core = __webpack_require__(470);
 const registry_1 = __webpack_require__(822);
 const expressions_1 = __webpack_require__(134);
 const handler_1 = __webpack_require__(895);
+/**
+ * Caches an arbitrary path (or paths), creating a new cache whenever the contents
+ * change.  By design, this will never have an exact match during restore.  Instead,
+ * this relies on the caching service returning the last created cache matching the
+ * restore keys.
+ */
 class DiffCache extends handler_1.CacheHandler {
     getPaths() {
         return __awaiter(this, void 0, void 0, function* () {
-            return core.getInput('path').split('\n').map(s => s.trim());
+            return core
+                .getInput('path')
+                .split('\n')
+                .map((s) => s.trim());
         });
     }
     getKeyForRestore(version) {
@@ -39006,7 +39012,7 @@ class DiffCache extends handler_1.CacheHandler {
         });
     }
 }
-registry_1.registry.add("diff", new DiffCache());
+registry_1.registry.add('diff', new DiffCache());
 
 
 /***/ }),
@@ -39526,7 +39532,7 @@ class Yarn extends handler_1.CacheHandler {
         });
     }
 }
-registry_1.registry.add("yarn", new Yarn());
+registry_1.registry.add('yarn', new Yarn());
 
 
 /***/ }),
@@ -40398,7 +40404,7 @@ class Carthage extends handler_1.CacheHandler {
         });
     }
 }
-registry_1.registry.add("carthage", new Carthage());
+registry_1.registry.add('carthage', new Carthage());
 
 
 /***/ }),
@@ -44651,7 +44657,7 @@ class NPM extends handler_1.CacheHandler {
         });
     }
 }
-registry_1.registry.add("npm", new NPM());
+registry_1.registry.add('npm', new NPM());
 
 
 /***/ }),
@@ -45014,7 +45020,7 @@ class Maven extends handler_1.CacheHandler {
         });
     }
 }
-registry_1.registry.add("maven", new Maven());
+registry_1.registry.add('maven', new Maven());
 
 
 /***/ }),
@@ -45630,7 +45636,7 @@ class Bundler extends handler_1.CacheHandler {
         });
     }
 }
-registry_1.registry.add("bundler", new Bundler());
+registry_1.registry.add('bundler', new Bundler());
 
 
 /***/ }),
@@ -47636,7 +47642,7 @@ class Composer extends handler_1.CacheHandler {
         });
     }
 }
-registry_1.registry.add("composer", new Composer());
+registry_1.registry.add('composer', new Composer());
 
 
 /***/ }),
@@ -47686,7 +47692,7 @@ class Cocoapods extends handler_1.CacheHandler {
         });
     }
 }
-registry_1.registry.add("cocoapods", new Cocoapods());
+registry_1.registry.add('cocoapods', new Cocoapods());
 
 
 /***/ }),
@@ -47739,7 +47745,7 @@ function run() {
         core.setOutput('cache-hit', isFullRestore);
     });
 }
-run().catch(e => {
+run().catch((e) => {
     console.error(e);
     core.setFailed(e);
 });
@@ -49076,7 +49082,7 @@ class Go extends handler_1.CacheHandler {
         });
     }
 }
-registry_1.registry.add("go", new Go());
+registry_1.registry.add('go', new Go());
 
 
 /***/ }),
@@ -51777,7 +51783,7 @@ class Pip extends handler_1.CacheHandler {
         return __awaiter(this, void 0, void 0, function* () {
             switch (expressions_1.runner.os) {
                 case 'Windows':
-                    return ['~\AppData\Local\pip\Cache'];
+                    return ['~AppDataLocalpipCache'];
                 case 'Linux':
                     return ['~/.cache/pip'];
                 case 'macOS':
@@ -51801,7 +51807,7 @@ class Pip extends handler_1.CacheHandler {
         });
     }
 }
-registry_1.registry.add("pip", new Pip());
+registry_1.registry.add('pip', new Pip());
 
 
 /***/ }),
@@ -55217,8 +55223,7 @@ class CacheHandler {
         });
     }
     setup() {
-        return __awaiter(this, void 0, void 0, function* () {
-        });
+        return __awaiter(this, void 0, void 0, function* () { });
     }
     saveCache(options) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -55249,7 +55254,7 @@ class CacheHandler {
             }
             return {
                 type: restoredKey ? (key === restoredKey ? RestoreType.Full : RestoreType.Partial) : RestoreType.Miss,
-                restoredKey: restoredKey
+                restoredKey: restoredKey,
             };
         });
     }
@@ -55401,7 +55406,7 @@ class Gradle extends handler_1.CacheHandler {
         });
     }
 }
-registry_1.registry.add("gradle", new Gradle());
+registry_1.registry.add('gradle', new Gradle());
 
 
 /***/ }),
@@ -56785,7 +56790,7 @@ class SPM extends handler_1.CacheHandler {
         });
     }
 }
-registry_1.registry.add("spm", new SPM());
+registry_1.registry.add('spm', new SPM());
 
 
 /***/ }),

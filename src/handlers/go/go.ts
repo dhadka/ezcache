@@ -3,21 +3,21 @@ import { hashFiles, matches, runner } from '../../expressions'
 import { CacheHandler } from '../../handler'
 
 class Go extends CacheHandler {
-    async getPaths(): Promise<string[]> {
-        return ['~/go/pkg/mod']
-    }
+  async getPaths(): Promise<string[]> {
+    return ['~/go/pkg/mod']
+  }
 
-    async getKey(version?: string): Promise<string> {
-        return `${runner.os}-${version}-go-${await hashFiles('**/go.sum')}`
-    }
+  async getKey(version?: string): Promise<string> {
+    return `${runner.os}-${version}-go-${await hashFiles('**/go.sum')}`
+  }
 
-    async getRestoreKeys(version?: string): Promise<string[]> {
-        return [`${runner.os}-${version}-go-`]
-    }
+  async getRestoreKeys(version?: string): Promise<string[]> {
+    return [`${runner.os}-${version}-go-`]
+  }
 
-    async shouldCache(): Promise<boolean> {
-        return await matches('**/go.sum')
-    }
+  async shouldCache(): Promise<boolean> {
+    return await matches('**/go.sum')
+  }
 }
 
-registry.add("go", new Go())
+registry.add('go', new Go())

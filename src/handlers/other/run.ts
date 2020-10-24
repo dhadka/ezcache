@@ -5,13 +5,16 @@ import { runner } from '../../expressions'
 import { CacheHandler } from '../../handler'
 
 class PerRunCache extends CacheHandler {
-    async getPaths(): Promise<string[]> {
-        return core.getInput('path').split('\n').map(s => s.trim())
-    }
+  async getPaths(): Promise<string[]> {
+    return core
+      .getInput('path')
+      .split('\n')
+      .map((s) => s.trim())
+  }
 
-    async getKey(version?: string): Promise<string> {
-        return `${runner.os}-${version}-run-${github.context.runId}`
-    }
+  async getKey(version?: string): Promise<string> {
+    return `${runner.os}-${version}-run-${github.context.runId}`
+  }
 }
 
-registry.add("run", new PerRunCache())
+registry.add('run', new PerRunCache())

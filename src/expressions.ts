@@ -11,15 +11,15 @@ class Runner {
   os: 'Windows' | 'Linux' | 'macOS'
 
   constructor() {
-      const platform = process.platform
-  
-      if (platform === 'win32') {
-          this.os = 'Windows'
-      } else if (platform === 'darwin') {
-          this.os = 'macOS'
-      } else {
-          this.os = 'Linux'
-      }
+    const platform = process.platform
+
+    if (platform === 'win32') {
+      this.os = 'Windows'
+    } else if (platform === 'darwin') {
+      this.os = 'macOS'
+    } else {
+      this.os = 'Linux'
+    }
   }
 }
 
@@ -29,13 +29,16 @@ export async function exec(cmd: string, ...args: string[]): Promise<string> {
   return (await execa(cmd, args, {})).stdout
 }
 
-export async function matches(matchPatterns: string | string[], followSymbolicLinks: boolean = false): Promise<boolean> {
+export async function matches(
+  matchPatterns: string | string[],
+  followSymbolicLinks: boolean = false,
+): Promise<boolean> {
   if (Array.isArray(matchPatterns)) {
-    matchPatterns = matchPatterns.join("\n")
+    matchPatterns = matchPatterns.join('\n')
   }
 
-  const globber = await glob.create(matchPatterns, {followSymbolicLinks})
-  
+  const globber = await glob.create(matchPatterns, { followSymbolicLinks })
+
   for await (const file of globber.globGenerator()) {
     return true
   }
@@ -43,29 +46,27 @@ export async function matches(matchPatterns: string | string[], followSymbolicLi
   return false
 }
 
-export async function hashFiles(matchPatterns: string | string[], followSymbolicLinks: boolean = false): Promise<string> {
-  console.log('Computing hash...')
+export async function hashFiles(
+  matchPatterns: string | string[],
+  followSymbolicLinks: boolean = false,
+  verbose: boolean = false,
+): Promise<string> {
+  console.log('Calculating hash')
 
   let hasMatch = false
-  const githubWorkspace = process.cwd()
   const result = crypto.createHash('sha256')
 
   if (Array.isArray(matchPatterns)) {
-    matchPatterns = matchPatterns.join("\n")
+    matchPatterns = matchPatterns.join('\n')
   }
 
-  const globber = await glob.create(matchPatterns, {followSymbolicLinks})
-  
-  for await (const file of globber.globGenerator()) {
-    console.log(` > Processing ${file}`)
+  const globber = await glob.create(matchPatterns, { followSymbolicLinks })
 
-    //if (!file.startsWith(`${githubWorkspace}${path.sep}`)) {
-    //  console.log(`Ignore '${file}' since it is not under GITHUB_WORKSPACE.`)
-    //  continue
-    //}
+  for await (const file of globber.globGenerator()) {
+    verbose && console.log(` > Processing ${file}`)
 
     if (fs.statSync(file).isDirectory()) {
-      console.log(`Skip directory '${file}'.`)
+      verbose && console.log(`Skip directory '${file}'.`)
       continue
     }
 
@@ -74,16 +75,14 @@ export async function hashFiles(matchPatterns: string | string[], followSymbolic
     await pipeline(fs.createReadStream(file), hash)
     result.write(hash.digest())
 
-    if (!hasMatch) {
-      hasMatch = true
-    }
+    hasMatch = true
   }
 
   result.end()
 
   if (hasMatch) {
-      return result.digest('hex')
+    return result.digest('hex')
   } else {
-      return ''
+    return ''
   }
 }
