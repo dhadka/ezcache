@@ -6,12 +6,12 @@ class Cargo extends CacheHandler {
         return ['~/.cargo/registry', '~/.cargo/git', 'target']
     }
 
-    async getKey(): Promise<string> {
-        return `${runner.os}-cargo-${await hashFiles('**/Cargo.lock')}`
+    async getKey(version?: string): Promise<string> {
+        return `${runner.os}-${version}-cargo-${await hashFiles('**/Cargo.lock')}`
     }
 
-    async getRestoreKeys(): Promise<string[]> {
-        return [`${runner.os}-cargo-`]
+    async getRestoreKeys(version?: string): Promise<string[]> {
+        return [`${runner.os}-${version}-cargo-`]
     }
 
     async shouldCache(): Promise<boolean> {

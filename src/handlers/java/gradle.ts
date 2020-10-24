@@ -6,12 +6,12 @@ class Gradle extends CacheHandler {
         return ['~/.gradle/caches', '~/.gradle/wrapper']
     }
 
-    async getKey(): Promise<string> {
-        return `${runner.os}-gradle-${await hashFiles('**/*.gradle')}`
+    async getKey(version?: string): Promise<string> {
+        return `${runner.os}-${version}-gradle-${await hashFiles('**/*.gradle')}`
     }
 
-    async getRestoreKeys(): Promise<string[]> {
-        return [`${runner.os}-gradle-`]
+    async getRestoreKeys(version?: string): Promise<string[]> {
+        return [`${runner.os}-${version}-gradle-`]
     }
 
     async shouldCache(): Promise<boolean> {

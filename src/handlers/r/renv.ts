@@ -13,12 +13,12 @@ class REnv extends CacheHandler {
         }
     }
 
-    async getKey(): Promise<string> {
-        return `${runner.os}-renv-${await hashFiles('**/renv.lock')}`
+    async getKey(version?: string): Promise<string> {
+        return `${runner.os}-${version}-renv-${await hashFiles('**/renv.lock')}`
     }
 
-    async getRestoreKeys(): Promise<string[]> {
-        return [`${runner.os}-renv-`]
+    async getRestoreKeys(version?: string): Promise<string[]> {
+        return [`${runner.os}-${version}-renv-`]
     }
 
     async shouldCache(): Promise<boolean> {

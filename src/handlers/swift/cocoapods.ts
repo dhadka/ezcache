@@ -6,12 +6,12 @@ class Cocoapods extends CacheHandler {
         return ['Pods']
     }
 
-    async getKey(): Promise<string> {
-        return `${runner.os}-pods-${await hashFiles('**/Podfile.lock')}`
+    async getKey(version?: string): Promise<string> {
+        return `${runner.os}-${version}-pods-${await hashFiles('**/Podfile.lock')}`
     }
 
-    async getRestoreKeys(): Promise<string[]> {
-        return [`${runner.os}-pods-`]
+    async getRestoreKeys(version?: string): Promise<string[]> {
+        return [`${runner.os}-${version}-pods-`]
     }
 
     async shouldCache(): Promise<boolean> {

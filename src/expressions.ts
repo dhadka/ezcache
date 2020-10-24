@@ -47,7 +47,6 @@ export async function hashFiles(matchPatterns: string | string[], followSymbolic
   let hasMatch = false
   const githubWorkspace = process.cwd()
   const result = crypto.createHash('sha256')
-  let count = 0
 
   if (Array.isArray(matchPatterns)) {
     matchPatterns = matchPatterns.join("\n")
@@ -72,8 +71,6 @@ export async function hashFiles(matchPatterns: string | string[], followSymbolic
     const pipeline = util.promisify(stream.pipeline)
     await pipeline(fs.createReadStream(file), hash)
     result.write(hash.digest())
-
-    count++
 
     if (!hasMatch) {
       hasMatch = true

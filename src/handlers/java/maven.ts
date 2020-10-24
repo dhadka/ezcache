@@ -6,12 +6,12 @@ class Maven extends CacheHandler {
         return ['~/.m2/repository']
     }
 
-    async getKey(): Promise<string> {
-        return `${runner.os}-maven-${await hashFiles('**/pom.xml')}`
+    async getKey(version?: string): Promise<string> {
+        return `${runner.os}-${version}-maven-${await hashFiles('**/pom.xml')}`
     }
 
-    async getRestoreKeys(): Promise<string[]> {
-        return [`${runner.os}-maven-`]
+    async getRestoreKeys(version?: string): Promise<string[]> {
+        return [`${runner.os}-${version}-maven-`]
     }
 
     async shouldCache(): Promise<boolean> {

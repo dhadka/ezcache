@@ -6,12 +6,12 @@ class NPM extends CacheHandler {
         return [await exec('npm', 'config', 'get', 'cache')]
     }
 
-    async getKey(): Promise<string> {
-        return `${runner.os}-node-${await hashFiles('**/package-lock.json')}`
+    async getKey(version?: string): Promise<string> {
+        return `${runner.os}-${version}-node-${await hashFiles('**/package-lock.json')}`
     }
 
-    async getRestoreKeys(): Promise<string[]> {
-        return [`${runner.os}-node-`]
+    async getRestoreKeys(version?: string): Promise<string[]> {
+        return [`${runner.os}-${version}-node-`]
     }
 
     async shouldCache(): Promise<boolean> {

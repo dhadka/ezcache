@@ -6,12 +6,12 @@ class SPM extends CacheHandler {
         return ['.build']
     }
 
-    async getKey(): Promise<string> {
-        return `${runner.os}-spm-${await hashFiles('**/Package.resolved')}`
+    async getKey(version?: string): Promise<string> {
+        return `${runner.os}-${version}-spm-${await hashFiles('**/Package.resolved')}`
     }
 
-    async getRestoreKeys(): Promise<string[]> {
-        return [`${runner.os}-spm-`]
+    async getRestoreKeys(version?: string): Promise<string[]> {
+        return [`${runner.os}-${version}-spm-`]
     }
 
     async shouldCache(): Promise<boolean> {

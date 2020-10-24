@@ -6,12 +6,12 @@ class Bundler extends CacheHandler {
         return ['vendor/bundle']
     }
 
-    async getKey(): Promise<string> {
-        return `${runner.os}-gems-${await hashFiles('**/Gemfile.lock')}`
+    async getKey(version?: string): Promise<string> {
+        return `${runner.os}-${version}-gems-${await hashFiles('**/Gemfile.lock')}`
     }
 
-    async getRestoreKeys(): Promise<string[]> {
-        return [`${runner.os}-gems-`]
+    async getRestoreKeys(version?: string): Promise<string[]> {
+        return [`${runner.os}-${version}-gems-`]
     }
 
     async shouldCache(): Promise<boolean> {

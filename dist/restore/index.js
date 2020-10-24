@@ -1776,14 +1776,14 @@ class Cargo extends registry_1.CacheHandler {
             return ['~/.cargo/registry', '~/.cargo/git', 'target'];
         });
     }
-    getKey() {
+    getKey(version) {
         return __awaiter(this, void 0, void 0, function* () {
-            return `${expressions_1.runner.os}-cargo-${yield expressions_1.hashFiles('**/Cargo.lock')}`;
+            return `${expressions_1.runner.os}-${version}-cargo-${yield expressions_1.hashFiles('**/Cargo.lock')}`;
         });
     }
-    getRestoreKeys() {
+    getRestoreKeys(version) {
         return __awaiter(this, void 0, void 0, function* () {
-            return [`${expressions_1.runner.os}-cargo-`];
+            return [`${expressions_1.runner.os}-${version}-cargo-`];
         });
     }
     shouldCache() {
@@ -3617,14 +3617,14 @@ class REnv extends registry_1.CacheHandler {
             }
         });
     }
-    getKey() {
+    getKey(version) {
         return __awaiter(this, void 0, void 0, function* () {
-            return `${expressions_1.runner.os}-renv-${yield expressions_1.hashFiles('**/renv.lock')}`;
+            return `${expressions_1.runner.os}-${version}-renv-${yield expressions_1.hashFiles('**/renv.lock')}`;
         });
     }
-    getRestoreKeys() {
+    getRestoreKeys(version) {
         return __awaiter(this, void 0, void 0, function* () {
-            return [`${expressions_1.runner.os}-renv-`];
+            return [`${expressions_1.runner.os}-${version}-renv-`];
         });
     }
     shouldCache() {
@@ -3731,7 +3731,6 @@ function hashFiles(matchPatterns, followSymbolicLinks = false) {
         let hasMatch = false;
         const githubWorkspace = process.cwd();
         const result = crypto.createHash('sha256');
-        let count = 0;
         if (Array.isArray(matchPatterns)) {
             matchPatterns = matchPatterns.join("\n");
         }
@@ -3752,7 +3751,6 @@ function hashFiles(matchPatterns, followSymbolicLinks = false) {
                 const pipeline = util.promisify(stream.pipeline);
                 yield pipeline(fs.createReadStream(file), hash);
                 result.write(hash.digest());
-                count++;
                 if (!hasMatch) {
                     hasMatch = true;
                 }
@@ -34536,9 +34534,9 @@ class Sbt extends registry_1.CacheHandler {
             return ['~/.ivy2/cache', '~/.sbt'];
         });
     }
-    getKey() {
+    getKey(version) {
         return __awaiter(this, void 0, void 0, function* () {
-            return `${expressions_1.runner.os}-sbt-${yield expressions_1.hashFiles('**/build.sbt')}`;
+            return `${expressions_1.runner.os}-${version}-sbt-${yield expressions_1.hashFiles('**/build.sbt')}`;
         });
     }
     shouldCache() {
@@ -38291,14 +38289,14 @@ class Yarn extends registry_1.CacheHandler {
             return [yield expressions_1.exec('yarn', 'cache', 'dir')];
         });
     }
-    getKey() {
+    getKey(version) {
         return __awaiter(this, void 0, void 0, function* () {
-            return `${expressions_1.runner.os}-yarn-${yield expressions_1.hashFiles('**/yarn.lock')}`;
+            return `${expressions_1.runner.os}-${version}-yarn-${yield expressions_1.hashFiles('**/yarn.lock')}`;
         });
     }
-    getRestoreKeys() {
+    getRestoreKeys(version) {
         return __awaiter(this, void 0, void 0, function* () {
-            return [`${expressions_1.runner.os}-yarn-`];
+            return [`${expressions_1.runner.os}-${version}-yarn-`];
         });
     }
     shouldCache() {
@@ -38991,14 +38989,14 @@ class Carthage extends registry_1.CacheHandler {
             return ['Carthage'];
         });
     }
-    getKey() {
+    getKey(version) {
         return __awaiter(this, void 0, void 0, function* () {
-            return `${expressions_1.runner.os}-carthage-${yield expressions_1.hashFiles('**/Cartfile.resolved')}`;
+            return `${expressions_1.runner.os}-${version}-carthage-${yield expressions_1.hashFiles('**/Cartfile.resolved')}`;
         });
     }
-    getRestoreKeys() {
+    getRestoreKeys(version) {
         return __awaiter(this, void 0, void 0, function* () {
-            return [`${expressions_1.runner.os}-carthage-`];
+            return [`${expressions_1.runner.os}-${version}-carthage-`];
         });
     }
     shouldCache() {
@@ -43243,14 +43241,14 @@ class NPM extends registry_1.CacheHandler {
             return [yield expressions_1.exec('npm', 'config', 'get', 'cache')];
         });
     }
-    getKey() {
+    getKey(version) {
         return __awaiter(this, void 0, void 0, function* () {
-            return `${expressions_1.runner.os}-node-${yield expressions_1.hashFiles('**/package-lock.json')}`;
+            return `${expressions_1.runner.os}-${version}-node-${yield expressions_1.hashFiles('**/package-lock.json')}`;
         });
     }
-    getRestoreKeys() {
+    getRestoreKeys(version) {
         return __awaiter(this, void 0, void 0, function* () {
-            return [`${expressions_1.runner.os}-node-`];
+            return [`${expressions_1.runner.os}-${version}-node-`];
         });
     }
     shouldCache() {
@@ -43605,14 +43603,14 @@ class Maven extends registry_1.CacheHandler {
             return ['~/.m2/repository'];
         });
     }
-    getKey() {
+    getKey(version) {
         return __awaiter(this, void 0, void 0, function* () {
-            return `${expressions_1.runner.os}-maven-${yield expressions_1.hashFiles('**/pom.xml')}`;
+            return `${expressions_1.runner.os}-${version}-maven-${yield expressions_1.hashFiles('**/pom.xml')}`;
         });
     }
-    getRestoreKeys() {
+    getRestoreKeys(version) {
         return __awaiter(this, void 0, void 0, function* () {
-            return [`${expressions_1.runner.os}-maven-`];
+            return [`${expressions_1.runner.os}-${version}-maven-`];
         });
     }
     shouldCache() {
@@ -44215,14 +44213,14 @@ class Bundler extends registry_1.CacheHandler {
             return ['vendor/bundle'];
         });
     }
-    getKey() {
+    getKey(version) {
         return __awaiter(this, void 0, void 0, function* () {
-            return `${expressions_1.runner.os}-gems-${yield expressions_1.hashFiles('**/Gemfile.lock')}`;
+            return `${expressions_1.runner.os}-${version}-gems-${yield expressions_1.hashFiles('**/Gemfile.lock')}`;
         });
     }
-    getRestoreKeys() {
+    getRestoreKeys(version) {
         return __awaiter(this, void 0, void 0, function* () {
-            return [`${expressions_1.runner.os}-gems-`];
+            return [`${expressions_1.runner.os}-${version}-gems-`];
         });
     }
     shouldCache() {
@@ -46045,14 +46043,14 @@ class Composer extends registry_1.CacheHandler {
             return [yield expressions_1.exec('composer', 'config', 'cache-files-dir')];
         });
     }
-    getKey() {
+    getKey(version) {
         return __awaiter(this, void 0, void 0, function* () {
-            return `${expressions_1.runner.os}-composer-${yield expressions_1.hashFiles('**/composer.lock')}`;
+            return `${expressions_1.runner.os}-${version}-composer-${yield expressions_1.hashFiles('**/composer.lock')}`;
         });
     }
-    getRestoreKeys() {
+    getRestoreKeys(version) {
         return __awaiter(this, void 0, void 0, function* () {
-            return [`${expressions_1.runner.os}-composer-`];
+            return [`${expressions_1.runner.os}-${version}-composer-`];
         });
     }
     shouldCache() {
@@ -46094,14 +46092,14 @@ class Cocoapods extends registry_1.CacheHandler {
             return ['Pods'];
         });
     }
-    getKey() {
+    getKey(version) {
         return __awaiter(this, void 0, void 0, function* () {
-            return `${expressions_1.runner.os}-pods-${yield expressions_1.hashFiles('**/Podfile.lock')}`;
+            return `${expressions_1.runner.os}-${version}-pods-${yield expressions_1.hashFiles('**/Podfile.lock')}`;
         });
     }
-    getRestoreKeys() {
+    getRestoreKeys(version) {
         return __awaiter(this, void 0, void 0, function* () {
-            return [`${expressions_1.runner.os}-pods-`];
+            return [`${expressions_1.runner.os}-${version}-pods-`];
         });
     }
     shouldCache() {
@@ -47489,14 +47487,14 @@ class Go extends registry_1.CacheHandler {
             return ['~/go/pkg/mod'];
         });
     }
-    getKey() {
+    getKey(version) {
         return __awaiter(this, void 0, void 0, function* () {
-            return `${expressions_1.runner.os}-go-${yield expressions_1.hashFiles('**/go.sum')}`;
+            return `${expressions_1.runner.os}-${version}-go-${yield expressions_1.hashFiles('**/go.sum')}`;
         });
     }
-    getRestoreKeys() {
+    getRestoreKeys(version) {
         return __awaiter(this, void 0, void 0, function* () {
-            return [`${expressions_1.runner.os}-go-`];
+            return [`${expressions_1.runner.os}-${version}-go-`];
         });
     }
     shouldCache() {
@@ -47891,7 +47889,7 @@ class CacheHandler {
             throw Error('not implemented');
         });
     }
-    getKey() {
+    getKey(version) {
         return __awaiter(this, void 0, void 0, function* () {
             throw Error('not implemented');
         });
@@ -47910,10 +47908,10 @@ class CacheHandler {
         return __awaiter(this, void 0, void 0, function* () {
         });
     }
-    saveCache() {
+    saveCache(options) {
         return __awaiter(this, void 0, void 0, function* () {
             const paths = yield this.getPaths();
-            const key = yield this.getKey();
+            const key = yield this.getKey(options === null || options === void 0 ? void 0 : options.version);
             console.log(`Calling saveCache(${paths}, ${key})`);
             yield cache_1.saveCache(paths, key);
         });
@@ -49030,14 +49028,14 @@ class Pip extends registry_1.CacheHandler {
             }
         });
     }
-    getKey() {
+    getKey(version) {
         return __awaiter(this, void 0, void 0, function* () {
-            return `${expressions_1.runner.os}-pip-${yield expressions_1.hashFiles('**/requirements.txt')}`;
+            return `${expressions_1.runner.os}-${version}-pip-${yield expressions_1.hashFiles('**/requirements.txt')}`;
         });
     }
-    getRestoreKeys() {
+    getRestoreKeys(version) {
         return __awaiter(this, void 0, void 0, function* () {
-            return [`${expressions_1.runner.os}-pip-`];
+            return [`${expressions_1.runner.os}-${version}-pip-`];
         });
     }
     shouldCache() {
@@ -52469,14 +52467,14 @@ class Gradle extends registry_1.CacheHandler {
             return ['~/.gradle/caches', '~/.gradle/wrapper'];
         });
     }
-    getKey() {
+    getKey(version) {
         return __awaiter(this, void 0, void 0, function* () {
-            return `${expressions_1.runner.os}-gradle-${yield expressions_1.hashFiles('**/*.gradle')}`;
+            return `${expressions_1.runner.os}-${version}-gradle-${yield expressions_1.hashFiles('**/*.gradle')}`;
         });
     }
-    getRestoreKeys() {
+    getRestoreKeys(version) {
         return __awaiter(this, void 0, void 0, function* () {
-            return [`${expressions_1.runner.os}-gradle-`];
+            return [`${expressions_1.runner.os}-${version}-gradle-`];
         });
     }
     shouldCache() {
@@ -53852,14 +53850,14 @@ class SPM extends registry_1.CacheHandler {
             return ['.build'];
         });
     }
-    getKey() {
+    getKey(version) {
         return __awaiter(this, void 0, void 0, function* () {
-            return `${expressions_1.runner.os}-spm-${yield expressions_1.hashFiles('**/Package.resolved')}`;
+            return `${expressions_1.runner.os}-${version}-spm-${yield expressions_1.hashFiles('**/Package.resolved')}`;
         });
     }
-    getRestoreKeys() {
+    getRestoreKeys(version) {
         return __awaiter(this, void 0, void 0, function* () {
-            return [`${expressions_1.runner.os}-spm-`];
+            return [`${expressions_1.runner.os}-${version}-spm-`];
         });
     }
     shouldCache() {

@@ -6,12 +6,12 @@ class Composer extends CacheHandler {
     return [await exec('composer', 'config', 'cache-files-dir')]
   }
       
-  async getKey(): Promise<string> {
-    return `${runner.os}-composer-${await hashFiles('**/composer.lock')}`
+  async getKey(version?: string): Promise<string> {
+    return `${runner.os}-${version}-composer-${await hashFiles('**/composer.lock')}`
   }
       
-  async getRestoreKeys(): Promise<string[]> {
-    return [`${runner.os}-composer-`]
+  async getRestoreKeys(version?: string): Promise<string[]> {
+    return [`${runner.os}-${version}-composer-`]
   }
       
   async shouldCache(): Promise<boolean> {

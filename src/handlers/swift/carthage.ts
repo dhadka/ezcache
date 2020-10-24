@@ -6,12 +6,12 @@ class Carthage extends CacheHandler {
         return ['Carthage']
     }
 
-    async getKey(): Promise<string> {
-        return `${runner.os}-carthage-${await hashFiles('**/Cartfile.resolved')}`
+    async getKey(version?: string): Promise<string> {
+        return `${runner.os}-${version}-carthage-${await hashFiles('**/Cartfile.resolved')}`
     }
 
-    async getRestoreKeys(): Promise<string[]> {
-        return [`${runner.os}-carthage-`]
+    async getRestoreKeys(version?: string): Promise<string[]> {
+        return [`${runner.os}-${version}-carthage-`]
     }
 
     async shouldCache(): Promise<boolean> {

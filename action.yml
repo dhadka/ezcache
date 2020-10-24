@@ -4,6 +4,9 @@ inputs:
   type:
     description: 'The type of cache to create'
     required: true
+  version:
+    description: 'The version number of the cache'
+    required: false
 runs:
   using: 'node12'
   main: 'dist/restore/index.js'

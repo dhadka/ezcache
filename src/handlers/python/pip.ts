@@ -13,12 +13,12 @@ class Pip extends CacheHandler {
         }
     }
 
-    async getKey(): Promise<string> {
-        return `${runner.os}-pip-${await hashFiles('**/requirements.txt')}`
+    async getKey(version?: string): Promise<string> {
+        return `${runner.os}-${version}-pip-${await hashFiles('**/requirements.txt')}`
     }
 
-    async getRestoreKeys(): Promise<string[]> {
-        return [`${runner.os}-pip-`]
+    async getRestoreKeys(version?: string): Promise<string[]> {
+        return [`${runner.os}-${version}-pip-`]
     }
 
     async shouldCache(): Promise<boolean> {

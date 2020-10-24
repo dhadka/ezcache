@@ -1,11 +1,15 @@
 import { saveCache, restoreCache } from '@actions/cache'
 
+export interface ICacheOptions {
+    version?: string
+}
+
 export class CacheHandler {
     async getPaths(): Promise<string[]> {
         throw Error('not implemented')
     }
 
-    async getKey(): Promise<string> {
+    async getKey(version?: string): Promise<string> {
         throw Error('not implemented')
     }
 
@@ -21,9 +25,9 @@ export class CacheHandler {
 
     }
 
-    async saveCache(): Promise<void> {
+    async saveCache(options?: ICacheOptions): Promise<void> {
         const paths = await this.getPaths()
-        const key = await this.getKey()
+        const key = await this.getKey(options?.version)
 
         console.log(`Calling saveCache(${paths}, ${key})`)
         await saveCache(paths, key)

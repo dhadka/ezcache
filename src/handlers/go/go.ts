@@ -6,12 +6,12 @@ class Go extends CacheHandler {
         return ['~/go/pkg/mod']
     }
 
-    async getKey(): Promise<string> {
-        return `${runner.os}-go-${await hashFiles('**/go.sum')}`
+    async getKey(version?: string): Promise<string> {
+        return `${runner.os}-${version}-go-${await hashFiles('**/go.sum')}`
     }
 
-    async getRestoreKeys(): Promise<string[]> {
-        return [`${runner.os}-go-`]
+    async getRestoreKeys(version?: string): Promise<string[]> {
+        return [`${runner.os}-${version}-go-`]
     }
 
     async shouldCache(): Promise<boolean> {

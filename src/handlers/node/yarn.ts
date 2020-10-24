@@ -6,12 +6,12 @@ class Yarn extends CacheHandler {
         return [await exec('yarn', 'cache', 'dir')]
     }
 
-    async getKey(): Promise<string> {
-        return `${runner.os}-yarn-${await hashFiles('**/yarn.lock')}`
+    async getKey(version?: string): Promise<string> {
+        return `${runner.os}-${version}-yarn-${await hashFiles('**/yarn.lock')}`
     }
 
-    async getRestoreKeys(): Promise<string[]> {
-        return [`${runner.os}-yarn-`]
+    async getRestoreKeys(version?: string): Promise<string[]> {
+        return [`${runner.os}-${version}-yarn-`]
     }
 
     async shouldCache(): Promise<boolean> {

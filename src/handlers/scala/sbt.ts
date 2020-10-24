@@ -6,8 +6,8 @@ class Sbt extends CacheHandler {
         return ['~/.ivy2/cache', '~/.sbt']
     }
 
-    async getKey(): Promise<string> {
-        return `${runner.os}-sbt-${await hashFiles('**/build.sbt')}`
+    async getKey(version?: string): Promise<string> {
+        return `${runner.os}-${version}-sbt-${await hashFiles('**/build.sbt')}`
     }
 
     async shouldCache(): Promise<boolean> {
