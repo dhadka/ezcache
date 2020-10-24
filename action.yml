@@ -1,9 +1,11 @@
 name: 'ezcache'
 description: ''
 inputs:
-  name:
-    description: 'Your name'
+  type:
+    description: 'The type of cache to create'
     required: true
 runs:
   using: 'node12'
-  main: 'dist/index.js'
+  main: 'dist/restore.js'
+  post: 'dist/save.js'
+  post-if: 'success()'

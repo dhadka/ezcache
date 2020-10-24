@@ -4,9 +4,9 @@
     "description": "",
     "main": "lib/index.js",
     "scripts": {
-        "run": "npm run build && node lib/index.js",
+        "run": "npm run build && node lib/restore.js",
         "test": "jest --config jestconfig.json",
-        "build": "tsc && ncc build -o dist src/index.ts",
+        "build": "tsc && ncc build -o dist src/restore.ts && ncc build -o dist src/save.ts",
         "format": "prettier --write \"src/**/*.ts\"",
         "lint": "tslint -p tsconfig.json"
     },
@@ -32,7 +32,13 @@
         "typescript": "^4.0.3"
     },
     "dependencies": {
+        "@actions/cache": "^1.0.3",
         "@actions/core": "^1.2.6",
-        "@actions/exec": "^1.0.4"
+        "@actions/exec": "^1.0.4",
+        "@actions/github": "^4.0.0",
+        "@types/glob": "^7.1.3",
+        "execa": "^4.0.3",
+        "glob": "^7.1.6",
+        "hasha": "^5.2.2"
     }
 }
