@@ -35363,53 +35363,7 @@ exports.PrefixSecurityEnum = PrefixSecurityEnum;
 /* 395 */,
 /* 396 */,
 /* 397 */,
-/* 398 */
-/***/ (function(__unusedmodule, exports, __webpack_require__) {
-
-"use strict";
-
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-const core = __webpack_require__(470);
-const github = __webpack_require__(469);
-const registry_1 = __webpack_require__(822);
-const expressions_1 = __webpack_require__(134);
-class LastCache extends registry_1.CacheHandler {
-    getBranchName() {
-        let ref = github.context.ref;
-        if (ref.startsWith('refs/heads/')) {
-            ref = ref.substring(11);
-        }
-        return ref;
-    }
-    getPaths() {
-        return __awaiter(this, void 0, void 0, function* () {
-            return core.getInput('path').split('\n').map(s => s.trim());
-        });
-    }
-    getKey(version) {
-        return __awaiter(this, void 0, void 0, function* () {
-            return `${expressions_1.runner.os}-${version}-last-${this.getBranchName()}-${yield expressions_1.hashFiles(yield this.getPaths())}`;
-        });
-    }
-    getRestoreKeys(version) {
-        return __awaiter(this, void 0, void 0, function* () {
-            return [`${expressions_1.runner.os}-${version}-last-${this.getBranchName()}-`, `${expressions_1.runner.os}-${version}-last-master-`];
-        });
-    }
-}
-registry_1.registry.add("last", new LastCache());
-
-
-/***/ }),
+/* 398 */,
 /* 399 */,
 /* 400 */,
 /* 401 */,
@@ -38915,7 +38869,53 @@ module.exports.argument = escapeArgument;
 /* 464 */,
 /* 465 */,
 /* 466 */,
-/* 467 */,
+/* 467 */
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const core = __webpack_require__(470);
+const github = __webpack_require__(469);
+const registry_1 = __webpack_require__(822);
+const expressions_1 = __webpack_require__(134);
+class DiffCache extends registry_1.CacheHandler {
+    getBranchName() {
+        let ref = github.context.ref;
+        if (ref.startsWith('refs/heads/')) {
+            ref = ref.substring(11);
+        }
+        return ref;
+    }
+    getPaths() {
+        return __awaiter(this, void 0, void 0, function* () {
+            return core.getInput('path').split('\n').map(s => s.trim());
+        });
+    }
+    getKey(version) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return `${expressions_1.runner.os}-${version}-diff-${this.getBranchName()}-${yield expressions_1.hashFiles(yield this.getPaths())}`;
+        });
+    }
+    getRestoreKeys(version) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return [`${expressions_1.runner.os}-${version}-diff-${this.getBranchName()}-`, `${expressions_1.runner.os}-${version}-last-master-`];
+        });
+    }
+}
+registry_1.registry.add("diff", new DiffCache());
+
+
+/***/ }),
 /* 468 */,
 /* 469 */
 /***/ (function(__unusedmodule, exports, __webpack_require__) {
@@ -52277,7 +52277,7 @@ __webpack_require__(905);
 __webpack_require__(664);
 __webpack_require__(648);
 __webpack_require__(484);
-__webpack_require__(398);
+__webpack_require__(467);
 __webpack_require__(322);
 __webpack_require__(769);
 __webpack_require__(859);

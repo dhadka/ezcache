@@ -3,7 +3,7 @@ import * as github from '@actions/github'
 import { registry, CacheHandler } from '../../registry'
 import { hashFiles, runner } from '../../expressions'
 
-class LastCache extends CacheHandler {
+class DiffCache extends CacheHandler {
     getBranchName(): string {
         let ref = github.context.ref
 
@@ -19,12 +19,12 @@ class LastCache extends CacheHandler {
     }
 
     async getKey(version?: string): Promise<string> {
-        return `${runner.os}-${version}-last-${this.getBranchName()}-${await hashFiles(await this.getPaths())}`
+        return `${runner.os}-${version}-diff-${this.getBranchName()}-${await hashFiles(await this.getPaths())}`
     }
 
     async getRestoreKeys(version?: string): Promise<string[]> {
-        return [`${runner.os}-${version}-last-${this.getBranchName()}-`, `${runner.os}-${version}-last-master-`]
+        return [`${runner.os}-${version}-diff-${this.getBranchName()}-`, `${runner.os}-${version}-last-master-`]
     }
 }
 
-registry.add("last", new LastCache())
+registry.add("diff", new DiffCache())

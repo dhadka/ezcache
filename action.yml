@@ -8,7 +8,7 @@ inputs:
     description: 'The version number of the cache'
     required: false
   path:
-    description: 'The cache path, only valid for types "run", "last"'
+    description: 'The cache path, only valid for types "run", "diff"'
     required: false
 runs:
   using: 'node12'

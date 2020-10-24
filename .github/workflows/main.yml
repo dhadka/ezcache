@@ -45,10 +45,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - name: Cache per run
+      - name: Cache by diff
         uses: ./
         with:
           type: last
           path: ~/.npm
+      - name: Install dependencies
+        run: npm ci
+
+  test-last:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Auto cache
+        uses: ./
+        with:
+          type: auto
       - name: Install dependencies
         run: npm ci
