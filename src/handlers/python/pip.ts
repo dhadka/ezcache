@@ -1,5 +1,6 @@
-import { registry, CacheHandler } from '../../registry'
-import { hashFiles, exec, runner, matches } from '../../expressions'
+import { registry } from '../../registry'
+import { hashFiles, runner, matches } from '../../expressions'
+import { CacheHandler } from '../../handler'
 
 class Pip extends CacheHandler {
     async getPaths(): Promise<string[]> {

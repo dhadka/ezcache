@@ -1,5 +1,6 @@
-import { registry, CacheHandler } from '../../registry'
+import { registry } from '../../registry'
 import { hashFiles, matches, runner } from '../../expressions'
+import { CacheHandler } from '../../handler'
 
 class Maven extends CacheHandler {
     async getPaths(): Promise<string[]> {

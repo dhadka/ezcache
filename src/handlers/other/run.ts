@@ -1,7 +1,8 @@
 import * as core from '@actions/core'
 import * as github from '@actions/github'
-import { registry, CacheHandler } from '../../registry'
+import { registry } from '../../registry'
 import { runner } from '../../expressions'
+import { CacheHandler } from '../../handler'
 
 class PerRunCache extends CacheHandler {
     async getPaths(): Promise<string[]> {
@@ -9,7 +10,7 @@ class PerRunCache extends CacheHandler {
     }
 
     async getKey(version?: string): Promise<string> {
-        return `${runner.os}-run-${github.context.runId}`
+        return `${runner.os}-${version}-run-${github.context.runId}`
     }
 }
 

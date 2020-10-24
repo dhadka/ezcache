@@ -1770,7 +1770,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 const registry_1 = __webpack_require__(822);
 const expressions_1 = __webpack_require__(134);
-class Cargo extends registry_1.CacheHandler {
+const handler_1 = __webpack_require__(895);
+class Cargo extends handler_1.CacheHandler {
     getPaths() {
         return __awaiter(this, void 0, void 0, function* () {
             return ['~/.cargo/registry', '~/.cargo/git', 'target'];
@@ -1990,7 +1991,52 @@ if (typeof Symbol === undefined || !Symbol.asyncIterator) {
 /* 74 */,
 /* 75 */,
 /* 76 */,
-/* 77 */,
+/* 77 */
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.readHandlers = exports.readPrimaryKey = exports.readRestoredKey = exports.addHandler = exports.savePrimaryKey = exports.saveRestoredKey = void 0;
+const core = __webpack_require__(470);
+var State;
+(function (State) {
+    State["RestoredKey"] = "RestoredKey";
+    State["PrimaryKey"] = "PrimaryKey";
+    State["CacheHandlers"] = "CacheHandlers";
+})(State || (State = {}));
+function getScopedStateKey(handler, name) {
+    return `${handler.constructor.name}-${name}`;
+}
+function saveRestoredKey(handler, value) {
+    core.saveState(getScopedStateKey(handler, State.RestoredKey), value);
+}
+exports.saveRestoredKey = saveRestoredKey;
+function savePrimaryKey(handler, value) {
+    core.saveState(getScopedStateKey(handler, State.PrimaryKey), value);
+}
+exports.savePrimaryKey = savePrimaryKey;
+function addHandler(handler) {
+    const handlers = readHandlers();
+    handlers.push(handler.constructor.name);
+    core.saveState(State.CacheHandlers, handlers.join(','));
+}
+exports.addHandler = addHandler;
+function readRestoredKey(handler) {
+    return core.getState(getScopedStateKey(handler, State.RestoredKey));
+}
+exports.readRestoredKey = readRestoredKey;
+function readPrimaryKey(handler) {
+    return core.getState(getScopedStateKey(handler, State.PrimaryKey));
+}
+exports.readPrimaryKey = readPrimaryKey;
+function readHandlers() {
+    return core.getState(State.CacheHandlers).split(',');
+}
+exports.readHandlers = readHandlers;
+
+
+/***/ }),
 /* 78 */
 /***/ (function(__unusedmodule, exports, __webpack_require__) {
 
@@ -3659,7 +3705,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 const registry_1 = __webpack_require__(822);
 const expressions_1 = __webpack_require__(134);
-class REnv extends registry_1.CacheHandler {
+const handler_1 = __webpack_require__(895);
+class REnv extends handler_1.CacheHandler {
     getPaths() {
         return __awaiter(this, void 0, void 0, function* () {
             switch (expressions_1.runner.os) {
@@ -8167,7 +8214,8 @@ const core = __webpack_require__(470);
 const github = __webpack_require__(469);
 const registry_1 = __webpack_require__(822);
 const expressions_1 = __webpack_require__(134);
-class PerRunCache extends registry_1.CacheHandler {
+const handler_1 = __webpack_require__(895);
+class PerRunCache extends handler_1.CacheHandler {
     getPaths() {
         return __awaiter(this, void 0, void 0, function* () {
             return core.getInput('path').split('\n').map(s => s.trim());
@@ -8175,7 +8223,7 @@ class PerRunCache extends registry_1.CacheHandler {
     }
     getKey(version) {
         return __awaiter(this, void 0, void 0, function* () {
-            return `${expressions_1.runner.os}-run-${github.context.runId}`;
+            return `${expressions_1.runner.os}-${version}-run-${github.context.runId}`;
         });
     }
 }
@@ -35439,7 +35487,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 const registry_1 = __webpack_require__(822);
 const expressions_1 = __webpack_require__(134);
-class Sbt extends registry_1.CacheHandler {
+const handler_1 = __webpack_require__(895);
+class Sbt extends handler_1.CacheHandler {
     getPaths() {
         return __awaiter(this, void 0, void 0, function* () {
             return ['~/.ivy2/cache', '~/.sbt'];
@@ -38932,17 +38981,10 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const core = __webpack_require__(470);
-const github = __webpack_require__(469);
 const registry_1 = __webpack_require__(822);
 const expressions_1 = __webpack_require__(134);
-class DiffCache extends registry_1.CacheHandler {
-    getBranchName() {
-        let ref = github.context.ref;
-        if (ref.startsWith('refs/heads/')) {
-            ref = ref.substring(11);
-        }
-        return ref;
-    }
+const handler_1 = __webpack_require__(895);
+class DiffCache extends handler_1.CacheHandler {
     getPaths() {
         return __awaiter(this, void 0, void 0, function* () {
             return core.getInput('path').split('\n').map(s => s.trim());
@@ -38950,12 +38992,12 @@ class DiffCache extends registry_1.CacheHandler {
     }
     getKey(version) {
         return __awaiter(this, void 0, void 0, function* () {
-            return `${expressions_1.runner.os}-${version}-diff-${this.getBranchName()}-${yield expressions_1.hashFiles(yield this.getPaths())}`;
+            return `${expressions_1.runner.os}-${version}-diff-${yield expressions_1.hashFiles(yield this.getPaths())}`;
         });
     }
     getRestoreKeys(version) {
         return __awaiter(this, void 0, void 0, function* () {
-            return [`${expressions_1.runner.os}-${version}-diff-${this.getBranchName()}-`, `${expressions_1.runner.os}-${version}-last-master-`];
+            return [`${expressions_1.runner.os}-${version}-diff-`];
         });
     }
 }
@@ -39456,7 +39498,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 const registry_1 = __webpack_require__(822);
 const expressions_1 = __webpack_require__(134);
-class Yarn extends registry_1.CacheHandler {
+const handler_1 = __webpack_require__(895);
+class Yarn extends handler_1.CacheHandler {
     getPaths() {
         return __awaiter(this, void 0, void 0, function* () {
             return [yield expressions_1.exec('yarn', 'cache', 'dir')];
@@ -40327,7 +40370,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 const registry_1 = __webpack_require__(822);
 const expressions_1 = __webpack_require__(134);
-class Carthage extends registry_1.CacheHandler {
+const handler_1 = __webpack_require__(895);
+class Carthage extends handler_1.CacheHandler {
     getPaths() {
         return __awaiter(this, void 0, void 0, function* () {
             return ['Carthage'];
@@ -44579,7 +44623,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 const registry_1 = __webpack_require__(822);
 const expressions_1 = __webpack_require__(134);
-class NPM extends registry_1.CacheHandler {
+const handler_1 = __webpack_require__(895);
+class NPM extends handler_1.CacheHandler {
     getPaths() {
         return __awaiter(this, void 0, void 0, function* () {
             return [yield expressions_1.exec('npm', 'config', 'get', 'cache')];
@@ -44941,7 +44986,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 const registry_1 = __webpack_require__(822);
 const expressions_1 = __webpack_require__(134);
-class Maven extends registry_1.CacheHandler {
+const handler_1 = __webpack_require__(895);
+class Maven extends handler_1.CacheHandler {
     getPaths() {
         return __awaiter(this, void 0, void 0, function* () {
             return ['~/.m2/repository'];
@@ -45551,7 +45597,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 const registry_1 = __webpack_require__(822);
 const expressions_1 = __webpack_require__(134);
-class Bundler extends registry_1.CacheHandler {
+const handler_1 = __webpack_require__(895);
+class Bundler extends handler_1.CacheHandler {
     getPaths() {
         return __awaiter(this, void 0, void 0, function* () {
             return ['vendor/bundle'];
@@ -47561,7 +47608,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 const registry_1 = __webpack_require__(822);
 const expressions_1 = __webpack_require__(134);
-class Composer extends registry_1.CacheHandler {
+const handler_1 = __webpack_require__(895);
+class Composer extends handler_1.CacheHandler {
     getPaths() {
         return __awaiter(this, void 0, void 0, function* () {
             return [yield expressions_1.exec('composer', 'config', 'cache-files-dir')];
@@ -47610,7 +47658,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 const registry_1 = __webpack_require__(822);
 const expressions_1 = __webpack_require__(134);
-class Cocoapods extends registry_1.CacheHandler {
+const handler_1 = __webpack_require__(895);
+class Cocoapods extends handler_1.CacheHandler {
     getPaths() {
         return __awaiter(this, void 0, void 0, function* () {
             return ['Pods'];
@@ -47667,35 +47716,28 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 const core = __webpack_require__(470);
 const registry_1 = __webpack_require__(822);
+const handler_1 = __webpack_require__(895);
 __webpack_require__(877);
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
-        try {
-            let type = core.getInput('type', { required: true });
-            let version = core.getInput('version');
-            if (type === 'auto') {
-                for (const handler of registry_1.registry.all()) {
-                    if (yield handler.shouldCache()) {
-                        console.log(`Restoring cache with ${handler.constructor.name} handler`);
-                        yield handler.setup();
-                        yield handler.restoreCache({ version });
-                    }
-                }
-            }
-            else {
-                const handler = registry_1.registry.get(type);
-                if (handler) {
-                    yield handler.setup();
-                    yield handler.restoreCache({ version });
-                }
+        let type = core.getInput('type', { required: true });
+        let version = core.getInput('version');
+        let isFullRestore = true;
+        for (const handler of registry_1.registry.getAll(type)) {
+            console.log(`Restoring cache with ${handler.constructor.name} handler`);
+            yield handler.setup();
+            const result = yield handler.restoreCache({ version });
+            if (result.type != handler_1.RestoreType.Full) {
+                isFullRestore = false;
             }
         }
-        catch (error) {
-            console.error(error);
-        }
+        core.setOutput('cache-hit', isFullRestore);
     });
 }
-run();
+run().catch(e => {
+    console.error(e);
+    core.setFailed(e);
+});
 
 
 /***/ }),
@@ -49006,7 +49048,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 const registry_1 = __webpack_require__(822);
 const expressions_1 = __webpack_require__(134);
-class Go extends registry_1.CacheHandler {
+const handler_1 = __webpack_require__(895);
+class Go extends handler_1.CacheHandler {
     getPaths() {
         return __awaiter(this, void 0, void 0, function* () {
             return ['~/go/pkg/mod'];
@@ -49392,66 +49435,12 @@ function sync (path, options) {
 /* 820 */,
 /* 821 */,
 /* 822 */
-/***/ (function(__unusedmodule, exports, __webpack_require__) {
+/***/ (function(__unusedmodule, exports) {
 
 "use strict";
 
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.registry = exports.CacheHandler = void 0;
-const cache_1 = __webpack_require__(692);
-class CacheHandler {
-    getPaths() {
-        return __awaiter(this, void 0, void 0, function* () {
-            throw Error('not implemented');
-        });
-    }
-    getKey(version) {
-        return __awaiter(this, void 0, void 0, function* () {
-            throw Error('not implemented');
-        });
-    }
-    getRestoreKeys(version) {
-        return __awaiter(this, void 0, void 0, function* () {
-            return [];
-        });
-    }
-    shouldCache() {
-        return __awaiter(this, void 0, void 0, function* () {
-            return false;
-        });
-    }
-    setup() {
-        return __awaiter(this, void 0, void 0, function* () {
-        });
-    }
-    saveCache(options) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const paths = yield this.getPaths();
-            const key = yield this.getKey(options === null || options === void 0 ? void 0 : options.version);
-            console.log(`Calling saveCache(${paths}, ${key})`);
-            yield cache_1.saveCache(paths, key);
-        });
-    }
-    restoreCache(options) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const paths = yield this.getPaths();
-            const key = yield this.getKey(options === null || options === void 0 ? void 0 : options.version);
-            const restoreKeys = yield this.getRestoreKeys(options === null || options === void 0 ? void 0 : options.version);
-            console.log(`Calling restoreCache(${paths}, ${key}, ${restoreKeys})`);
-            yield cache_1.restoreCache(paths, key, restoreKeys);
-        });
-    }
-}
-exports.CacheHandler = CacheHandler;
+exports.registry = void 0;
 class Registry {
     constructor() {
         this.handlers = new Map();
@@ -49459,18 +49448,33 @@ class Registry {
     toCanonicalName(name) {
         return name.toLowerCase();
     }
-    all() {
-        return this.handlers.values();
-    }
     add(name, handler) {
         console.log(`Registering ${name} handler`);
         this.handlers.set(this.toCanonicalName(name), handler);
     }
-    get(name) {
+    getFirst(name) {
         return this.handlers.get(this.toCanonicalName(name));
     }
     contains(name) {
         return this.handlers.has(this.toCanonicalName(name));
+    }
+    getAll(name) {
+        name = this.toCanonicalName(name);
+        const result = [];
+        if (name === 'auto') {
+            for (const handler of this.handlers.values()) {
+                if (handler.shouldCache()) {
+                    result.push(handler);
+                }
+            }
+        }
+        else {
+            const handler = this.getFirst(name);
+            if (handler) {
+                result.push(handler);
+            }
+        }
+        return result;
     }
 }
 exports.registry = new Registry();
@@ -51751,7 +51755,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 const registry_1 = __webpack_require__(822);
 const expressions_1 = __webpack_require__(134);
-class Pip extends registry_1.CacheHandler {
+const handler_1 = __webpack_require__(895);
+class Pip extends handler_1.CacheHandler {
     getPaths() {
         return __awaiter(this, void 0, void 0, function* () {
             switch (expressions_1.runner.os) {
@@ -55139,7 +55144,92 @@ exports.default = _default;
 
 /***/ }),
 /* 894 */,
-/* 895 */,
+/* 895 */
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.CacheHandler = exports.RestoreType = void 0;
+const cache_1 = __webpack_require__(692);
+const state = __webpack_require__(77);
+var RestoreType;
+(function (RestoreType) {
+    RestoreType[RestoreType["Miss"] = 0] = "Miss";
+    RestoreType[RestoreType["Partial"] = 1] = "Partial";
+    RestoreType[RestoreType["Full"] = 2] = "Full";
+})(RestoreType = exports.RestoreType || (exports.RestoreType = {}));
+class CacheHandler {
+    getPaths() {
+        return __awaiter(this, void 0, void 0, function* () {
+            throw Error('not implemented');
+        });
+    }
+    getKey(version) {
+        return __awaiter(this, void 0, void 0, function* () {
+            throw Error('not implemented');
+        });
+    }
+    getRestoreKeys(version) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return [];
+        });
+    }
+    shouldCache() {
+        return __awaiter(this, void 0, void 0, function* () {
+            return false;
+        });
+    }
+    setup() {
+        return __awaiter(this, void 0, void 0, function* () {
+        });
+    }
+    saveCache(options) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const paths = yield this.getPaths();
+            const key = state.readPrimaryKey(this);
+            const restoredKey = state.readRestoredKey(this);
+            if (key === restoredKey) {
+                console.log(`Cache hit on primary key '${key}', skip saving cache`);
+            }
+            else {
+                console.log(`Calling saveCache('${paths}', '${key}')`);
+                yield cache_1.saveCache(paths, key);
+            }
+        });
+    }
+    restoreCache(options) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const paths = yield this.getPaths();
+            const key = yield this.getKey(options === null || options === void 0 ? void 0 : options.version);
+            const restoreKeys = yield this.getRestoreKeys(options === null || options === void 0 ? void 0 : options.version);
+            console.log(`Calling restoreCache('${paths}', '${key}', ${restoreKeys})`);
+            const restoredKey = yield cache_1.restoreCache(paths, key, restoreKeys);
+            state.savePrimaryKey(this, key);
+            state.addHandler(this);
+            if (restoredKey) {
+                state.saveRestoredKey(this, restoredKey !== null && restoredKey !== void 0 ? restoredKey : '');
+            }
+            return {
+                type: restoredKey ? (key === restoredKey ? RestoreType.Full : RestoreType.Partial) : RestoreType.Miss,
+                restoredKey: restoredKey
+            };
+        });
+    }
+}
+exports.CacheHandler = CacheHandler;
+
+
+/***/ }),
 /* 896 */
 /***/ (function(module) {
 
@@ -55260,7 +55350,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 const registry_1 = __webpack_require__(822);
 const expressions_1 = __webpack_require__(134);
-class Gradle extends registry_1.CacheHandler {
+const handler_1 = __webpack_require__(895);
+class Gradle extends handler_1.CacheHandler {
     getPaths() {
         return __awaiter(this, void 0, void 0, function* () {
             return ['~/.gradle/caches', '~/.gradle/wrapper'];
@@ -56643,7 +56734,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 const registry_1 = __webpack_require__(822);
 const expressions_1 = __webpack_require__(134);
-class SPM extends registry_1.CacheHandler {
+const handler_1 = __webpack_require__(895);
+class SPM extends handler_1.CacheHandler {
     getPaths() {
         return __awaiter(this, void 0, void 0, function* () {
             return ['.build'];

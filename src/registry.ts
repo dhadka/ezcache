@@ -1,47 +1,4 @@
-import { saveCache, restoreCache } from '@actions/cache'
-
-export interface ICacheOptions {
-    version?: string
-}
-
-export class CacheHandler {
-    async getPaths(): Promise<string[]> {
-        throw Error('not implemented')
-    }
-
-    async getKey(version?: string): Promise<string> {
-        throw Error('not implemented')
-    }
-
-    async getRestoreKeys(version?: string): Promise<string[]> {
-        return []
-    }
-
-    async shouldCache(): Promise<boolean> {
-        return false
-    }
-
-    async setup(): Promise<void> {
-
-    }
-
-    async saveCache(options?: ICacheOptions): Promise<void> {
-        const paths = await this.getPaths()
-        const key = await this.getKey(options?.version)
-
-        console.log(`Calling saveCache(${paths}, ${key})`)
-        await saveCache(paths, key)
-    }
-
-    async restoreCache(options?: ICacheOptions): Promise<void> {
-        const paths = await this.getPaths()
-        const key = await this.getKey(options?.version)
-        const restoreKeys = await this.getRestoreKeys(options?.version)
-
-        console.log(`Calling restoreCache(${paths}, ${key}, ${restoreKeys})`)
-        await restoreCache(paths, key, restoreKeys)
-    }
-}
+import { CacheHandler } from './handler'
 
 class Registry {
     handlers = new Map<string, CacheHandler>()
@@ -50,21 +7,39 @@ class Registry {
         return name.toLowerCase()
     }
 
-    all(): IterableIterator<CacheHandler> {
-        return this.handlers.values()
-    }
-
     add(name: string, handler: CacheHandler) {
         console.log(`Registering ${name} handler`)
         this.handlers.set(this.toCanonicalName(name), handler)
     }
 
-    get(name: string): CacheHandler | undefined {
+    getFirst(name: string): CacheHandler | undefined {
         return this.handlers.get(this.toCanonicalName(name))
     }
 
     contains(name: string) {
         return this.handlers.has(this.toCanonicalName(name))
+    }
+
+    getAll(name: string): CacheHandler[] {
+        name = this.toCanonicalName(name)
+
+        const result: CacheHandler[] = []
+
+        if (name === 'auto') {
+            for (const handler of this.handlers.values()) {
+                if (handler.shouldCache()) {
+                    result.push(handler)
+                }
+            }
+        } else {
+            const handler = this.getFirst(name)
+
+            if (handler) {
+                result.push(handler)
+            }
+        }
+
+        return result
     }
 }
 

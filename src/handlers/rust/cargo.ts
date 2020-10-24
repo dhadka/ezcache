@@ -1,5 +1,6 @@
-import { registry, CacheHandler } from '../../registry'
-import { hashFiles, exec, matches, runner } from '../../expressions'
+import { registry } from '../../registry'
+import { hashFiles, matches, runner } from '../../expressions'
+import { CacheHandler } from '../../handler'
 
 class Cargo extends CacheHandler {
     async getPaths(): Promise<string[]> {

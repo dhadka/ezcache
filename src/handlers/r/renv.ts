@@ -1,5 +1,6 @@
-import { registry, CacheHandler } from '../../registry'
+import { registry } from '../../registry'
 import { hashFiles, runner, matches } from '../../expressions'
+import { CacheHandler } from '../../handler'
 
 class REnv extends CacheHandler {
     async getPaths(): Promise<string[]> {
