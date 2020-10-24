@@ -50,6 +50,7 @@ jobs:
         with:
           type: diff
           path: ~/.npm
+          version: v1
       - name: Install dependencies
         run: npm ci
 
