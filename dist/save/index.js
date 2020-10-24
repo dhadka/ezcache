@@ -55215,6 +55215,7 @@ class CacheHandler {
             state.savePrimaryKey(this, key);
             state.addHandler(this);
             if (restoredKey) {
+                console.log(`Restored cache with key '${restoredKey}'`);
                 state.saveRestoredKey(this, restoredKey !== null && restoredKey !== void 0 ? restoredKey : '');
             }
             return {
