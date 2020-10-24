@@ -26,7 +26,7 @@ export class CacheHandler {
         const key = await this.getKey()
 
         console.log(`Calling saveCache(${paths}, ${key})`)
-        //await saveCache(paths, key)
+        await saveCache(paths, key)
     }
 
     async restoreCache(): Promise<void> {
@@ -35,7 +35,7 @@ export class CacheHandler {
         const restoreKeys = await this.getRestoreKeys()
 
         console.log(`Calling restoreCache(${paths}, ${key}, ${restoreKeys})`)
-        //await restoreCache(paths, key, restoreKeys)
+        await restoreCache(paths, key, restoreKeys)
     }
 }
 
@@ -51,7 +51,7 @@ class Registry {
     }
 
     add(name: string, handler: CacheHandler) {
-        console.log(`Registering ${name} with ${typeof handler}`)
+        console.log(`Registering ${name} handler`)
         this.handlers.set(this.toCanonicalName(name), handler)
     }
 

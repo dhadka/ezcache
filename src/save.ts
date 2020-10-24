@@ -1,21 +1,7 @@
 import * as core from '@actions/core'
 import { registry } from './registry'
 
-// Explicit list of all handlers so they are compiled by ncc.
-require('./handlers/go/go')
-require('./handlers/java/gradle')
-require('./handlers/java/maven')
-require('./handlers/node/npm')
-require('./handlers/node/yarn')
-require('./handlers/php/composer')
-require('./handlers/python/pip')
-require('./handlers/r/renv')
-require('./handlers/ruby/bundler')
-require('./handlers/rust/cargo')
-require('./handlers/scala/sbt')
-require('./handlers/swift/carthage')
-require('./handlers/swift/cocoapods')
-require('./handlers/swift/spm')
+require('./handlers/all')
 
 async function run() {
     try {
