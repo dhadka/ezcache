@@ -6,7 +6,7 @@
     "scripts": {
         "run": "npm run build && node lib/restore.js",
         "test": "jest --config jestconfig.json",
-        "build": "tsc && ncc build -o dist src/restore.ts && ncc build -o dist src/save.ts",
+        "build": "tsc && ncc build -o dist/restore src/restore.ts && ncc build -o dist/save src/save.ts",
         "format": "prettier --write \"src/**/*.ts\"",
         "lint": "tslint -p tsconfig.json"
     },

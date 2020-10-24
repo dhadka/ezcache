@@ -40,7 +40,7 @@ module.exports =
 /******/ 	// the startup function
 /******/ 	function startup() {
 /******/ 		// Load entry module and return exports
-/******/ 		return __webpack_require__(325);
+/******/ 		return __webpack_require__(778);
 /******/ 	};
 /******/
 /******/ 	// run startup
@@ -2503,68 +2503,6 @@ module.exports = isStream;
 
 /***/ }),
 
-/***/ 325:
-/***/ (function(__unusedmodule, exports, __webpack_require__) {
-
-"use strict";
-
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-const registry_1 = __webpack_require__(822);
-// Explicit list of all handlers so they are compiled by ncc.
-__webpack_require__(814);
-__webpack_require__(905);
-__webpack_require__(664);
-__webpack_require__(648);
-__webpack_require__(484);
-__webpack_require__(769);
-__webpack_require__(859);
-__webpack_require__(126);
-__webpack_require__(697);
-__webpack_require__(56);
-__webpack_require__(410);
-__webpack_require__(65);
-__webpack_require__(566);
-__webpack_require__(967);
-function run() {
-    return __awaiter(this, void 0, void 0, function* () {
-        try {
-            let type = 'bundler';
-            if (type === 'auto') {
-                for (const handler of registry_1.registry.all()) {
-                    if (yield handler.shouldCache()) {
-                        console.log(`Caching with ${handler.constructor.name} handler`);
-                        yield handler.setup();
-                        yield handler.saveCache();
-                    }
-                }
-            }
-            else {
-                const handler = registry_1.registry.get(type);
-                if (handler) {
-                    yield handler.setup();
-                    yield handler.saveCache();
-                }
-            }
-        }
-        catch (error) {
-            console.error(error);
-        }
-    });
-}
-run().catch(e => console.error(e));
-
-
-/***/ }),
-
 /***/ 327:
 /***/ (function(__unusedmodule, exports) {
 
@@ -2586,6 +2524,55 @@ var MatchKind;
     MatchKind[MatchKind["All"] = 3] = "All";
 })(MatchKind = exports.MatchKind || (exports.MatchKind = {}));
 //# sourceMappingURL=internal-match-kind.js.map
+
+/***/ }),
+
+/***/ 329:
+/***/ (function(module, __unusedexports, __webpack_require__) {
+
+"use strict";
+
+
+const { PassThrough } = __webpack_require__(413);
+
+module.exports = function (/*streams...*/) {
+  var sources = []
+  var output  = new PassThrough({objectMode: true})
+
+  output.setMaxListeners(0)
+
+  output.add = add
+  output.isEmpty = isEmpty
+
+  output.on('unpipe', remove)
+
+  Array.prototype.slice.call(arguments).forEach(add)
+
+  return output
+
+  function add (source) {
+    if (Array.isArray(source)) {
+      source.forEach(add)
+      return this
+    }
+
+    sources.push(source);
+    source.once('end', remove.bind(null, source))
+    source.once('error', output.emit.bind(output, 'error'))
+    source.pipe(output, {end: false})
+    return this
+  }
+
+  function isEmpty () {
+    return sources.length == 0;
+  }
+
+  function remove (source) {
+    sources = sources.filter(function (it) { return it !== source })
+    if (!sources.length && output.readable) { output.end() }
+  }
+}
+
 
 /***/ }),
 
@@ -3586,7 +3573,7 @@ module.exports.env = options => {
 
 const isStream = __webpack_require__(323);
 const getStream = __webpack_require__(145);
-const mergeStream = __webpack_require__(778);
+const mergeStream = __webpack_require__(329);
 
 // `input` option
 const handleInput = (spawned, input) => {
@@ -5049,50 +5036,64 @@ registry_1.registry.add("composer", new Composer());
 /***/ }),
 
 /***/ 778:
-/***/ (function(module, __unusedexports, __webpack_require__) {
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
 
 "use strict";
 
-
-const { PassThrough } = __webpack_require__(413);
-
-module.exports = function (/*streams...*/) {
-  var sources = []
-  var output  = new PassThrough({objectMode: true})
-
-  output.setMaxListeners(0)
-
-  output.add = add
-  output.isEmpty = isEmpty
-
-  output.on('unpipe', remove)
-
-  Array.prototype.slice.call(arguments).forEach(add)
-
-  return output
-
-  function add (source) {
-    if (Array.isArray(source)) {
-      source.forEach(add)
-      return this
-    }
-
-    sources.push(source);
-    source.once('end', remove.bind(null, source))
-    source.once('error', output.emit.bind(output, 'error'))
-    source.pipe(output, {end: false})
-    return this
-  }
-
-  function isEmpty () {
-    return sources.length == 0;
-  }
-
-  function remove (source) {
-    sources = sources.filter(function (it) { return it !== source })
-    if (!sources.length && output.readable) { output.end() }
-  }
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const core = __webpack_require__(470);
+const registry_1 = __webpack_require__(822);
+// Explicit list of all handlers so they are compiled by ncc.
+__webpack_require__(814);
+__webpack_require__(905);
+__webpack_require__(664);
+__webpack_require__(648);
+__webpack_require__(484);
+__webpack_require__(769);
+__webpack_require__(859);
+__webpack_require__(126);
+__webpack_require__(697);
+__webpack_require__(56);
+__webpack_require__(410);
+__webpack_require__(65);
+__webpack_require__(566);
+__webpack_require__(967);
+function run() {
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            let type = core.getInput('type', { required: true });
+            if (type === 'auto') {
+                for (const handler of registry_1.registry.all()) {
+                    if (yield handler.shouldCache()) {
+                        console.log(`Restoring cache with ${handler.constructor.name} handler`);
+                        yield handler.setup();
+                        yield handler.restoreCache();
+                    }
+                }
+            }
+            else {
+                const handler = registry_1.registry.get(type);
+                if (handler) {
+                    yield handler.setup();
+                    yield handler.restoreCache();
+                }
+            }
+        }
+        catch (error) {
+            console.error(error);
+        }
+    });
 }
+run();
 
 
 /***/ }),

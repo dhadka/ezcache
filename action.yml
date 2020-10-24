@@ -6,6 +6,6 @@ inputs:
     required: true
 runs:
   using: 'node12'
-  main: 'dist/restore.js'
-  post: 'dist/save.js'
+  main: 'dist/restore/index.js'
+  post: 'dist/save/index.js'
   post-if: 'success()'
