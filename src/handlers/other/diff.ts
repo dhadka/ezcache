@@ -4,6 +4,11 @@ import { hashFiles, runner } from '../../expressions'
 import { CacheHandler } from '../../handler'
 
 class DiffCache extends CacheHandler {
+    constructor() {
+        super()
+        this.recomputeKey = true
+    }
+
     async getPaths(): Promise<string[]> {
         return core.getInput('path').split('\n').map(s => s.trim())
     }

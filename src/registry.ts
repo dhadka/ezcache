@@ -20,14 +20,14 @@ class Registry {
         return this.handlers.has(this.toCanonicalName(name))
     }
 
-    getAll(name: string): CacheHandler[] {
+    async getAll(name: string): Promise<CacheHandler[]> {
         name = this.toCanonicalName(name)
 
         const result: CacheHandler[] = []
 
         if (name === 'auto') {
             for (const handler of this.handlers.values()) {
-                if (handler.shouldCache()) {
+                if (await handler.shouldCache()) {
                     result.push(handler)
                 }
             }

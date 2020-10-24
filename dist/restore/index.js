@@ -38985,6 +38985,10 @@ const registry_1 = __webpack_require__(822);
 const expressions_1 = __webpack_require__(134);
 const handler_1 = __webpack_require__(895);
 class DiffCache extends handler_1.CacheHandler {
+    constructor() {
+        super();
+        this.recomputeKey = true;
+    }
     getPaths() {
         return __awaiter(this, void 0, void 0, function* () {
             return core.getInput('path').split('\n').map(s => s.trim());
@@ -47723,7 +47727,7 @@ function run() {
         let type = core.getInput('type', { required: true });
         let version = core.getInput('version');
         let isFullRestore = true;
-        for (const handler of registry_1.registry.getAll(type)) {
+        for (const handler of yield registry_1.registry.getAll(type)) {
             console.log(`Restoring cache with ${handler.constructor.name} handler`);
             yield handler.setup();
             const result = yield handler.restoreCache({ version });
@@ -49439,6 +49443,15 @@ function sync (path, options) {
 
 "use strict";
 
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.registry = void 0;
 class Registry {
@@ -49459,22 +49472,24 @@ class Registry {
         return this.handlers.has(this.toCanonicalName(name));
     }
     getAll(name) {
-        name = this.toCanonicalName(name);
-        const result = [];
-        if (name === 'auto') {
-            for (const handler of this.handlers.values()) {
-                if (handler.shouldCache()) {
+        return __awaiter(this, void 0, void 0, function* () {
+            name = this.toCanonicalName(name);
+            const result = [];
+            if (name === 'auto') {
+                for (const handler of this.handlers.values()) {
+                    if (yield handler.shouldCache()) {
+                        result.push(handler);
+                    }
+                }
+            }
+            else {
+                const handler = this.getFirst(name);
+                if (handler) {
                     result.push(handler);
                 }
             }
-        }
-        else {
-            const handler = this.getFirst(name);
-            if (handler) {
-                result.push(handler);
-            }
-        }
-        return result;
+            return result;
+        });
     }
 }
 exports.registry = new Registry();
@@ -55169,6 +55184,9 @@ var RestoreType;
     RestoreType[RestoreType["Full"] = 2] = "Full";
 })(RestoreType = exports.RestoreType || (exports.RestoreType = {}));
 class CacheHandler {
+    constructor() {
+        this.recomputeKey = false;
+    }
     getPaths() {
         return __awaiter(this, void 0, void 0, function* () {
             throw Error('not implemented');
@@ -55196,7 +55214,7 @@ class CacheHandler {
     saveCache(options) {
         return __awaiter(this, void 0, void 0, function* () {
             const paths = yield this.getPaths();
-            const key = state.readPrimaryKey(this);
+            const key = this.recomputeKey ? yield this.getKey(options === null || options === void 0 ? void 0 : options.version) : state.readPrimaryKey(this);
             const restoredKey = state.readRestoredKey(this);
             if (key === restoredKey) {
                 console.log(`Cache hit on primary key '${key}', skip saving cache`);
