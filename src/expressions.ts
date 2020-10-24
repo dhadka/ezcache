@@ -51,8 +51,7 @@ export async function hashFiles(
   followSymbolicLinks: boolean = false,
   verbose: boolean = false,
 ): Promise<string> {
-  console.log('Calculating hash')
-
+  const startTime = Date.now()
   let hasMatch = false
   const result = crypto.createHash('sha256')
 
@@ -79,6 +78,7 @@ export async function hashFiles(
   }
 
   result.end()
+  console.log(`Calculated hash in ${Date.now() - startTime} ms`)
 
   if (hasMatch) {
     return result.digest('hex')

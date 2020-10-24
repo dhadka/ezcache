@@ -3877,7 +3877,7 @@ exports.matches = matches;
 function hashFiles(matchPatterns, followSymbolicLinks = false, verbose = false) {
     var e_2, _a;
     return __awaiter(this, void 0, void 0, function* () {
-        verbose && console.log('Computing hash...');
+        const startTime = Date.now();
         let hasMatch = false;
         const result = crypto.createHash('sha256');
         if (Array.isArray(matchPatterns)) {
@@ -3890,13 +3890,12 @@ function hashFiles(matchPatterns, followSymbolicLinks = false, verbose = false) 
                 verbose && console.log(` > Processing ${file}`);
                 if (fs.statSync(file).isDirectory()) {
                     verbose && console.log(`Skip directory '${file}'.`);
+                    continue;
                 }
-                else {
-                    const hash = crypto.createHash('sha256');
-                    const pipeline = util.promisify(stream.pipeline);
-                    yield pipeline(fs.createReadStream(file), hash);
-                    result.write(hash.digest());
-                }
+                const hash = crypto.createHash('sha256');
+                const pipeline = util.promisify(stream.pipeline);
+                yield pipeline(fs.createReadStream(file), hash);
+                result.write(hash.digest());
                 hasMatch = true;
             }
         }
@@ -3908,6 +3907,7 @@ function hashFiles(matchPatterns, followSymbolicLinks = false, verbose = false) 
             finally { if (e_2) throw e_2.error; }
         }
         result.end();
+        console.log(`Calculated hash in ${Date.now() - startTime} ms`);
         if (hasMatch) {
             return result.digest('hex');
         }
