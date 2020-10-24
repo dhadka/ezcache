@@ -44,6 +44,8 @@ export async function matches(matchPatterns: string | string[], followSymbolicLi
 }
 
 export async function hashFiles(matchPatterns: string | string[], followSymbolicLinks: boolean = false): Promise<string> {
+  console.log('Computing hash...')
+
   let hasMatch = false
   const githubWorkspace = process.cwd()
   const result = crypto.createHash('sha256')
@@ -55,7 +57,7 @@ export async function hashFiles(matchPatterns: string | string[], followSymbolic
   const globber = await glob.create(matchPatterns, {followSymbolicLinks})
   
   for await (const file of globber.globGenerator()) {
-    console.log(file)
+    console.log(` > Processing ${file}`)
 
     if (!file.startsWith(`${githubWorkspace}${path.sep}`)) {
       console.log(`Ignore '${file}' since it is not under GITHUB_WORKSPACE.`)

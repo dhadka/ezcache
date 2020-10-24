@@ -13,7 +13,7 @@ export class CacheHandler {
         throw Error('not implemented')
     }
 
-    async getRestoreKeys(): Promise<string[]> {
+    async getRestoreKeys(version?: string): Promise<string[]> {
         return []
     }
 
@@ -33,10 +33,10 @@ export class CacheHandler {
         await saveCache(paths, key)
     }
 
-    async restoreCache(): Promise<void> {
+    async restoreCache(options?: ICacheOptions): Promise<void> {
         const paths = await this.getPaths()
-        const key = await this.getKey()
-        const restoreKeys = await this.getRestoreKeys()
+        const key = await this.getKey(options?.version)
+        const restoreKeys = await this.getRestoreKeys(options?.version)
 
         console.log(`Calling restoreCache(${paths}, ${key}, ${restoreKeys})`)
         await restoreCache(paths, key, restoreKeys)

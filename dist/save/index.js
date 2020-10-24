@@ -3728,6 +3728,7 @@ exports.matches = matches;
 function hashFiles(matchPatterns, followSymbolicLinks = false) {
     var e_2, _a;
     return __awaiter(this, void 0, void 0, function* () {
+        console.log('Computing hash...');
         let hasMatch = false;
         const githubWorkspace = process.cwd();
         const result = crypto.createHash('sha256');
@@ -3738,7 +3739,7 @@ function hashFiles(matchPatterns, followSymbolicLinks = false) {
         try {
             for (var _b = __asyncValues(globber.globGenerator()), _c; _c = yield _b.next(), !_c.done;) {
                 const file = _c.value;
-                console.log(file);
+                console.log(` > Processing ${file}`);
                 if (!file.startsWith(`${githubWorkspace}${path.sep}`)) {
                     console.log(`Ignore '${file}' since it is not under GITHUB_WORKSPACE.`);
                     continue;
@@ -43901,18 +43902,19 @@ function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
             let type = core.getInput('type', { required: true });
+            let version = core.getInput('version');
             if (type === 'auto') {
                 for (const handler of registry_1.registry.all()) {
                     if (yield handler.shouldCache()) {
                         console.log(`Saving cache with ${handler.constructor.name} handler`);
-                        yield handler.saveCache();
+                        yield handler.saveCache({ version });
                     }
                 }
             }
             else {
                 const handler = registry_1.registry.get(type);
                 if (handler) {
-                    yield handler.saveCache();
+                    yield handler.saveCache({ version });
                 }
             }
         }
@@ -47892,7 +47894,7 @@ class CacheHandler {
             throw Error('not implemented');
         });
     }
-    getRestoreKeys() {
+    getRestoreKeys(version) {
         return __awaiter(this, void 0, void 0, function* () {
             return [];
         });
@@ -47914,11 +47916,11 @@ class CacheHandler {
             yield cache_1.saveCache(paths, key);
         });
     }
-    restoreCache() {
+    restoreCache(options) {
         return __awaiter(this, void 0, void 0, function* () {
             const paths = yield this.getPaths();
-            const key = yield this.getKey();
-            const restoreKeys = yield this.getRestoreKeys();
+            const key = yield this.getKey(options === null || options === void 0 ? void 0 : options.version);
+            const restoreKeys = yield this.getRestoreKeys(options === null || options === void 0 ? void 0 : options.version);
             console.log(`Calling restoreCache(${paths}, ${key}, ${restoreKeys})`);
             yield cache_1.restoreCache(paths, key, restoreKeys);
         });
