@@ -17,18 +17,20 @@ export interface IRestoreResult {
 }
 
 export class CacheHandler {
-    recomputeKey: boolean
-
-    constructor() {
-        this.recomputeKey = false
-    }
-
     async getPaths(): Promise<string[]> {
         throw Error('not implemented')
     }
 
     async getKey(version?: string): Promise<string> {
         throw Error('not implemented')
+    }
+
+    async getKeyForRestore(version?: string): Promise<string> {
+        return this.getKey(version)
+    }
+
+    async getKeyForSave(version?: string): Promise<string> {
+        return state.readPrimaryKey(this) ?? this.getKey(version)
     }
 
     async getRestoreKeys(version?: string): Promise<string[]> {
@@ -45,7 +47,7 @@ export class CacheHandler {
 
     async saveCache(options?: ICacheOptions): Promise<void> {
         const paths = await this.getPaths()
-        const key = this.recomputeKey? await this.getKey(options?.version) : state.readPrimaryKey(this)
+        const key = await this.getKeyForSave(options?.version)
         const restoredKey = state.readRestoredKey(this)
 
         if (key === restoredKey) {
@@ -58,7 +60,7 @@ export class CacheHandler {
 
     async restoreCache(options?: ICacheOptions): Promise<IRestoreResult> {
         const paths = await this.getPaths()
-        const key = await this.getKey(options?.version)
+        const key = await this.getKeyForRestore(options?.version)
         const restoreKeys = await this.getRestoreKeys(options?.version)
 
         console.log(`Calling restoreCache('${paths}', '${key}', ${restoreKeys})`)

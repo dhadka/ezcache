@@ -4,16 +4,15 @@ import { hashFiles, runner } from '../../expressions'
 import { CacheHandler } from '../../handler'
 
 class DiffCache extends CacheHandler {
-    constructor() {
-        super()
-        this.recomputeKey = true
-    }
-
     async getPaths(): Promise<string[]> {
         return core.getInput('path').split('\n').map(s => s.trim())
     }
 
-    async getKey(version?: string): Promise<string> {
+    async getKeyForRestore(version?: string): Promise<string> {
+        return `diff-no-match-primary-key`
+    }
+
+    async getKeyForSave(version?: string): Promise<string> {
         return `${runner.os}-${version}-diff-${await hashFiles(await this.getPaths())}`
     }
 

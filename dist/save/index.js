@@ -38273,16 +38273,17 @@ const registry_1 = __webpack_require__(822);
 const expressions_1 = __webpack_require__(134);
 const handler_1 = __webpack_require__(895);
 class DiffCache extends handler_1.CacheHandler {
-    constructor() {
-        super();
-        this.recomputeKey = true;
-    }
     getPaths() {
         return __awaiter(this, void 0, void 0, function* () {
             return core.getInput('path').split('\n').map(s => s.trim());
         });
     }
-    getKey(version) {
+    getKeyForRestore(version) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return `diff-no-match-primary-key`;
+        });
+    }
+    getKeyForSave(version) {
         return __awaiter(this, void 0, void 0, function* () {
             return `${expressions_1.runner.os}-${version}-diff-${yield expressions_1.hashFiles(yield this.getPaths())}`;
         });
@@ -55164,9 +55165,6 @@ var RestoreType;
     RestoreType[RestoreType["Full"] = 2] = "Full";
 })(RestoreType = exports.RestoreType || (exports.RestoreType = {}));
 class CacheHandler {
-    constructor() {
-        this.recomputeKey = false;
-    }
     getPaths() {
         return __awaiter(this, void 0, void 0, function* () {
             throw Error('not implemented');
@@ -55175,6 +55173,17 @@ class CacheHandler {
     getKey(version) {
         return __awaiter(this, void 0, void 0, function* () {
             throw Error('not implemented');
+        });
+    }
+    getKeyForRestore(version) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return this.getKey(version);
+        });
+    }
+    getKeyForSave(version) {
+        var _a;
+        return __awaiter(this, void 0, void 0, function* () {
+            return (_a = state.readPrimaryKey(this)) !== null && _a !== void 0 ? _a : this.getKey(version);
         });
     }
     getRestoreKeys(version) {
@@ -55194,7 +55203,7 @@ class CacheHandler {
     saveCache(options) {
         return __awaiter(this, void 0, void 0, function* () {
             const paths = yield this.getPaths();
-            const key = this.recomputeKey ? yield this.getKey(options === null || options === void 0 ? void 0 : options.version) : state.readPrimaryKey(this);
+            const key = yield this.getKeyForSave(options === null || options === void 0 ? void 0 : options.version);
             const restoredKey = state.readRestoredKey(this);
             if (key === restoredKey) {
                 console.log(`Cache hit on primary key '${key}', skip saving cache`);
@@ -55208,7 +55217,7 @@ class CacheHandler {
     restoreCache(options) {
         return __awaiter(this, void 0, void 0, function* () {
             const paths = yield this.getPaths();
-            const key = yield this.getKey(options === null || options === void 0 ? void 0 : options.version);
+            const key = yield this.getKeyForRestore(options === null || options === void 0 ? void 0 : options.version);
             const restoreKeys = yield this.getRestoreKeys(options === null || options === void 0 ? void 0 : options.version);
             console.log(`Calling restoreCache('${paths}', '${key}', ${restoreKeys})`);
             const restoredKey = yield cache_1.restoreCache(paths, key, restoreKeys);
