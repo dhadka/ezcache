@@ -3780,7 +3780,6 @@ const crypto = __webpack_require__(417);
 const fs = __webpack_require__(747);
 const stream = __webpack_require__(794);
 const util = __webpack_require__(669);
-const path = __webpack_require__(622);
 const execa = __webpack_require__(955);
 const process = __webpack_require__(765);
 class Runner {
@@ -3843,10 +3842,10 @@ function hashFiles(matchPatterns, followSymbolicLinks = false) {
             for (var _b = __asyncValues(globber.globGenerator()), _c; _c = yield _b.next(), !_c.done;) {
                 const file = _c.value;
                 console.log(` > Processing ${file}`);
-                if (!file.startsWith(`${githubWorkspace}${path.sep}`)) {
-                    console.log(`Ignore '${file}' since it is not under GITHUB_WORKSPACE.`);
-                    continue;
-                }
+                //if (!file.startsWith(`${githubWorkspace}${path.sep}`)) {
+                //  console.log(`Ignore '${file}' since it is not under GITHUB_WORKSPACE.`)
+                //  continue
+                //}
                 if (fs.statSync(file).isDirectory()) {
                     console.log(`Skip directory '${file}'.`);
                     continue;

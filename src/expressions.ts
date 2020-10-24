@@ -59,10 +59,10 @@ export async function hashFiles(matchPatterns: string | string[], followSymbolic
   for await (const file of globber.globGenerator()) {
     console.log(` > Processing ${file}`)
 
-    if (!file.startsWith(`${githubWorkspace}${path.sep}`)) {
-      console.log(`Ignore '${file}' since it is not under GITHUB_WORKSPACE.`)
-      continue
-    }
+    //if (!file.startsWith(`${githubWorkspace}${path.sep}`)) {
+    //  console.log(`Ignore '${file}' since it is not under GITHUB_WORKSPACE.`)
+    //  continue
+    //}
 
     if (fs.statSync(file).isDirectory()) {
       console.log(`Skip directory '${file}'.`)
