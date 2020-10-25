@@ -3,7 +3,6 @@ import * as crypto from 'crypto'
 import * as fs from 'fs'
 import * as stream from 'stream'
 import * as util from 'util'
-import * as path from 'path'
 import * as execa from 'execa'
 import * as process from 'process'
 
@@ -39,7 +38,7 @@ export async function matches(
 
   const globber = await glob.create(matchPatterns, { followSymbolicLinks })
 
-  for await (const file of globber.globGenerator()) {
+  for await (const _ of globber.globGenerator()) {
     return true
   }
 

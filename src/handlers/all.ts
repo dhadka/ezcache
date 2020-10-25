@@ -1,4 +1,7 @@
 // Explicit list of all handlers so they are compiled by ncc.
+require('./csharp/nuget')
+require('./d/dub')
+require('./elixir/mix')
 require('./go/go')
 require('./java/gradle')
 require('./java/maven')

@@ -14,6 +14,9 @@ management tools.  For example, caching NPM is as easy as adding the step:
 
 | Language | Package Manager | Type        |
 | -------- | --------------- | ----------- |
+| C#       | Nuget           | `nuget`     |
+| D        | Dub             | `dub`       |
+| Elixir   | Mix             | `mix`       |
 | Go       |                 | `go`        |
 | Java     | Gradle          | `gradle`    |
 | Java     | Maven           | `maven`     |

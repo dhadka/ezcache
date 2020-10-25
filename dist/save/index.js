@@ -3266,7 +3266,7 @@ function matches(matchPatterns, followSymbolicLinks = false) {
         const globber = yield glob.create(matchPatterns, { followSymbolicLinks });
         try {
             for (var _b = __asyncValues(globber.globGenerator()), _c; _c = yield _b.next(), !_c.done;) {
-                const file = _c.value;
+                const _ = _c.value;
                 return true;
             }
         }
@@ -4668,7 +4668,78 @@ function checkMode (stat, options) {
 /***/ }),
 /* 198 */,
 /* 199 */,
-/* 200 */,
+/* 200 */
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const registry_1 = __webpack_require__(822);
+const expressions_1 = __webpack_require__(134);
+const handler_1 = __webpack_require__(895);
+const core = __webpack_require__(470);
+const fs = __webpack_require__(747);
+const path = __webpack_require__(622);
+class Nuget extends handler_1.CacheHandler {
+    getPaths() {
+        return __awaiter(this, void 0, void 0, function* () {
+            const paths = ['~/.nuget/packages'];
+            const existingPackages = core.getState('NUGET_EXISTING_PACKAGES').split(',');
+            for (const existingPackage of existingPackages) {
+                paths.push("!~/.nuget/packages/" + existingPackage);
+            }
+            return paths;
+        });
+    }
+    getKey(version) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return `${expressions_1.runner.os}-${version}-nuget-${yield expressions_1.hashFiles('**/packages.lock.json')}`;
+        });
+    }
+    getRestoreKeys(version) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return [`${expressions_1.runner.os}-${version}-nuget-`];
+        });
+    }
+    shouldCache() {
+        return __awaiter(this, void 0, void 0, function* () {
+            return yield expressions_1.matches('**/packages.lock.json');
+        });
+    }
+    setup() {
+        return __awaiter(this, void 0, void 0, function* () {
+            // Hosted runners have a lot of Nuget packages already installed.  As caching these would be a
+            // waste of resources, record all existing packages so they can be excluded.
+            const existingPackages = [];
+            const rootPath = path.resolve('~/.nuget/packages');
+            for (const rootFile of fs.readdirSync(rootPath)) {
+                const absoluteRootFile = path.join(rootPath, rootFile);
+                if (fs.statSync(absoluteRootFile).isDirectory()) {
+                    for (const subFile of fs.readdirSync(absoluteRootFile)) {
+                        const absoluteSubFile = path.join(absoluteRootFile, subFile);
+                        if (fs.statSync(absoluteSubFile).isDirectory()) {
+                            existingPackages.push(rootFile + '/' + subFile);
+                        }
+                    }
+                }
+            }
+            core.saveState('NUGET_EXISTING_PACKAGES', existingPackages.join(','));
+        });
+    }
+}
+registry_1.registry.add('nuget', new Nuget());
+
+
+/***/ }),
 /* 201 */,
 /* 202 */,
 /* 203 */,
@@ -6130,137 +6201,7 @@ exports.setTracer = setTracer;
 
 
 /***/ }),
-/* 266 */
-/***/ (function(module, __unusedexports, __webpack_require__) {
-
-const isWindows = process.platform === 'win32' ||
-    process.env.OSTYPE === 'cygwin' ||
-    process.env.OSTYPE === 'msys'
-
-const path = __webpack_require__(622)
-const COLON = isWindows ? ';' : ':'
-const isexe = __webpack_require__(742)
-
-const getNotFoundError = (cmd) =>
-  Object.assign(new Error(`not found: ${cmd}`), { code: 'ENOENT' })
-
-const getPathInfo = (cmd, opt) => {
-  const colon = opt.colon || COLON
-
-  // If it has a slash, then we don't bother searching the pathenv.
-  // just check the file itself, and that's it.
-  const pathEnv = cmd.match(/\//) || isWindows && cmd.match(/\\/) ? ['']
-    : (
-      [
-        // windows always checks the cwd first
-        ...(isWindows ? [process.cwd()] : []),
-        ...(opt.path || process.env.PATH ||
-          /* istanbul ignore next: very unusual */ '').split(colon),
-      ]
-    )
-  const pathExtExe = isWindows
-    ? opt.pathExt || process.env.PATHEXT || '.EXE;.CMD;.BAT;.COM'
-    : ''
-  const pathExt = isWindows ? pathExtExe.split(colon) : ['']
-
-  if (isWindows) {
-    if (cmd.indexOf('.') !== -1 && pathExt[0] !== '')
-      pathExt.unshift('')
-  }
-
-  return {
-    pathEnv,
-    pathExt,
-    pathExtExe,
-  }
-}
-
-const which = (cmd, opt, cb) => {
-  if (typeof opt === 'function') {
-    cb = opt
-    opt = {}
-  }
-  if (!opt)
-    opt = {}
-
-  const { pathEnv, pathExt, pathExtExe } = getPathInfo(cmd, opt)
-  const found = []
-
-  const step = i => new Promise((resolve, reject) => {
-    if (i === pathEnv.length)
-      return opt.all && found.length ? resolve(found)
-        : reject(getNotFoundError(cmd))
-
-    const ppRaw = pathEnv[i]
-    const pathPart = /^".*"$/.test(ppRaw) ? ppRaw.slice(1, -1) : ppRaw
-
-    const pCmd = path.join(pathPart, cmd)
-    const p = !pathPart && /^\.[\\\/]/.test(cmd) ? cmd.slice(0, 2) + pCmd
-      : pCmd
-
-    resolve(subStep(p, i, 0))
-  })
-
-  const subStep = (p, i, ii) => new Promise((resolve, reject) => {
-    if (ii === pathExt.length)
-      return resolve(step(i + 1))
-    const ext = pathExt[ii]
-    isexe(p + ext, { pathExt: pathExtExe }, (er, is) => {
-      if (!er && is) {
-        if (opt.all)
-          found.push(p + ext)
-        else
-          return resolve(p + ext)
-      }
-      return resolve(subStep(p, i, ii + 1))
-    })
-  })
-
-  return cb ? step(0).then(res => cb(null, res), cb) : step(0)
-}
-
-const whichSync = (cmd, opt) => {
-  opt = opt || {}
-
-  const { pathEnv, pathExt, pathExtExe } = getPathInfo(cmd, opt)
-  const found = []
-
-  for (let i = 0; i < pathEnv.length; i ++) {
-    const ppRaw = pathEnv[i]
-    const pathPart = /^".*"$/.test(ppRaw) ? ppRaw.slice(1, -1) : ppRaw
-
-    const pCmd = path.join(pathPart, cmd)
-    const p = !pathPart && /^\.[\\\/]/.test(cmd) ? cmd.slice(0, 2) + pCmd
-      : pCmd
-
-    for (let j = 0; j < pathExt.length; j ++) {
-      const cur = p + pathExt[j]
-      try {
-        const is = isexe.sync(cur, { pathExt: pathExtExe })
-        if (is) {
-          if (opt.all)
-            found.push(cur)
-          else
-            return cur
-        }
-      } catch (ex) {}
-    }
-  }
-
-  if (opt.all && found.length)
-    return found
-
-  if (opt.nothrow)
-    return null
-
-  throw getNotFoundError(cmd)
-}
-
-module.exports = which
-which.sync = whichSync
-
-
-/***/ }),
+/* 266 */,
 /* 267 */,
 /* 268 */,
 /* 269 */,
@@ -38791,7 +38732,7 @@ registry_1.registry.add('yarn', new Yarn());
 
 
 const path = __webpack_require__(622);
-const which = __webpack_require__(266);
+const which = __webpack_require__(814);
 const getPathKey = __webpack_require__(39);
 
 function resolveCommandAttempt(parsed, withoutPathExt) {
@@ -47908,7 +47849,50 @@ function populateMaps (extensions, types) {
 
 
 /***/ }),
-/* 780 */,
+/* 780 */
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const registry_1 = __webpack_require__(822);
+const expressions_1 = __webpack_require__(134);
+const handler_1 = __webpack_require__(895);
+class Go extends handler_1.CacheHandler {
+    getPaths() {
+        return __awaiter(this, void 0, void 0, function* () {
+            return ['~/go/pkg/mod'];
+        });
+    }
+    getKey(version) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return `${expressions_1.runner.os}-${version}-go-${yield expressions_1.hashFiles('**/go.sum')}`;
+        });
+    }
+    getRestoreKeys(version) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return [`${expressions_1.runner.os}-${version}-go-`];
+        });
+    }
+    shouldCache() {
+        return __awaiter(this, void 0, void 0, function* () {
+            return yield expressions_1.matches('**/go.sum');
+        });
+    }
+}
+registry_1.registry.add('go', new Go());
+
+
+/***/ }),
 /* 781 */
 /***/ (function(module) {
 
@@ -49017,46 +49001,133 @@ exports.createTokenAuth = createTokenAuth;
 
 /***/ }),
 /* 814 */
-/***/ (function(__unusedmodule, exports, __webpack_require__) {
+/***/ (function(module, __unusedexports, __webpack_require__) {
 
-"use strict";
+const isWindows = process.platform === 'win32' ||
+    process.env.OSTYPE === 'cygwin' ||
+    process.env.OSTYPE === 'msys'
 
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-const registry_1 = __webpack_require__(822);
-const expressions_1 = __webpack_require__(134);
-const handler_1 = __webpack_require__(895);
-class Go extends handler_1.CacheHandler {
-    getPaths() {
-        return __awaiter(this, void 0, void 0, function* () {
-            return ['~/go/pkg/mod'];
-        });
-    }
-    getKey(version) {
-        return __awaiter(this, void 0, void 0, function* () {
-            return `${expressions_1.runner.os}-${version}-go-${yield expressions_1.hashFiles('**/go.sum')}`;
-        });
-    }
-    getRestoreKeys(version) {
-        return __awaiter(this, void 0, void 0, function* () {
-            return [`${expressions_1.runner.os}-${version}-go-`];
-        });
-    }
-    shouldCache() {
-        return __awaiter(this, void 0, void 0, function* () {
-            return yield expressions_1.matches('**/go.sum');
-        });
-    }
+const path = __webpack_require__(622)
+const COLON = isWindows ? ';' : ':'
+const isexe = __webpack_require__(742)
+
+const getNotFoundError = (cmd) =>
+  Object.assign(new Error(`not found: ${cmd}`), { code: 'ENOENT' })
+
+const getPathInfo = (cmd, opt) => {
+  const colon = opt.colon || COLON
+
+  // If it has a slash, then we don't bother searching the pathenv.
+  // just check the file itself, and that's it.
+  const pathEnv = cmd.match(/\//) || isWindows && cmd.match(/\\/) ? ['']
+    : (
+      [
+        // windows always checks the cwd first
+        ...(isWindows ? [process.cwd()] : []),
+        ...(opt.path || process.env.PATH ||
+          /* istanbul ignore next: very unusual */ '').split(colon),
+      ]
+    )
+  const pathExtExe = isWindows
+    ? opt.pathExt || process.env.PATHEXT || '.EXE;.CMD;.BAT;.COM'
+    : ''
+  const pathExt = isWindows ? pathExtExe.split(colon) : ['']
+
+  if (isWindows) {
+    if (cmd.indexOf('.') !== -1 && pathExt[0] !== '')
+      pathExt.unshift('')
+  }
+
+  return {
+    pathEnv,
+    pathExt,
+    pathExtExe,
+  }
 }
-registry_1.registry.add('go', new Go());
+
+const which = (cmd, opt, cb) => {
+  if (typeof opt === 'function') {
+    cb = opt
+    opt = {}
+  }
+  if (!opt)
+    opt = {}
+
+  const { pathEnv, pathExt, pathExtExe } = getPathInfo(cmd, opt)
+  const found = []
+
+  const step = i => new Promise((resolve, reject) => {
+    if (i === pathEnv.length)
+      return opt.all && found.length ? resolve(found)
+        : reject(getNotFoundError(cmd))
+
+    const ppRaw = pathEnv[i]
+    const pathPart = /^".*"$/.test(ppRaw) ? ppRaw.slice(1, -1) : ppRaw
+
+    const pCmd = path.join(pathPart, cmd)
+    const p = !pathPart && /^\.[\\\/]/.test(cmd) ? cmd.slice(0, 2) + pCmd
+      : pCmd
+
+    resolve(subStep(p, i, 0))
+  })
+
+  const subStep = (p, i, ii) => new Promise((resolve, reject) => {
+    if (ii === pathExt.length)
+      return resolve(step(i + 1))
+    const ext = pathExt[ii]
+    isexe(p + ext, { pathExt: pathExtExe }, (er, is) => {
+      if (!er && is) {
+        if (opt.all)
+          found.push(p + ext)
+        else
+          return resolve(p + ext)
+      }
+      return resolve(subStep(p, i, ii + 1))
+    })
+  })
+
+  return cb ? step(0).then(res => cb(null, res), cb) : step(0)
+}
+
+const whichSync = (cmd, opt) => {
+  opt = opt || {}
+
+  const { pathEnv, pathExt, pathExtExe } = getPathInfo(cmd, opt)
+  const found = []
+
+  for (let i = 0; i < pathEnv.length; i ++) {
+    const ppRaw = pathEnv[i]
+    const pathPart = /^".*"$/.test(ppRaw) ? ppRaw.slice(1, -1) : ppRaw
+
+    const pCmd = path.join(pathPart, cmd)
+    const p = !pathPart && /^\.[\\\/]/.test(cmd) ? cmd.slice(0, 2) + pCmd
+      : pCmd
+
+    for (let j = 0; j < pathExt.length; j ++) {
+      const cur = p + pathExt[j]
+      try {
+        const is = isexe.sync(cur, { pathExt: pathExtExe })
+        if (is) {
+          if (opt.all)
+            found.push(cur)
+          else
+            return cur
+        }
+      } catch (ex) {}
+    }
+  }
+
+  if (opt.all && found.length)
+    return found
+
+  if (opt.nothrow)
+    return null
+
+  throw getNotFoundError(cmd)
+}
+
+module.exports = which
+which.sync = whichSync
 
 
 /***/ }),
@@ -52281,7 +52352,10 @@ exports.TraceAPI = TraceAPI;
 "use strict";
 
 // Explicit list of all handlers so they are compiled by ncc.
-__webpack_require__(814);
+__webpack_require__(200);
+__webpack_require__(981);
+__webpack_require__(948);
+__webpack_require__(780);
 __webpack_require__(905);
 __webpack_require__(664);
 __webpack_require__(648);
@@ -56292,7 +56366,50 @@ function terminator(callback)
 /* 945 */,
 /* 946 */,
 /* 947 */,
-/* 948 */,
+/* 948 */
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const registry_1 = __webpack_require__(822);
+const expressions_1 = __webpack_require__(134);
+const handler_1 = __webpack_require__(895);
+class Mix extends handler_1.CacheHandler {
+    getPaths() {
+        return __awaiter(this, void 0, void 0, function* () {
+            return ['deps'];
+        });
+    }
+    getKey(version) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return `${expressions_1.runner.os}-${version}-mix-${yield expressions_1.hashFiles('mix.lock')}`;
+        });
+    }
+    getRestoreKeys(version) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return [`${expressions_1.runner.os}-${version}-mix-`];
+        });
+    }
+    shouldCache() {
+        return __awaiter(this, void 0, void 0, function* () {
+            return yield expressions_1.matches('mix.lock');
+        });
+    }
+}
+registry_1.registry.add('mix', new Mix());
+
+
+/***/ }),
 /* 949 */,
 /* 950 */
 /***/ (function(__unusedmodule, exports) {
@@ -57073,7 +57190,57 @@ Object.defineProperty(exports, "__esModule", { value: true });
 /* 978 */,
 /* 979 */,
 /* 980 */,
-/* 981 */,
+/* 981 */
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const registry_1 = __webpack_require__(822);
+const expressions_1 = __webpack_require__(134);
+const handler_1 = __webpack_require__(895);
+class Dub extends handler_1.CacheHandler {
+    getPaths() {
+        return __awaiter(this, void 0, void 0, function* () {
+            switch (expressions_1.runner.os) {
+                case 'Windows':
+                    return ['~/AppData/Local/dub'];
+                case 'Linux':
+                    return ['~/.dub'];
+                case 'macOS':
+                    return ['~/.dub'];
+            }
+        });
+    }
+    getKey(version) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return `${expressions_1.runner.os}-${version}-dub-${yield expressions_1.hashFiles('**/dub.json')}`;
+        });
+    }
+    getRestoreKeys(version) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return [`${expressions_1.runner.os}-${version}-dub-`];
+        });
+    }
+    shouldCache() {
+        return __awaiter(this, void 0, void 0, function* () {
+            return yield expressions_1.matches('**/dub.json');
+        });
+    }
+}
+registry_1.registry.add('dub', new Dub());
+
+
+/***/ }),
 /* 982 */,
 /* 983 */,
 /* 984 */
