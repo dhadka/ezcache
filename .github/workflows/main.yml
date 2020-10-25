@@ -17,6 +17,16 @@ jobs:
     #  - run: npm test
     #  - run: npm run lint
 
+  test-nuget:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Cache nuget
+        uses: ./
+        with:
+          type: nuget
+          version: v1
+
   test-npm:
     runs-on: ubuntu-latest
     steps:
