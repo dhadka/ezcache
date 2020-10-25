@@ -18,6 +18,12 @@ jobs:
     #  - run: npm test
     #  - run: npm run lint
 
+  test-docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - run: docker image ls
+
   test-nuget:
     runs-on: ubuntu-latest
     steps:
