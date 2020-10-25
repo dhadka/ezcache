@@ -1197,39 +1197,22 @@ module.exports = ["ac","com.ac","edu.ac","gov.ac","net.ac","mil.ac","org.ac","ad
 
 "use strict";
 
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 const registry_1 = __webpack_require__(822);
 const expressions_1 = __webpack_require__(134);
 const handler_1 = __webpack_require__(895);
 class Cargo extends handler_1.CacheHandler {
-    getPaths() {
-        return __awaiter(this, void 0, void 0, function* () {
-            return ['~/.cargo/registry', '~/.cargo/git', 'target'];
-        });
+    async getPaths() {
+        return ['~/.cargo/registry', '~/.cargo/git', 'target'];
     }
-    getKey(version) {
-        return __awaiter(this, void 0, void 0, function* () {
-            return `${expressions_1.runner.os}-${version}-cargo-${yield expressions_1.hashFiles('**/Cargo.lock')}`;
-        });
+    async getKey(version) {
+        return `${expressions_1.runner.os}-${version}-cargo-${await expressions_1.hashFiles('**/Cargo.lock')}`;
     }
-    getRestoreKeys(version) {
-        return __awaiter(this, void 0, void 0, function* () {
-            return [`${expressions_1.runner.os}-${version}-cargo-`];
-        });
+    async getRestoreKeys(version) {
+        return [`${expressions_1.runner.os}-${version}-cargo-`];
     }
-    shouldCache() {
-        return __awaiter(this, void 0, void 0, function* () {
-            return yield expressions_1.matches('**/Cargo.lock');
-        });
+    async shouldCache() {
+        return await expressions_1.matches('**/Cargo.lock');
     }
 }
 registry_1.registry.add('cargo', new Cargo());
@@ -3100,46 +3083,29 @@ exports.saveCache = saveCache;
 
 "use strict";
 
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 const registry_1 = __webpack_require__(822);
 const expressions_1 = __webpack_require__(134);
 const handler_1 = __webpack_require__(895);
 class REnv extends handler_1.CacheHandler {
-    getPaths() {
-        return __awaiter(this, void 0, void 0, function* () {
-            switch (expressions_1.runner.os) {
-                case 'Windows':
-                    return ['~AppDataLocal\renv'];
-                case 'Linux':
-                    return ['~/.local/share/renv'];
-                case 'macOS':
-                    return ['~/Library/Application Support/renv'];
-            }
-        });
+    async getPaths() {
+        switch (expressions_1.runner.os) {
+            case 'Windows':
+                return ['~AppDataLocal\renv'];
+            case 'Linux':
+                return ['~/.local/share/renv'];
+            case 'macOS':
+                return ['~/Library/Application Support/renv'];
+        }
     }
-    getKey(version) {
-        return __awaiter(this, void 0, void 0, function* () {
-            return `${expressions_1.runner.os}-${version}-renv-${yield expressions_1.hashFiles('**/renv.lock')}`;
-        });
+    async getKey(version) {
+        return `${expressions_1.runner.os}-${version}-renv-${await expressions_1.hashFiles('**/renv.lock')}`;
     }
-    getRestoreKeys(version) {
-        return __awaiter(this, void 0, void 0, function* () {
-            return [`${expressions_1.runner.os}-${version}-renv-`];
-        });
+    async getRestoreKeys(version) {
+        return [`${expressions_1.runner.os}-${version}-renv-`];
     }
-    shouldCache() {
-        return __awaiter(this, void 0, void 0, function* () {
-            return yield expressions_1.matches('**/renv.lock');
-        });
+    async shouldCache() {
+        return await expressions_1.matches('**/renv.lock');
     }
 }
 registry_1.registry.add('renv', new REnv());
@@ -3211,22 +3177,6 @@ module.exports = require("child_process");
 
 "use strict";
 
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-var __asyncValues = (this && this.__asyncValues) || function (o) {
-    if (!Symbol.asyncIterator) throw new TypeError("Symbol.asyncIterator is not defined.");
-    var m = o[Symbol.asyncIterator], i;
-    return m ? m.call(o) : (o = typeof __values === "function" ? __values(o) : o[Symbol.iterator](), i = {}, verb("next"), verb("throw"), verb("return"), i[Symbol.asyncIterator] = function () { return this; }, i);
-    function verb(n) { i[n] = o[n] && function (v) { return new Promise(function (resolve, reject) { v = o[n](v), settle(resolve, reject, v.done, v.value); }); }; }
-    function settle(resolve, reject, d, v) { Promise.resolve(v).then(function(v) { resolve({ value: v, done: d }); }, reject); }
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.hashFiles = exports.matches = exports.exec = exports.runner = void 0;
 const glob = __webpack_require__(281);
@@ -3251,77 +3201,49 @@ class Runner {
     }
 }
 exports.runner = new Runner();
-function exec(cmd, ...args) {
-    return __awaiter(this, void 0, void 0, function* () {
-        return (yield execa(cmd, args, {})).stdout;
-    });
+async function exec(cmd, ...args) {
+    return (await execa(cmd, args, {})).stdout;
 }
 exports.exec = exec;
-function matches(matchPatterns, followSymbolicLinks = false) {
-    var e_1, _a;
-    return __awaiter(this, void 0, void 0, function* () {
-        if (Array.isArray(matchPatterns)) {
-            matchPatterns = matchPatterns.join('\n');
-        }
-        const globber = yield glob.create(matchPatterns, { followSymbolicLinks });
-        try {
-            for (var _b = __asyncValues(globber.globGenerator()), _c; _c = yield _b.next(), !_c.done;) {
-                const _ = _c.value;
-                return true;
-            }
-        }
-        catch (e_1_1) { e_1 = { error: e_1_1 }; }
-        finally {
-            try {
-                if (_c && !_c.done && (_a = _b.return)) yield _a.call(_b);
-            }
-            finally { if (e_1) throw e_1.error; }
-        }
-        return false;
-    });
+async function matches(matchPatterns, followSymbolicLinks = false) {
+    if (Array.isArray(matchPatterns)) {
+        matchPatterns = matchPatterns.join('\n');
+    }
+    const globber = await glob.create(matchPatterns, { followSymbolicLinks });
+    for await (const _ of globber.globGenerator()) {
+        return true;
+    }
+    return false;
 }
 exports.matches = matches;
-function hashFiles(matchPatterns, followSymbolicLinks = false, verbose = false) {
-    var e_2, _a;
-    return __awaiter(this, void 0, void 0, function* () {
-        const startTime = Date.now();
-        let hasMatch = false;
-        const result = crypto.createHash('sha256');
-        if (Array.isArray(matchPatterns)) {
-            matchPatterns = matchPatterns.join('\n');
+async function hashFiles(matchPatterns, followSymbolicLinks = false, verbose = false) {
+    const startTime = Date.now();
+    let hasMatch = false;
+    const result = crypto.createHash('sha256');
+    if (Array.isArray(matchPatterns)) {
+        matchPatterns = matchPatterns.join('\n');
+    }
+    const globber = await glob.create(matchPatterns, { followSymbolicLinks });
+    for await (const file of globber.globGenerator()) {
+        verbose && console.log(` > Processing ${file}`);
+        if (fs.statSync(file).isDirectory()) {
+            verbose && console.log(`Skip directory '${file}'.`);
+            continue;
         }
-        const globber = yield glob.create(matchPatterns, { followSymbolicLinks });
-        try {
-            for (var _b = __asyncValues(globber.globGenerator()), _c; _c = yield _b.next(), !_c.done;) {
-                const file = _c.value;
-                verbose && console.log(` > Processing ${file}`);
-                if (fs.statSync(file).isDirectory()) {
-                    verbose && console.log(`Skip directory '${file}'.`);
-                    continue;
-                }
-                const hash = crypto.createHash('sha256');
-                const pipeline = util.promisify(stream.pipeline);
-                yield pipeline(fs.createReadStream(file), hash);
-                result.write(hash.digest());
-                hasMatch = true;
-            }
-        }
-        catch (e_2_1) { e_2 = { error: e_2_1 }; }
-        finally {
-            try {
-                if (_c && !_c.done && (_a = _b.return)) yield _a.call(_b);
-            }
-            finally { if (e_2) throw e_2.error; }
-        }
-        result.end();
-        console.log(`Calculated hash in ${Date.now() - startTime} ms`);
-        if (hasMatch) {
-            return result.digest('hex');
-        }
-        else {
-            return '';
-        }
-    });
+        const hash = crypto.createHash('sha256');
+        const pipeline = util.promisify(stream.pipeline);
+        await pipeline(fs.createReadStream(file), hash);
+        result.write(hash.digest());
+        hasMatch = true;
+    }
+    result.end();
+    console.log(`Calculated hash in ${Date.now() - startTime} ms`);
+    if (hasMatch) {
+        return result.digest('hex');
+    }
+    else {
+        return '';
+    }
 }
 exports.hashFiles = hashFiles;
 
@@ -4673,39 +4595,22 @@ function checkMode (stat, options) {
 
 "use strict";
 
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 const registry_1 = __webpack_require__(822);
 const expressions_1 = __webpack_require__(134);
 const handler_1 = __webpack_require__(895);
 class Nuget extends handler_1.CacheHandler {
-    getPaths() {
-        return __awaiter(this, void 0, void 0, function* () {
-            return ['~/.nuget/packages'];
-        });
+    async getPaths() {
+        return ['~/.nuget/packages'];
     }
-    getKey(version) {
-        return __awaiter(this, void 0, void 0, function* () {
-            return `${expressions_1.runner.os}-${version}-nuget-${yield expressions_1.hashFiles('**/packages.lock.json')}`;
-        });
+    async getKey(version) {
+        return `${expressions_1.runner.os}-${version}-nuget-${await expressions_1.hashFiles('**/packages.lock.json')}`;
     }
-    getRestoreKeys(version) {
-        return __awaiter(this, void 0, void 0, function* () {
-            return [`${expressions_1.runner.os}-${version}-nuget-`];
-        });
+    async getRestoreKeys(version) {
+        return [`${expressions_1.runner.os}-${version}-nuget-`];
     }
-    shouldCache() {
-        return __awaiter(this, void 0, void 0, function* () {
-            return yield expressions_1.matches('**/packages.lock.json');
-        });
+    async shouldCache() {
+        return await expressions_1.matches('**/packages.lock.json');
     }
 }
 registry_1.registry.add('nuget', new Nuget());
@@ -7443,15 +7348,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 
 "use strict";
 
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 const core = __webpack_require__(470);
 const github = __webpack_require__(469);
@@ -7459,18 +7355,14 @@ const registry_1 = __webpack_require__(822);
 const expressions_1 = __webpack_require__(134);
 const handler_1 = __webpack_require__(895);
 class PerRunCache extends handler_1.CacheHandler {
-    getPaths() {
-        return __awaiter(this, void 0, void 0, function* () {
-            return core
-                .getInput('path')
-                .split('\n')
-                .map((s) => s.trim());
-        });
+    async getPaths() {
+        return core
+            .getInput('path')
+            .split('\n')
+            .map((s) => s.trim());
     }
-    getKey(version) {
-        return __awaiter(this, void 0, void 0, function* () {
-            return `${expressions_1.runner.os}-${version}-run-${github.context.runId}`;
-        });
+    async getKey(version) {
+        return `${expressions_1.runner.os}-${version}-run-${github.context.runId}`;
     }
 }
 registry_1.registry.add('run', new PerRunCache());
@@ -34674,34 +34566,19 @@ exports.PrefixSecurityEnum = PrefixSecurityEnum;
 
 "use strict";
 
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 const registry_1 = __webpack_require__(822);
 const expressions_1 = __webpack_require__(134);
 const handler_1 = __webpack_require__(895);
 class Sbt extends handler_1.CacheHandler {
-    getPaths() {
-        return __awaiter(this, void 0, void 0, function* () {
-            return ['~/.ivy2/cache', '~/.sbt'];
-        });
+    async getPaths() {
+        return ['~/.ivy2/cache', '~/.sbt'];
     }
-    getKey(version) {
-        return __awaiter(this, void 0, void 0, function* () {
-            return `${expressions_1.runner.os}-${version}-sbt-${yield expressions_1.hashFiles('**/build.sbt')}`;
-        });
+    async getKey(version) {
+        return `${expressions_1.runner.os}-${version}-sbt-${await expressions_1.hashFiles('**/build.sbt')}`;
     }
-    shouldCache() {
-        return __awaiter(this, void 0, void 0, function* () {
-            return yield expressions_1.matches('**/build.sbt');
-        });
+    async shouldCache() {
+        return await expressions_1.matches('**/build.sbt');
     }
 }
 registry_1.registry.add('sbt', new Sbt());
@@ -38168,15 +38045,6 @@ module.exports.argument = escapeArgument;
 
 "use strict";
 
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 const core = __webpack_require__(470);
 const registry_1 = __webpack_require__(822);
@@ -38189,28 +38057,20 @@ const handler_1 = __webpack_require__(895);
  * restore keys.
  */
 class DiffCache extends handler_1.CacheHandler {
-    getPaths() {
-        return __awaiter(this, void 0, void 0, function* () {
-            return core
-                .getInput('path')
-                .split('\n')
-                .map((s) => s.trim());
-        });
+    async getPaths() {
+        return core
+            .getInput('path')
+            .split('\n')
+            .map((s) => s.trim());
     }
-    getKeyForRestore(version) {
-        return __awaiter(this, void 0, void 0, function* () {
-            return `diff-no-match-primary-key`;
-        });
+    async getKeyForRestore(version) {
+        return `diff-no-match-primary-key`;
     }
-    getKeyForSave(version) {
-        return __awaiter(this, void 0, void 0, function* () {
-            return `${expressions_1.runner.os}-${version}-diff-${yield expressions_1.hashFiles(yield this.getPaths())}`;
-        });
+    async getKeyForSave(version) {
+        return `${expressions_1.runner.os}-${version}-diff-${await expressions_1.hashFiles(await this.getPaths())}`;
     }
-    getRestoreKeys(version) {
-        return __awaiter(this, void 0, void 0, function* () {
-            return [`${expressions_1.runner.os}-${version}-diff-`];
-        });
+    async getRestoreKeys(version) {
+        return [`${expressions_1.runner.os}-${version}-diff-`];
     }
 }
 registry_1.registry.add('diff', new DiffCache());
@@ -38654,39 +38514,22 @@ exports.getState = getState;
 
 "use strict";
 
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 const registry_1 = __webpack_require__(822);
 const expressions_1 = __webpack_require__(134);
 const handler_1 = __webpack_require__(895);
 class Yarn extends handler_1.CacheHandler {
-    getPaths() {
-        return __awaiter(this, void 0, void 0, function* () {
-            return [yield expressions_1.exec('yarn', 'cache', 'dir')];
-        });
+    async getPaths() {
+        return [await expressions_1.exec('yarn', 'cache', 'dir')];
     }
-    getKey(version) {
-        return __awaiter(this, void 0, void 0, function* () {
-            return `${expressions_1.runner.os}-${version}-yarn-${yield expressions_1.hashFiles('**/yarn.lock')}`;
-        });
+    async getKey(version) {
+        return `${expressions_1.runner.os}-${version}-yarn-${await expressions_1.hashFiles('**/yarn.lock')}`;
     }
-    getRestoreKeys(version) {
-        return __awaiter(this, void 0, void 0, function* () {
-            return [`${expressions_1.runner.os}-${version}-yarn-`];
-        });
+    async getRestoreKeys(version) {
+        return [`${expressions_1.runner.os}-${version}-yarn-`];
     }
-    shouldCache() {
-        return __awaiter(this, void 0, void 0, function* () {
-            return yield expressions_1.matches('**/yarn.lock');
-        });
+    async shouldCache() {
+        return await expressions_1.matches('**/yarn.lock');
     }
 }
 registry_1.registry.add('yarn', new Yarn());
@@ -39619,39 +39462,22 @@ exports.getUserAgent = getUserAgent;
 
 "use strict";
 
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 const registry_1 = __webpack_require__(822);
 const expressions_1 = __webpack_require__(134);
 const handler_1 = __webpack_require__(895);
 class Carthage extends handler_1.CacheHandler {
-    getPaths() {
-        return __awaiter(this, void 0, void 0, function* () {
-            return ['Carthage'];
-        });
+    async getPaths() {
+        return ['Carthage'];
     }
-    getKey(version) {
-        return __awaiter(this, void 0, void 0, function* () {
-            return `${expressions_1.runner.os}-${version}-carthage-${yield expressions_1.hashFiles('**/Cartfile.resolved')}`;
-        });
+    async getKey(version) {
+        return `${expressions_1.runner.os}-${version}-carthage-${await expressions_1.hashFiles('**/Cartfile.resolved')}`;
     }
-    getRestoreKeys(version) {
-        return __awaiter(this, void 0, void 0, function* () {
-            return [`${expressions_1.runner.os}-${version}-carthage-`];
-        });
+    async getRestoreKeys(version) {
+        return [`${expressions_1.runner.os}-${version}-carthage-`];
     }
-    shouldCache() {
-        return __awaiter(this, void 0, void 0, function* () {
-            return yield expressions_1.matches('**/Cartfile.resolved');
-        });
+    async shouldCache() {
+        return await expressions_1.matches('**/Cartfile.resolved');
     }
 }
 registry_1.registry.add('carthage', new Carthage());
@@ -44099,39 +43925,22 @@ module.exports = {"application/1d-interleaved-parityfec":{"source":"iana"},"appl
 
 "use strict";
 
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 const registry_1 = __webpack_require__(822);
 const expressions_1 = __webpack_require__(134);
 const handler_1 = __webpack_require__(895);
 class NPM extends handler_1.CacheHandler {
-    getPaths() {
-        return __awaiter(this, void 0, void 0, function* () {
-            return [yield expressions_1.exec('npm', 'config', 'get', 'cache')];
-        });
+    async getPaths() {
+        return [await expressions_1.exec('npm', 'config', 'get', 'cache')];
     }
-    getKey(version) {
-        return __awaiter(this, void 0, void 0, function* () {
-            return `${expressions_1.runner.os}-${version}-node-${yield expressions_1.hashFiles('**/package-lock.json')}`;
-        });
+    async getKey(version) {
+        return `${expressions_1.runner.os}-${version}-node-${await expressions_1.hashFiles('**/package-lock.json')}`;
     }
-    getRestoreKeys(version) {
-        return __awaiter(this, void 0, void 0, function* () {
-            return [`${expressions_1.runner.os}-${version}-node-`];
-        });
+    async getRestoreKeys(version) {
+        return [`${expressions_1.runner.os}-${version}-node-`];
     }
-    shouldCache() {
-        return __awaiter(this, void 0, void 0, function* () {
-            return yield expressions_1.matches('**/package-lock.json');
-        });
+    async shouldCache() {
+        return await expressions_1.matches('**/package-lock.json');
     }
 }
 registry_1.registry.add('npm', new NPM());
@@ -44462,39 +44271,22 @@ Object.defineProperty(exports, "__esModule", { value: true });
 
 "use strict";
 
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 const registry_1 = __webpack_require__(822);
 const expressions_1 = __webpack_require__(134);
 const handler_1 = __webpack_require__(895);
 class Maven extends handler_1.CacheHandler {
-    getPaths() {
-        return __awaiter(this, void 0, void 0, function* () {
-            return ['~/.m2/repository'];
-        });
+    async getPaths() {
+        return ['~/.m2/repository'];
     }
-    getKey(version) {
-        return __awaiter(this, void 0, void 0, function* () {
-            return `${expressions_1.runner.os}-${version}-maven-${yield expressions_1.hashFiles('**/pom.xml')}`;
-        });
+    async getKey(version) {
+        return `${expressions_1.runner.os}-${version}-maven-${await expressions_1.hashFiles('**/pom.xml')}`;
     }
-    getRestoreKeys(version) {
-        return __awaiter(this, void 0, void 0, function* () {
-            return [`${expressions_1.runner.os}-${version}-maven-`];
-        });
+    async getRestoreKeys(version) {
+        return [`${expressions_1.runner.os}-${version}-maven-`];
     }
-    shouldCache() {
-        return __awaiter(this, void 0, void 0, function* () {
-            return yield expressions_1.matches('**/pom.xml');
-        });
+    async shouldCache() {
+        return await expressions_1.matches('**/pom.xml');
     }
 }
 registry_1.registry.add('maven', new Maven());
@@ -44809,28 +44601,17 @@ exports.fromPromise = function (fn) {
 
 "use strict";
 
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 const core = __webpack_require__(470);
 const registry_1 = __webpack_require__(822);
 __webpack_require__(877);
-function run() {
-    return __awaiter(this, void 0, void 0, function* () {
-        let type = core.getInput('type', { required: true });
-        let version = core.getInput('version');
-        for (const handler of yield registry_1.registry.getAll(type)) {
-            console.log(`Saving cache with ${handler.constructor.name} handler`);
-            yield handler.saveCache({ version });
-        }
-    });
+async function run() {
+    let type = core.getInput('type', { required: true });
+    let version = core.getInput('version');
+    for (const handler of await registry_1.registry.getAll(type)) {
+        console.log(`Saving cache with ${handler.constructor.name} handler`);
+        await handler.saveCache({ version });
+    }
 }
 run().catch((e) => {
     console.error(e);
@@ -45693,44 +45474,25 @@ exports.default = _default;
 
 "use strict";
 
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 const registry_1 = __webpack_require__(822);
 const expressions_1 = __webpack_require__(134);
 const handler_1 = __webpack_require__(895);
 class Bundler extends handler_1.CacheHandler {
-    getPaths() {
-        return __awaiter(this, void 0, void 0, function* () {
-            return ['vendor/bundle'];
-        });
+    async getPaths() {
+        return ['vendor/bundle'];
     }
-    getKey(version) {
-        return __awaiter(this, void 0, void 0, function* () {
-            return `${expressions_1.runner.os}-${version}-gems-${yield expressions_1.hashFiles('**/Gemfile.lock')}`;
-        });
+    async getKey(version) {
+        return `${expressions_1.runner.os}-${version}-gems-${await expressions_1.hashFiles('**/Gemfile.lock')}`;
     }
-    getRestoreKeys(version) {
-        return __awaiter(this, void 0, void 0, function* () {
-            return [`${expressions_1.runner.os}-${version}-gems-`];
-        });
+    async getRestoreKeys(version) {
+        return [`${expressions_1.runner.os}-${version}-gems-`];
     }
-    shouldCache() {
-        return __awaiter(this, void 0, void 0, function* () {
-            return yield expressions_1.matches('**/Gemfile.lock');
-        });
+    async shouldCache() {
+        return await expressions_1.matches('**/Gemfile.lock');
     }
-    setup() {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield expressions_1.exec('bundle', 'config', 'path', 'vendor/bundle');
-        });
+    async setup() {
+        await expressions_1.exec('bundle', 'config', 'path', 'vendor/bundle');
     }
 }
 registry_1.registry.add('bundler', new Bundler());
@@ -47475,39 +47237,22 @@ exports.NOOP_SPAN = new NoopSpan();
 
 "use strict";
 
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 const registry_1 = __webpack_require__(822);
 const expressions_1 = __webpack_require__(134);
 const handler_1 = __webpack_require__(895);
 class Composer extends handler_1.CacheHandler {
-    getPaths() {
-        return __awaiter(this, void 0, void 0, function* () {
-            return [yield expressions_1.exec('composer', 'config', 'cache-files-dir')];
-        });
+    async getPaths() {
+        return [await expressions_1.exec('composer', 'config', 'cache-files-dir')];
     }
-    getKey(version) {
-        return __awaiter(this, void 0, void 0, function* () {
-            return `${expressions_1.runner.os}-${version}-composer-${yield expressions_1.hashFiles('**/composer.lock')}`;
-        });
+    async getKey(version) {
+        return `${expressions_1.runner.os}-${version}-composer-${await expressions_1.hashFiles('**/composer.lock')}`;
     }
-    getRestoreKeys(version) {
-        return __awaiter(this, void 0, void 0, function* () {
-            return [`${expressions_1.runner.os}-${version}-composer-`];
-        });
+    async getRestoreKeys(version) {
+        return [`${expressions_1.runner.os}-${version}-composer-`];
     }
-    shouldCache() {
-        return __awaiter(this, void 0, void 0, function* () {
-            return yield expressions_1.matches('**/composer.lock');
-        });
+    async shouldCache() {
+        return await expressions_1.matches('**/composer.lock');
     }
 }
 registry_1.registry.add('composer', new Composer());
@@ -47525,39 +47270,22 @@ registry_1.registry.add('composer', new Composer());
 
 "use strict";
 
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 const registry_1 = __webpack_require__(822);
 const expressions_1 = __webpack_require__(134);
 const handler_1 = __webpack_require__(895);
 class Cocoapods extends handler_1.CacheHandler {
-    getPaths() {
-        return __awaiter(this, void 0, void 0, function* () {
-            return ['Pods'];
-        });
+    async getPaths() {
+        return ['Pods'];
     }
-    getKey(version) {
-        return __awaiter(this, void 0, void 0, function* () {
-            return `${expressions_1.runner.os}-${version}-pods-${yield expressions_1.hashFiles('**/Podfile.lock')}`;
-        });
+    async getKey(version) {
+        return `${expressions_1.runner.os}-${version}-pods-${await expressions_1.hashFiles('**/Podfile.lock')}`;
     }
-    getRestoreKeys(version) {
-        return __awaiter(this, void 0, void 0, function* () {
-            return [`${expressions_1.runner.os}-${version}-pods-`];
-        });
+    async getRestoreKeys(version) {
+        return [`${expressions_1.runner.os}-${version}-pods-`];
     }
-    shouldCache() {
-        return __awaiter(this, void 0, void 0, function* () {
-            return yield expressions_1.matches('**/Podfile.lock');
-        });
+    async shouldCache() {
+        return await expressions_1.matches('**/Podfile.lock');
     }
 }
 registry_1.registry.add('cocoapods', new Cocoapods());
@@ -47826,39 +47554,22 @@ function populateMaps (extensions, types) {
 
 "use strict";
 
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 const registry_1 = __webpack_require__(822);
 const expressions_1 = __webpack_require__(134);
 const handler_1 = __webpack_require__(895);
 class Go extends handler_1.CacheHandler {
-    getPaths() {
-        return __awaiter(this, void 0, void 0, function* () {
-            return ['~/go/pkg/mod'];
-        });
+    async getPaths() {
+        return ['~/go/pkg/mod'];
     }
-    getKey(version) {
-        return __awaiter(this, void 0, void 0, function* () {
-            return `${expressions_1.runner.os}-${version}-go-${yield expressions_1.hashFiles('**/go.sum')}`;
-        });
+    async getKey(version) {
+        return `${expressions_1.runner.os}-${version}-go-${await expressions_1.hashFiles('**/go.sum')}`;
     }
-    getRestoreKeys(version) {
-        return __awaiter(this, void 0, void 0, function* () {
-            return [`${expressions_1.runner.os}-${version}-go-`];
-        });
+    async getRestoreKeys(version) {
+        return [`${expressions_1.runner.os}-${version}-go-`];
     }
-    shouldCache() {
-        return __awaiter(this, void 0, void 0, function* () {
-            return yield expressions_1.matches('**/go.sum');
-        });
+    async shouldCache() {
+        return await expressions_1.matches('**/go.sum');
     }
 }
 registry_1.registry.add('go', new Go());
@@ -48506,7 +48217,286 @@ FormData.prototype.toString = function () {
 /***/ }),
 /* 792 */,
 /* 793 */,
-/* 794 */,
+/* 794 */
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+// This code is derived from github.com/satackey/action-docker-layer-caching.
+//
+// MIT License
+//
+// Copyright (c) 2020 satackey
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+Object.defineProperty(exports, "__esModule", { value: true });
+const core = __webpack_require__(470);
+const registry_1 = __webpack_require__(822);
+const expressions_1 = __webpack_require__(134);
+const handler_1 = __webpack_require__(895);
+const execa = __webpack_require__(955);
+const fs = __webpack_require__(747);
+class ImageDetector {
+    async getImageIds() {
+        const result = await execa('docker', ['image', 'ls', '-q']);
+        return result.stdout.split('\n').filter(id => id !== ``);
+    }
+    async getRepoTags() {
+        const result = await execa('docker', ['image', 'ls', '--format', '{{.Repository}}:{{.Tag}}', '--filter', 'dangling=false']);
+        return result.stdout.split(`\n`).filter(id => id !== ``);
+    }
+    async getExistingImages() {
+        const existingSet = new Set([]);
+        const ids = await this.getImageIds();
+        const repoTags = await this.getRepoTags();
+        ids.forEach(image => existingSet.add(image));
+        repoTags.forEach(image => existingSet.add(image));
+        return Array.from(existingSet);
+    }
+    async getImagesShouldSave(alreadRegisteredImages) {
+        const resultSet = new Set(await this.getExistingImages());
+        alreadRegisteredImages.forEach(image => resultSet.delete(image));
+        return Array.from(resultSet);
+    }
+    async checkIfImageHasAdded(restoredImages) {
+        const existing = await this.getExistingImages();
+        return JSON.stringify(restoredImages) === JSON.stringify(existing);
+    }
+}
+class LayerCache {
+    constructor(ids) {
+        this.ids = [];
+        this.unformattedSaveKey = '';
+        this.restoredRootKey = '';
+        this.enabledParallel = true;
+        this.concurrency = 4;
+        this.ids = ids;
+    }
+    async store(key) {
+        this.unformattedSaveKey = key;
+        await this.saveImageAsUnpacked();
+        // if (this.enabledParallel) {
+        //   await this.separateAllLayerCaches()
+        // }
+        // if (await this.storeRoot() === undefined) {
+        //   core.info(`cache key already exists, aborting.`)
+        //   return false
+        // }
+        // await Promise.all(this.enabledParallel ? await this.storeLayers() : [])
+        return true;
+    }
+    async saveImageAsUnpacked() {
+        fs.mkdirSync(this.getSavedImageTarDir(), { recursive: true });
+        await execa(`docker save '${(await this.makeRepotagsDockerSaveArgReady(this.ids)).join(`' '`)}' | tar xf - -C .`, { shell: true, cwd: this.getSavedImageTarDir() });
+    }
+    async makeRepotagsDockerSaveArgReady(repotags) {
+        const getMiddleIdsWithRepotag = async (id) => {
+            return [id, ...(await this.getAllImageIdsFrom(id))];
+        };
+        return (await Promise.all(repotags.map(getMiddleIdsWithRepotag))).flat();
+    }
+    async getAllImageIdsFrom(repotag) {
+        const result = await execa('docker', ['history', '-q', repotag]);
+        return result.stdout.split('\n').filter(id => id !== '<missing>' && id !== '');
+    }
+    // private async getManifests() {
+    //   return loadManifests(this.getUnpackedTarDir())
+    // }
+    // private async storeRoot() {
+    //   const rootKey = await this.generateRootSaveKey()
+    //   const paths = [
+    //     this.getUnpackedTarDir(),
+    //   ]
+    //   core.info(`Start storing root cache, key: ${rootKey}, dir: ${paths}`)
+    //   const cacheId = await LayerCache.dismissError(cache.saveCache(paths, rootKey), LayerCache.ERROR_CACHE_ALREAD_EXISTS_STR, -1)
+    //   core.info(`Stored root cache, key: ${rootKey}, id: ${cacheId}`)
+    //   return cacheId !== -1 ? cacheId : undefined
+    // }
+    // private async separateAllLayerCaches() {
+    //   await this.moveLayerTarsInDir(this.getUnpackedTarDir(), this.getLayerCachesDir())
+    // }
+    // private async joinAllLayerCaches() {
+    //   await this.moveLayerTarsInDir(this.getLayerCachesDir(), this.getUnpackedTarDir())
+    // }
+    // private async moveLayerTarsInDir(fromDir: string, toDir: string) {
+    //   const layerTars = (await recursiveReaddir(fromDir))
+    //     .filter(path => path.endsWith(`/layer.tar`))
+    //     .map(path => path.replace(`${fromDir}/`, ``))
+    //   const moveLayer = async (layer: string) => {
+    //     const from = path.resolve(`${fromDir}/${layer}`)
+    //     const to = path.resolve(`${toDir}/${layer}`)
+    //     core.debug(`Moving layer tar from ${from} to ${to}`)
+    //     await fs.mkdir(`${path.dirname(to)}`, { recursive: true })
+    //     await fs.rename(from, to)
+    //   }
+    //   await Promise.all(layerTars.map(moveLayer))
+    // }
+    // private async storeLayers(): Promise<number[]> {
+    //   const pool = new PromisePool(this.concurrency)
+    //   const result =  Promise.all(
+    //     (await this.getLayerIds()).map(
+    //       layerId => {
+    //         return pool.open(() => this.storeSingleLayerBy(layerId))
+    //       }
+    //     )
+    //   )
+    //   return result
+    // }
+    // private async storeSingleLayerBy(layerId: string): Promise<number> {
+    //   const path = this.genSingleLayerStorePath(layerId)
+    //   const key = await this.generateSingleLayerSaveKey(layerId)
+    //   core.info(`Start storing layer cache: ${JSON.stringify({ layerId, key })}`)
+    //   const cacheId = await LayerCache.dismissError(cache.saveCache([path], key), LayerCache.ERROR_CACHE_ALREAD_EXISTS_STR, -1)
+    //   core.info(`Stored layer cache: ${JSON.stringify({ key, cacheId })}`)
+    //   core.debug(JSON.stringify({ log: `storeSingleLayerBy`, layerId, path, key, cacheId}))
+    //   return cacheId
+    // }
+    // ---
+    // async restore(primaryKey: string, restoreKeys?: string[]) {
+    //   const restoredCacheKey = await this.restoreRoot(primaryKey, restoreKeys)
+    //   if (restoredCacheKey === undefined) {
+    //     core.info(`Root cache could not be found. aborting.`)
+    //     return undefined
+    //   }
+    //   if (this.enabledParallel) {
+    //     const hasRestoredAllLayers = await this.restoreLayers()
+    //     if (!hasRestoredAllLayers) {
+    //       core.info(`Some layer cache could not be found. aborting.`)
+    //       return undefined
+    //     }
+    //     await this.joinAllLayerCaches()
+    //   }
+    //   await this.loadImageFromUnpacked()
+    //   return restoredCacheKey
+    // }
+    // private async restoreRoot(primaryKey: string, restoreKeys?: string[]): Promise<string | undefined> {
+    //   core.debug(`Trying to restore root cache: ${ JSON.stringify({ restoreKeys, dir: this.getUnpackedTarDir() }) }`)
+    //   const restoredRootKey = await cache.restoreCache([this.getUnpackedTarDir()], primaryKey, restoreKeys)
+    //   core.debug(`restoredRootKey: ${restoredRootKey}`)
+    //   if (restoredRootKey === undefined) {
+    //     return undefined
+    //   }
+    //   this.restoredRootKey = restoredRootKey
+    //   return restoredRootKey
+    // }
+    // private async restoreLayers(): Promise<boolean> {
+    //   const pool = new PromisePool(this.concurrency)
+    //   const tasks = (await this.getLayerIds()).map(
+    //     layerId => pool.open(() => this.restoreSingleLayerBy(layerId))
+    //   )
+    //   try {
+    //     await Promise.all(tasks)
+    //   } catch (e) {
+    //     if (typeof e.message === `string` && e.message.includes(LayerCache.ERROR_LAYER_CACHE_NOT_FOUND_STR)) {
+    //       core.info(e.message)
+    //       // Avoid UnhandledPromiseRejectionWarning
+    //       tasks.map(task => task.catch(core.info))
+    //       return false
+    //     }
+    //     throw e
+    //   }
+    //   return true
+    // }
+    // private async restoreSingleLayerBy(id: string): Promise<string> {
+    //   const path = this.genSingleLayerStorePath(id)
+    //   const key = await this.recoverSingleLayerKey(id)
+    //   const dir = path.replace(/[^/\\]+$/, ``)
+    //   core.debug(JSON.stringify({ log: `restoreSingleLayerBy`, id, path, dir, key }))
+    //   await fs.mkdir(dir, { recursive: true })
+    //   const result = await cache.restoreCache([path], key)
+    //   if (result == null) {
+    //     throw new Error(`${LayerCache.ERROR_LAYER_CACHE_NOT_FOUND_STR}: ${JSON.stringify({ id })}`)
+    //   }
+    //   return result
+    // }
+    // private async loadImageFromUnpacked() {
+    //   await exec.exec(`sh -c`, [`tar cf - . | docker load`], { cwd: this.getUnpackedTarDir() })
+    // }
+    // async cleanUp() {
+    //   await fs.rmdir(this.getImagesDir(), { recursive: true })
+    // }
+    // ---
+    getImagesDir() {
+        return `.action-docker-layer-caching-docker_images`;
+    }
+    getUnpackedTarDir() {
+        return `${this.getImagesDir()}/${this.getCurrentTarStoreDir()}`;
+    }
+    getLayerCachesDir() {
+        return `${this.getUnpackedTarDir()}-layers`;
+    }
+    getSavedImageTarDir() {
+        return `${this.getImagesDir()}/${this.getCurrentTarStoreDir()}`;
+    }
+    getCurrentTarStoreDir() {
+        return 'image';
+    }
+    genSingleLayerStorePath(id) {
+        return `${this.getLayerCachesDir()}/${id}/layer.tar`;
+    }
+}
+LayerCache.ERROR_CACHE_ALREAD_EXISTS_STR = `Cache already exists`;
+LayerCache.ERROR_LAYER_CACHE_NOT_FOUND_STR = `Layer cache not found`;
+class Docker extends handler_1.CacheHandler {
+    async getPaths() {
+        return core
+            .getInput('path')
+            .split('\n')
+            .map((s) => s.trim());
+    }
+    async getKeyForRestore(version) {
+        return `diff-no-match-primary-key`;
+    }
+    async getKeyForSave(version) {
+        return `${expressions_1.runner.os}-${version}-diff-${await expressions_1.hashFiles(await this.getPaths())}`;
+    }
+    async getRestoreKeys(version) {
+        return [`${expressions_1.runner.os}-${version}-diff-`];
+    }
+    async saveCache(options) {
+        const imageDetector = new ImageDetector();
+        // if (await imageDetector.checkIfImageHasAdded(restoredImages)) {
+        //   core.info(`Key ${restoredKey} already exists, not saving cache.`)
+        //   return
+        // }
+        const imagesToSave = await imageDetector.getImagesShouldSave([]);
+        if (imagesToSave.length < 1) {
+            core.info(`There is no image to save.`);
+            return;
+        }
+        core.info(`Will save ${imagesToSave.join('\n')}`);
+        // const layerCache = new LayerCache(imagesToSave)
+        // layerCache.concurrency = parseInt(core.getInput(`concurrency`, { required: true }), 10)
+        // await layerCache.store('foo')
+        //await layerCache.cleanUp()
+    }
+    async restoreCache(options) {
+        return {
+            type: handler_1.RestoreType.Miss,
+            restoredKey: undefined
+        };
+    }
+}
+registry_1.registry.add('docker', new Docker());
+
+
+/***/ }),
 /* 795 */,
 /* 796 */
 /***/ (function(module, __unusedexports, __webpack_require__) {
@@ -49467,15 +49457,6 @@ function sync (path, options) {
 
 "use strict";
 
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.registry = void 0;
 class Registry {
@@ -49495,25 +49476,23 @@ class Registry {
     contains(name) {
         return this.handlers.has(this.toCanonicalName(name));
     }
-    getAll(name) {
-        return __awaiter(this, void 0, void 0, function* () {
-            name = this.toCanonicalName(name);
-            const result = [];
-            if (name === 'auto') {
-                for (const handler of this.handlers.values()) {
-                    if (yield handler.shouldCache()) {
-                        result.push(handler);
-                    }
-                }
-            }
-            else {
-                const handler = this.getFirst(name);
-                if (handler) {
+    async getAll(name) {
+        name = this.toCanonicalName(name);
+        const result = [];
+        if (name === 'auto') {
+            for (const handler of this.handlers.values()) {
+                if (await handler.shouldCache()) {
                     result.push(handler);
                 }
             }
-            return result;
-        });
+        }
+        else {
+            const handler = this.getFirst(name);
+            if (handler) {
+                result.push(handler);
+            }
+        }
+        return result;
     }
 }
 exports.registry = new Registry();
@@ -51788,46 +51767,29 @@ module.exports = __webpack_require__(141);
 
 "use strict";
 
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 const registry_1 = __webpack_require__(822);
 const expressions_1 = __webpack_require__(134);
 const handler_1 = __webpack_require__(895);
 class Pip extends handler_1.CacheHandler {
-    getPaths() {
-        return __awaiter(this, void 0, void 0, function* () {
-            switch (expressions_1.runner.os) {
-                case 'Windows':
-                    return ['~AppDataLocalpipCache'];
-                case 'Linux':
-                    return ['~/.cache/pip'];
-                case 'macOS':
-                    return ['~/Library/Caches/pip'];
-            }
-        });
+    async getPaths() {
+        switch (expressions_1.runner.os) {
+            case 'Windows':
+                return ['~AppDataLocalpipCache'];
+            case 'Linux':
+                return ['~/.cache/pip'];
+            case 'macOS':
+                return ['~/Library/Caches/pip'];
+        }
     }
-    getKey(version) {
-        return __awaiter(this, void 0, void 0, function* () {
-            return `${expressions_1.runner.os}-${version}-pip-${yield expressions_1.hashFiles('**/requirements.txt')}`;
-        });
+    async getKey(version) {
+        return `${expressions_1.runner.os}-${version}-pip-${await expressions_1.hashFiles('**/requirements.txt')}`;
     }
-    getRestoreKeys(version) {
-        return __awaiter(this, void 0, void 0, function* () {
-            return [`${expressions_1.runner.os}-${version}-pip-`];
-        });
+    async getRestoreKeys(version) {
+        return [`${expressions_1.runner.os}-${version}-pip-`];
     }
-    shouldCache() {
-        return __awaiter(this, void 0, void 0, function* () {
-            return yield expressions_1.matches('**/requirements.txt');
-        });
+    async shouldCache() {
+        return await expressions_1.matches('**/requirements.txt');
     }
 }
 registry_1.registry.add('pip', new Pip());
@@ -52333,6 +52295,7 @@ __webpack_require__(664);
 __webpack_require__(648);
 __webpack_require__(484);
 __webpack_require__(467);
+__webpack_require__(794);
 __webpack_require__(322);
 __webpack_require__(769);
 __webpack_require__(859);
@@ -55197,15 +55160,6 @@ exports.default = _default;
 
 "use strict";
 
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CacheHandler = exports.RestoreType = void 0;
 const cache_1 = __webpack_require__(692);
@@ -55217,72 +55171,54 @@ var RestoreType;
     RestoreType[RestoreType["Full"] = 2] = "Full";
 })(RestoreType = exports.RestoreType || (exports.RestoreType = {}));
 class CacheHandler {
-    getPaths() {
-        return __awaiter(this, void 0, void 0, function* () {
-            throw Error('not implemented');
-        });
+    async getPaths() {
+        throw Error('not implemented');
     }
-    getKey(version) {
-        return __awaiter(this, void 0, void 0, function* () {
-            throw Error('not implemented');
-        });
+    async getKey(version) {
+        throw Error('not implemented');
     }
-    getKeyForRestore(version) {
-        return __awaiter(this, void 0, void 0, function* () {
-            return this.getKey(version);
-        });
+    async getKeyForRestore(version) {
+        return this.getKey(version);
     }
-    getKeyForSave(version) {
+    async getKeyForSave(version) {
         var _a;
-        return __awaiter(this, void 0, void 0, function* () {
-            return (_a = state.readPrimaryKey(this)) !== null && _a !== void 0 ? _a : this.getKey(version);
-        });
+        return (_a = state.readPrimaryKey(this)) !== null && _a !== void 0 ? _a : this.getKey(version);
     }
-    getRestoreKeys(version) {
-        return __awaiter(this, void 0, void 0, function* () {
-            return [];
-        });
+    async getRestoreKeys(version) {
+        return [];
     }
-    shouldCache() {
-        return __awaiter(this, void 0, void 0, function* () {
-            return false;
-        });
+    async shouldCache() {
+        return false;
     }
-    setup() {
-        return __awaiter(this, void 0, void 0, function* () { });
+    async setup() { }
+    async saveCache(options) {
+        const paths = await this.getPaths();
+        const key = await this.getKeyForSave(options === null || options === void 0 ? void 0 : options.version);
+        const restoredKey = state.readRestoredKey(this);
+        if (key === restoredKey) {
+            console.log(`Cache hit on primary key '${key}', skip saving cache`);
+        }
+        else {
+            console.log(`Calling saveCache('${paths}', '${key}')`);
+            await cache_1.saveCache(paths, key);
+        }
     }
-    saveCache(options) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const paths = yield this.getPaths();
-            const key = yield this.getKeyForSave(options === null || options === void 0 ? void 0 : options.version);
-            const restoredKey = state.readRestoredKey(this);
-            if (key === restoredKey) {
-                console.log(`Cache hit on primary key '${key}', skip saving cache`);
-            }
-            else {
-                console.log(`Calling saveCache('${paths}', '${key}')`);
-                yield cache_1.saveCache(paths, key);
-            }
-        });
-    }
-    restoreCache(options) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const paths = yield this.getPaths();
-            const key = yield this.getKeyForRestore(options === null || options === void 0 ? void 0 : options.version);
-            const restoreKeys = yield this.getRestoreKeys(options === null || options === void 0 ? void 0 : options.version);
-            console.log(`Calling restoreCache('${paths}', '${key}', ${restoreKeys})`);
-            const restoredKey = yield cache_1.restoreCache(paths, key, restoreKeys);
-            state.savePrimaryKey(this, key);
-            state.addHandler(this);
-            if (restoredKey) {
-                console.log(`Restored cache with key '${restoredKey}'`);
-                state.saveRestoredKey(this, restoredKey !== null && restoredKey !== void 0 ? restoredKey : '');
-            }
-            return {
-                type: restoredKey ? (key === restoredKey ? RestoreType.Full : RestoreType.Partial) : RestoreType.Miss,
-                restoredKey: restoredKey,
-            };
-        });
+    async restoreCache(options) {
+        const paths = await this.getPaths();
+        const key = await this.getKeyForRestore(options === null || options === void 0 ? void 0 : options.version);
+        const restoreKeys = await this.getRestoreKeys(options === null || options === void 0 ? void 0 : options.version);
+        console.log(`Calling restoreCache('${paths}', '${key}', ${restoreKeys})`);
+        const restoredKey = await cache_1.restoreCache(paths, key, restoreKeys);
+        state.savePrimaryKey(this, key);
+        state.addHandler(this);
+        if (restoredKey) {
+            console.log(`Restored cache with key '${restoredKey}'`);
+            state.saveRestoredKey(this, restoredKey !== null && restoredKey !== void 0 ? restoredKey : '');
+        }
+        return {
+            type: restoredKey ? (key === restoredKey ? RestoreType.Full : RestoreType.Partial) : RestoreType.Miss,
+            restoredKey: restoredKey,
+        };
     }
 }
 exports.CacheHandler = CacheHandler;
@@ -55397,39 +55333,22 @@ exports.permuteDomain = permuteDomain;
 
 "use strict";
 
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 const registry_1 = __webpack_require__(822);
 const expressions_1 = __webpack_require__(134);
 const handler_1 = __webpack_require__(895);
 class Gradle extends handler_1.CacheHandler {
-    getPaths() {
-        return __awaiter(this, void 0, void 0, function* () {
-            return ['~/.gradle/caches', '~/.gradle/wrapper'];
-        });
+    async getPaths() {
+        return ['~/.gradle/caches', '~/.gradle/wrapper'];
     }
-    getKey(version) {
-        return __awaiter(this, void 0, void 0, function* () {
-            return `${expressions_1.runner.os}-${version}-gradle-${yield expressions_1.hashFiles('**/*.gradle')}`;
-        });
+    async getKey(version) {
+        return `${expressions_1.runner.os}-${version}-gradle-${await expressions_1.hashFiles('**/*.gradle')}`;
     }
-    getRestoreKeys(version) {
-        return __awaiter(this, void 0, void 0, function* () {
-            return [`${expressions_1.runner.os}-${version}-gradle-`];
-        });
+    async getRestoreKeys(version) {
+        return [`${expressions_1.runner.os}-${version}-gradle-`];
     }
-    shouldCache() {
-        return __awaiter(this, void 0, void 0, function* () {
-            return yield expressions_1.matches('**/*.gradle');
-        });
+    async shouldCache() {
+        return await expressions_1.matches('**/*.gradle');
     }
 }
 registry_1.registry.add('gradle', new Gradle());
@@ -56343,39 +56262,22 @@ function terminator(callback)
 
 "use strict";
 
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 const registry_1 = __webpack_require__(822);
 const expressions_1 = __webpack_require__(134);
 const handler_1 = __webpack_require__(895);
 class Mix extends handler_1.CacheHandler {
-    getPaths() {
-        return __awaiter(this, void 0, void 0, function* () {
-            return ['deps'];
-        });
+    async getPaths() {
+        return ['deps'];
     }
-    getKey(version) {
-        return __awaiter(this, void 0, void 0, function* () {
-            return `${expressions_1.runner.os}-${version}-mix-${yield expressions_1.hashFiles('mix.lock')}`;
-        });
+    async getKey(version) {
+        return `${expressions_1.runner.os}-${version}-mix-${await expressions_1.hashFiles('mix.lock')}`;
     }
-    getRestoreKeys(version) {
-        return __awaiter(this, void 0, void 0, function* () {
-            return [`${expressions_1.runner.os}-${version}-mix-`];
-        });
+    async getRestoreKeys(version) {
+        return [`${expressions_1.runner.os}-${version}-mix-`];
     }
-    shouldCache() {
-        return __awaiter(this, void 0, void 0, function* () {
-            return yield expressions_1.matches('mix.lock');
-        });
+    async shouldCache() {
+        return await expressions_1.matches('mix.lock');
     }
 }
 registry_1.registry.add('mix', new Mix());
@@ -56824,39 +56726,22 @@ module.exports = options => {
 
 "use strict";
 
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 const registry_1 = __webpack_require__(822);
 const expressions_1 = __webpack_require__(134);
 const handler_1 = __webpack_require__(895);
 class SPM extends handler_1.CacheHandler {
-    getPaths() {
-        return __awaiter(this, void 0, void 0, function* () {
-            return ['.build'];
-        });
+    async getPaths() {
+        return ['.build'];
     }
-    getKey(version) {
-        return __awaiter(this, void 0, void 0, function* () {
-            return `${expressions_1.runner.os}-${version}-spm-${yield expressions_1.hashFiles('**/Package.resolved')}`;
-        });
+    async getKey(version) {
+        return `${expressions_1.runner.os}-${version}-spm-${await expressions_1.hashFiles('**/Package.resolved')}`;
     }
-    getRestoreKeys(version) {
-        return __awaiter(this, void 0, void 0, function* () {
-            return [`${expressions_1.runner.os}-${version}-spm-`];
-        });
+    async getRestoreKeys(version) {
+        return [`${expressions_1.runner.os}-${version}-spm-`];
     }
-    shouldCache() {
-        return __awaiter(this, void 0, void 0, function* () {
-            return yield expressions_1.matches('**/Package.resolved');
-        });
+    async shouldCache() {
+        return await expressions_1.matches('**/Package.resolved');
     }
 }
 registry_1.registry.add('spm', new SPM());
@@ -57167,46 +57052,29 @@ Object.defineProperty(exports, "__esModule", { value: true });
 
 "use strict";
 
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 const registry_1 = __webpack_require__(822);
 const expressions_1 = __webpack_require__(134);
 const handler_1 = __webpack_require__(895);
 class Dub extends handler_1.CacheHandler {
-    getPaths() {
-        return __awaiter(this, void 0, void 0, function* () {
-            switch (expressions_1.runner.os) {
-                case 'Windows':
-                    return ['~/AppData/Local/dub'];
-                case 'Linux':
-                    return ['~/.dub'];
-                case 'macOS':
-                    return ['~/.dub'];
-            }
-        });
+    async getPaths() {
+        switch (expressions_1.runner.os) {
+            case 'Windows':
+                return ['~/AppData/Local/dub'];
+            case 'Linux':
+                return ['~/.dub'];
+            case 'macOS':
+                return ['~/.dub'];
+        }
     }
-    getKey(version) {
-        return __awaiter(this, void 0, void 0, function* () {
-            return `${expressions_1.runner.os}-${version}-dub-${yield expressions_1.hashFiles('**/dub.json')}`;
-        });
+    async getKey(version) {
+        return `${expressions_1.runner.os}-${version}-dub-${await expressions_1.hashFiles('**/dub.json')}`;
     }
-    getRestoreKeys(version) {
-        return __awaiter(this, void 0, void 0, function* () {
-            return [`${expressions_1.runner.os}-${version}-dub-`];
-        });
+    async getRestoreKeys(version) {
+        return [`${expressions_1.runner.os}-${version}-dub-`];
     }
-    shouldCache() {
-        return __awaiter(this, void 0, void 0, function* () {
-            return yield expressions_1.matches('**/dub.json');
-        });
+    async shouldCache() {
+        return await expressions_1.matches('**/dub.json');
     }
 }
 registry_1.registry.add('dub', new Dub());

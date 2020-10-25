@@ -23,6 +23,11 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - run: docker image ls
+      - name: Cache docker
+        uses: ./
+        with:
+          type: docker
+          version: v1
 
   test-nuget:
     runs-on: ubuntu-latest
