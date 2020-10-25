@@ -17,11 +17,21 @@ jobs:
     #  - run: npm test
     #  - run: npm run lint
 
-  test-nuget:
+  test-nuget-ubuntu:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - run: ls ~/.nuget/packages
+      - name: Cache nuget
+        uses: ./
+        with:
+          type: nuget
+          version: v1
+
+  test-nuget:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v2
       - name: Cache nuget
         uses: ./
         with:
