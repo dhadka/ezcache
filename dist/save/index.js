@@ -4721,12 +4721,14 @@ class Nuget extends handler_1.CacheHandler {
             // waste of resources, record all existing packages so they can be excluded.
             const existingPackages = [];
             const rootPath = path.resolve('~/.nuget/packages');
+            console.log(`Root: ${rootPath}`);
             for (const rootFile of fs.readdirSync(rootPath)) {
                 const absoluteRootFile = path.join(rootPath, rootFile);
                 if (fs.statSync(absoluteRootFile).isDirectory()) {
                     for (const subFile of fs.readdirSync(absoluteRootFile)) {
                         const absoluteSubFile = path.join(absoluteRootFile, subFile);
                         if (fs.statSync(absoluteSubFile).isDirectory()) {
+                            console.log(`rootFile + '/' + subFile`);
                             existingPackages.push(rootFile + '/' + subFile);
                         }
                     }
