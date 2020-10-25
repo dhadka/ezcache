@@ -4686,18 +4686,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const registry_1 = __webpack_require__(822);
 const expressions_1 = __webpack_require__(134);
 const handler_1 = __webpack_require__(895);
-const core = __webpack_require__(470);
-const fs = __webpack_require__(747);
-const path = __webpack_require__(622);
 class Nuget extends handler_1.CacheHandler {
     getPaths() {
         return __awaiter(this, void 0, void 0, function* () {
-            const paths = ['~/.nuget/packages'];
-            const existingPackages = core.getState('NUGET_EXISTING_PACKAGES').split(',');
-            for (const existingPackage of existingPackages) {
-                paths.push("!~/.nuget/packages/" + existingPackage);
-            }
-            return paths;
+            return ['~/.nuget/packages'];
         });
     }
     getKey(version) {
@@ -4713,28 +4705,6 @@ class Nuget extends handler_1.CacheHandler {
     shouldCache() {
         return __awaiter(this, void 0, void 0, function* () {
             return yield expressions_1.matches('**/packages.lock.json');
-        });
-    }
-    setup() {
-        return __awaiter(this, void 0, void 0, function* () {
-            // Hosted runners have a lot of Nuget packages already installed.  As caching these would be a
-            // waste of resources, record all existing packages so they can be excluded.
-            const existingPackages = [];
-            const rootPath = path.resolve('~/.nuget/packages');
-            console.log(`Root: ${rootPath}`);
-            for (const rootFile of fs.readdirSync(rootPath)) {
-                const absoluteRootFile = path.join(rootPath, rootFile);
-                if (fs.statSync(absoluteRootFile).isDirectory()) {
-                    for (const subFile of fs.readdirSync(absoluteRootFile)) {
-                        const absoluteSubFile = path.join(absoluteRootFile, subFile);
-                        if (fs.statSync(absoluteSubFile).isDirectory()) {
-                            console.log(`rootFile + '/' + subFile`);
-                            existingPackages.push(rootFile + '/' + subFile);
-                        }
-                    }
-                }
-            }
-            core.saveState('NUGET_EXISTING_PACKAGES', existingPackages.join(','));
         });
     }
 }
