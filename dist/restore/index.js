@@ -6796,9 +6796,9 @@ class ImageDetector {
     async getExistingImages() {
         const existingSet = new Set([]);
         const ids = await this.getImageIds();
-        const repoTags = await this.getRepoTags();
+        //const repoTags = await this.getRepoTags()
         ids.forEach(image => existingSet.add(image));
-        repoTags.forEach(image => existingSet.add(image));
+        //repoTags.forEach(image => existingSet.add(image))
         return Array.from(existingSet);
     }
     async getImagesShouldSave(alreadRegisteredImages) {
@@ -6834,8 +6834,10 @@ class LayerCache {
         return true;
     }
     async saveImageAsUnpacked() {
+        var _a;
         fs.mkdirSync(this.getSavedImageTarDir(), { recursive: true });
         await execa(`docker save '${(await this.makeRepotagsDockerSaveArgReady(this.ids)).join(`' '`)}' | tar xf - -C .`, { shell: true, cwd: this.getSavedImageTarDir() });
+        await ((_a = execa('du', ['-h'], { cwd: this.getSavedImageTarDir() }).stdout) === null || _a === void 0 ? void 0 : _a.pipe(process.stdout));
     }
     async makeRepotagsDockerSaveArgReady(repotags) {
         const getMiddleIdsWithRepotag = async (id) => {
@@ -6845,7 +6847,9 @@ class LayerCache {
     }
     async getAllImageIdsFrom(repotag) {
         const result = await execa('docker', ['history', '-q', repotag]);
-        return result.stdout.split('\n').filter(id => id !== '<missing>' && id !== '');
+        const value = result.stdout.split('\n').filter(id => id !== '<missing>' && id !== '');
+        core.info(`Image ${repotag} uses ${value.join(', ')}`);
+        return value;
     }
     // private async getManifests() {
     //   return loadManifests(this.getUnpackedTarDir())
@@ -6965,7 +6969,7 @@ class LayerCache {
     // }
     // ---
     getImagesDir() {
-        return `.action-docker-layer-caching-docker_images`;
+        return `.docker-image-cache`;
     }
     getUnpackedTarDir() {
         return `${this.getImagesDir()}/${this.getCurrentTarStoreDir()}`;
@@ -7013,9 +7017,9 @@ class Docker extends handler_1.CacheHandler {
             return;
         }
         core.info(`Will save ${imagesToSave.join('\n')}`);
-        // const layerCache = new LayerCache(imagesToSave)
+        const layerCache = new LayerCache(imagesToSave);
         // layerCache.concurrency = parseInt(core.getInput(`concurrency`, { required: true }), 10)
-        // await layerCache.store('foo')
+        await layerCache.store('foo');
         //await layerCache.cleanUp()
     }
     async restoreCache(options) {
@@ -39044,8 +39048,7 @@ const handler_1 = __webpack_require__(895);
 /**
  * Caches an arbitrary path (or paths), creating a new cache whenever the contents
  * change.  By design, this will never have an exact match during restore.  Instead,
- * this relies on the caching service returning the last created cache matching the
- * restore keys.
+ * it restores the last created cache on the current branch.
  */
 class DiffCache extends handler_1.CacheHandler {
     async getPaths() {

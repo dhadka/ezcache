@@ -6,8 +6,7 @@ import { CacheHandler } from '../../handler'
 /**
  * Caches an arbitrary path (or paths), creating a new cache whenever the contents
  * change.  By design, this will never have an exact match during restore.  Instead,
- * this relies on the caching service returning the last created cache matching the
- * restore keys.
+ * it restores the last created cache on the current branch.
  */
 class DiffCache extends CacheHandler {
   async getPaths(): Promise<string[]> {

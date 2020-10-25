@@ -44,10 +44,10 @@ class ImageDetector {
   async getExistingImages(): Promise<string[]> {
     const existingSet = new Set<string>([])
     const ids = await this.getImageIds()
-    const repoTags = await this.getRepoTags()
+    //const repoTags = await this.getRepoTags()
 
     ids.forEach(image => existingSet.add(image))
-    repoTags.forEach(image => existingSet.add(image))
+    //repoTags.forEach(image => existingSet.add(image))
 
     return Array.from(existingSet)
   }
@@ -97,7 +97,8 @@ class LayerCache {
 
   private async saveImageAsUnpacked() {
     fs.mkdirSync(this.getSavedImageTarDir(), {recursive: true})
-    await execa(`docker save '${(await this.makeRepotagsDockerSaveArgReady(this.ids)).join(`' '`)}' | tar xf - -C .`, {shell: true, cwd: this.getSavedImageTarDir() })
+    await execa(`docker save '${(await this.makeRepotagsDockerSaveArgReady(this.ids)).join(`' '`)}' | tar xf - -C .`, {shell: true, cwd: this.getSavedImageTarDir()})
+    await execa('du', ['-h'], {cwd: this.getSavedImageTarDir()}).stdout?.pipe(process.stdout)
   }
 
   private async makeRepotagsDockerSaveArgReady(repotags: string[]): Promise<string[]> {
@@ -109,7 +110,9 @@ class LayerCache {
 
   private async getAllImageIdsFrom(repotag: string): Promise<string[]> {
     const result = await execa('docker', ['history', '-q', repotag])
-    return result.stdout.split('\n').filter(id => id !== '<missing>' && id !== '')
+    const value = result.stdout.split('\n').filter(id => id !== '<missing>' && id !== '')
+    core.info(`Image ${repotag} uses ${value.join(', ')}`)
+    return value
   }
 
   // private async getManifests() {
@@ -260,7 +263,7 @@ class LayerCache {
   // ---
 
   getImagesDir(): string {
-    return `.action-docker-layer-caching-docker_images`
+    return `.docker-image-cache`
   }
 
   getUnpackedTarDir(): string {
@@ -370,10 +373,10 @@ class Docker extends CacheHandler {
 
     core.info(`Will save ${imagesToSave.join('\n')}`)
   
-    // const layerCache = new LayerCache(imagesToSave)
+    const layerCache = new LayerCache(imagesToSave)
     // layerCache.concurrency = parseInt(core.getInput(`concurrency`, { required: true }), 10)
   
-    // await layerCache.store('foo')
+    await layerCache.store('foo')
     //await layerCache.cleanUp()
   }
 
