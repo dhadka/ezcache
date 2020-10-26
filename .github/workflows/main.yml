@@ -28,7 +28,7 @@ jobs:
           type: docker
           version: v1
       - run: docker image ls
-      - run: docker load hello-world
+      - run: docker pull hello-world
 
   test-nuget:
     runs-on: ubuntu-latest
