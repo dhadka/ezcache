@@ -13,7 +13,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
         with:
-          repository: https://github.com/crazy-max/diun
+          repository: crazy-max/diun
 
       - run: ls
 

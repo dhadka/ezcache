@@ -18,17 +18,17 @@ jobs:
     #  - run: npm test
     #  - run: npm run lint
 
-  test-docker:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Cache docker images
-        uses: ./
-        with:
-          type: docker
-          version: v2
-      - run: docker image ls
-      - run: docker pull mcr.microsoft.com/mssql/server:2019-CU8-ubuntu-16.04
+  #test-docker:
+  #  runs-on: ubuntu-latest
+  #  steps:
+  #    - uses: actions/checkout@v2
+  #    - name: Cache docker images
+  #      uses: ./
+  #      with:
+  #        type: docker
+  #        version: v2
+  #    - run: docker image ls
+  #    - run: docker pull mcr.microsoft.com/mssql/server:2019-CU8-ubuntu-16.04
 
   test-nuget:
     runs-on: ubuntu-latest
