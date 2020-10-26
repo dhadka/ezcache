@@ -97,7 +97,7 @@ class LayerCache {
 
   private async saveImageAsUnpacked() {
     fs.mkdirSync(this.getSavedImageTarDir(), {recursive: true})
-    await execa(`docker save '${(await this.makeRepotagsDockerSaveArgReady(this.ids)).join(`' '`)}' | tar xf - -C .`, {shell: true, cwd: this.getSavedImageTarDir()})
+    await execa(`docker save '${(await this.makeRepotagsDockerSaveArgReady(this.ids)).join(`' '`)}' | tar xf - -C .`, {shell: true, cwd: this.getSavedImageTarDir()}).stdout?.pipe(process.stdout)
     await execa('du', ['-h'], {cwd: this.getSavedImageTarDir()}).stdout?.pipe(process.stdout)
   }
 
@@ -388,4 +388,4 @@ class Docker extends CacheHandler {
   }
 }
 
-registry.add('docker', new Docker())
+registry.add('docker-layers', new Docker())

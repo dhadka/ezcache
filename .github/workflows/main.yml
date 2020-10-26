@@ -22,12 +22,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - run: docker image ls
-      - name: Cache docker
+      - name: Cache docker images
         uses: ./
         with:
           type: docker
           version: v1
+      - run: docker image ls
+      - run: docker load hello-world
 
   test-nuget:
     runs-on: ubuntu-latest
