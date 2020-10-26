@@ -7467,9 +7467,10 @@ const handler_1 = __webpack_require__(895);
 const execa = __webpack_require__(955);
 const path = __webpack_require__(622);
 const fs = __webpack_require__(747);
+const dockerCacheFolder = '.docker-cache';
 class DockerImages extends handler_1.CacheHandler {
     async getPaths() {
-        return ['.docker-cache'];
+        return [dockerCacheFolder];
     }
     async getKey(version) {
         return `${expressions_1.runner.os}-${version}-docker`;
@@ -7481,21 +7482,22 @@ class DockerImages extends handler_1.CacheHandler {
     async setup() {
         const existingImages = await this.listImages();
         core.saveState('EXISTING_DOCKER_IMAGES', existingImages.join(','));
+        fs.mkdirSync(dockerCacheFolder, { recursive: true });
     }
     async saveCache(options) {
         const images = new Set(await this.listImages());
         const existingImages = core.getState('EXISTING_DOCKER_IMAGES').split(',');
         existingImages.forEach(image => images.delete(image));
         for (const image of images) {
-            await execa('docker', ['save', '-o', `.docker-cache/${image}.tar`, image]);
+            await execa('docker', ['save', '-o', path.join(dockerCacheFolder, `${image}.tar`), image]);
         }
         await super.saveCache(options);
     }
     async restoreCache(options) {
         const result = await super.restoreCache(options);
         if (result.type != handler_1.RestoreType.Miss) {
-            for (const file of fs.readdirSync('.docker-cache')) {
-                await execa('docker', ['load', '-i', path.join('.docker-cache', file)]);
+            for (const file of fs.readdirSync(dockerCacheFolder)) {
+                await execa('docker', ['load', '-i', path.join(dockerCacheFolder, file)]);
             }
         }
         return result;

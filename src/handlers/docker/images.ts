@@ -6,9 +6,11 @@ import * as execa from 'execa'
 import * as path from 'path'
 import * as fs from 'fs'
 
+const dockerCacheFolder = '.docker-cache'
+
 class DockerImages extends CacheHandler {
   async getPaths(): Promise<string[]> {
-    return ['.docker-cache']
+    return [dockerCacheFolder]
   }
 
   async getKey(version?: string): Promise<string> {
@@ -23,6 +25,8 @@ class DockerImages extends CacheHandler {
   async setup(): Promise<void> {
     const existingImages = await this.listImages()
     core.saveState('EXISTING_DOCKER_IMAGES', existingImages.join(','))
+
+    fs.mkdirSync(dockerCacheFolder, { recursive: true })
   }
 
   async saveCache(options?: ICacheOptions): Promise<void> {
@@ -32,7 +36,7 @@ class DockerImages extends CacheHandler {
     existingImages.forEach(image => images.delete(image))
 
     for (const image of images) {
-      await execa('docker', ['save', '-o', `.docker-cache/${image}.tar`, image])
+      await execa('docker', ['save', '-o', path.join(dockerCacheFolder, `${image}.tar`), image])
     }
 
     await super.saveCache(options)
@@ -42,8 +46,8 @@ class DockerImages extends CacheHandler {
     const result = await super.restoreCache(options)
 
     if (result.type != RestoreType.Miss) {
-      for (const file of fs.readdirSync('.docker-cache')) {
-        await execa('docker', ['load', '-i', path.join('.docker-cache', file)])
+      for (const file of fs.readdirSync(dockerCacheFolder)) {
+        await execa('docker', ['load', '-i', path.join(dockerCacheFolder, file)])
       }
     }
 
