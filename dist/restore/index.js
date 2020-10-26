@@ -7489,7 +7489,7 @@ class DockerImages extends handler_1.CacheHandler {
         const existingImages = core.getState('EXISTING_DOCKER_IMAGES').split(',');
         existingImages.forEach(image => images.delete(image));
         for (const image of images) {
-            await execa('docker', ['save', '-o', path.join(dockerCacheFolder, `${image}.tar`), image]);
+            await execa('docker', ['save', '-o', path.join(dockerCacheFolder, `${image}.tar`), image], { stdout: process.stdout });
         }
         await super.saveCache(options);
     }
@@ -7497,9 +7497,10 @@ class DockerImages extends handler_1.CacheHandler {
         const result = await super.restoreCache(options);
         if (result.type != handler_1.RestoreType.Miss) {
             for (const file of fs.readdirSync(dockerCacheFolder)) {
-                await execa('docker', ['load', '-i', path.join(dockerCacheFolder, file)]);
+                await execa('docker', ['load', '-i', path.join(dockerCacheFolder, file)], { stdout: process.stdout });
             }
         }
+        await execa('ls', [dockerCacheFolder]);
         return result;
     }
 }

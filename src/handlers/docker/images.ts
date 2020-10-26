@@ -36,7 +36,7 @@ class DockerImages extends CacheHandler {
     existingImages.forEach(image => images.delete(image))
 
     for (const image of images) {
-      await execa('docker', ['save', '-o', path.join(dockerCacheFolder, `${image}.tar`), image])
+      await execa('docker', ['save', '-o', path.join(dockerCacheFolder, `${image}.tar`), image], { stdout: process.stdout })
     }
 
     await super.saveCache(options)
@@ -47,9 +47,11 @@ class DockerImages extends CacheHandler {
 
     if (result.type != RestoreType.Miss) {
       for (const file of fs.readdirSync(dockerCacheFolder)) {
-        await execa('docker', ['load', '-i', path.join(dockerCacheFolder, file)])
+        await execa('docker', ['load', '-i', path.join(dockerCacheFolder, file)], { stdout: process.stdout })
       }
     }
+
+    await execa('ls', [dockerCacheFolder])
 
     return result
   }
