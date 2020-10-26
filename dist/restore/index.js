@@ -7454,7 +7454,58 @@ exports.paginateRest = paginateRest;
 /* 300 */,
 /* 301 */,
 /* 302 */,
-/* 303 */,
+/* 303 */
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const core = __webpack_require__(470);
+const registry_1 = __webpack_require__(822);
+const expressions_1 = __webpack_require__(134);
+const handler_1 = __webpack_require__(895);
+const execa = __webpack_require__(955);
+const path = __webpack_require__(622);
+const fs = __webpack_require__(747);
+class DockerImages extends handler_1.CacheHandler {
+    async getPaths() {
+        return ['.docker-cache'];
+    }
+    async getKey(version) {
+        return `${expressions_1.runner.os}-${version}-docker`;
+    }
+    async listImages() {
+        const result = await execa('docker', ['image', 'ls', '--format', '{{.Repository}}:{{.Tag}}', '--filter', 'dangling=false']);
+        return result.stdout.split(`\n`).filter(id => id !== ``);
+    }
+    async setup() {
+        const existingImages = await this.listImages();
+        core.saveState('EXISTING_DOCKER_IMAGES', existingImages.join(','));
+    }
+    async saveCache(options) {
+        const images = new Set(await this.listImages());
+        const existingImages = core.getState('EXISTING_DOCKER_IMAGES').split(',');
+        existingImages.forEach(image => images.delete(image));
+        for (const image of images) {
+            await execa('docker', ['save', '-o', `.docker-cache/${image}.tar`, image]);
+        }
+        await super.saveCache(options);
+    }
+    async restoreCache(options) {
+        const result = await super.restoreCache(options);
+        if (result.type != handler_1.RestoreType.Miss) {
+            for (const file of fs.readdirSync('.docker-cache')) {
+                await execa('docker', ['load', '-i', path.join('.docker-cache', file)]);
+            }
+        }
+        return result;
+    }
+}
+registry_1.registry.add('docker', new DockerImages());
+registry_1.registry.add('docker-images', new DockerImages());
+
+
+/***/ }),
 /* 304 */
 /***/ (function(module) {
 
@@ -8488,13 +8539,7 @@ exports.Store = Store;
 
 
 /***/ }),
-/* 339 */
-/***/ (function(module) {
-
-module.exports = eval("require")("./other/docker");
-
-
-/***/ }),
+/* 339 */,
 /* 340 */
 /***/ (function(__unusedmodule, exports) {
 
@@ -52034,6 +52079,7 @@ exports.TraceAPI = TraceAPI;
 // Explicit list of all handlers so they are compiled by ncc.
 __webpack_require__(200);
 __webpack_require__(981);
+__webpack_require__(303);
 __webpack_require__(948);
 __webpack_require__(780);
 __webpack_require__(905);
@@ -52041,7 +52087,6 @@ __webpack_require__(664);
 __webpack_require__(648);
 __webpack_require__(484);
 __webpack_require__(467);
-__webpack_require__(339);
 __webpack_require__(322);
 __webpack_require__(769);
 __webpack_require__(859);
