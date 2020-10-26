@@ -6825,7 +6825,7 @@ class DockerImages extends handler_1.CacheHandler {
         const existingImages = core.getState('EXISTING_DOCKER_IMAGES').split(',');
         existingImages.forEach(image => images.delete(image));
         for (const image of images) {
-            await execa('docker', ['save', '-o', path.join(dockerCacheFolder, `${image}.tar`), image], { stdout: process.stdout });
+            await execa('docker', ['save', '-o', path.join(dockerCacheFolder, `${image.replace(/\//g, '_')}.tar`), image], { stdout: process.stdout });
         }
         await super.saveCache(options);
     }
@@ -6836,7 +6836,6 @@ class DockerImages extends handler_1.CacheHandler {
                 await execa('docker', ['load', '-i', path.join(dockerCacheFolder, file)], { stdout: process.stdout });
             }
         }
-        await execa('ls', [dockerCacheFolder]);
         return result;
     }
 }
