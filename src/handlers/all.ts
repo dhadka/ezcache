@@ -1,6 +1,7 @@
 // Explicit list of all handlers so they are compiled by ncc.
 require('./csharp/nuget')
 require('./d/dub')
+require('./docker/buildx')
 require('./docker/images')
 require('./elixir/mix')
 require('./go/go')

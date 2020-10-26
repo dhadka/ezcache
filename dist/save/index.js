@@ -40468,7 +40468,40 @@ Object.defineProperty(exports, "__esModule", { value: true });
 //# sourceMappingURL=BoundInstrument.js.map
 
 /***/ }),
-/* 552 */,
+/* 552 */
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const core = __webpack_require__(470);
+const registry_1 = __webpack_require__(822);
+const expressions_1 = __webpack_require__(134);
+const handler_1 = __webpack_require__(895);
+const fs = __webpack_require__(747);
+const defaultCacheFolder = '.buildx-cache';
+class DockerBuildX extends handler_1.CacheHandler {
+    getCachePath() {
+        var _a;
+        return (_a = core.getInput('path')) !== null && _a !== void 0 ? _a : defaultCacheFolder;
+    }
+    async getPaths() {
+        return [this.getCachePath()];
+    }
+    async getKey(version) {
+        return `${expressions_1.runner.os}-${version}-buildx-${await expressions_1.hashFiles(`${this.getCachePath()}/**`)}`;
+    }
+    async getRestoreKeys(version) {
+        return [`${expressions_1.runner.os}-${version}-buildx-`];
+    }
+    async setup() {
+        fs.mkdirSync(this.getCachePath(), { recursive: true });
+    }
+}
+registry_1.registry.add('buildx', new DockerBuildX());
+
+
+/***/ }),
 /* 553 */,
 /* 554 */,
 /* 555 */,
@@ -52061,6 +52094,7 @@ exports.TraceAPI = TraceAPI;
 // Explicit list of all handlers so they are compiled by ncc.
 __webpack_require__(200);
 __webpack_require__(981);
+__webpack_require__(552);
 __webpack_require__(303);
 __webpack_require__(948);
 __webpack_require__(780);

@@ -23,6 +23,12 @@ jobs:
         with:
           version: latest
 
+      - name: Cache Buildx
+        uses: ./
+        with:
+          type: buildx
+          path: /tmp/.buildx-cache
+
       - name: Docker Buildx (build)
         run: |
           docker buildx build \
@@ -30,6 +36,6 @@ jobs:
             --cache-to "type=local,dest=/tmp/.buildx-cache" \
             --platform linux/386 \
             --output "type=image,push=false" \
-            --tag crazymax/diun:latest \
+            --tag crazymax/diun:dev \
             --file ./Dockerfile ./
 
