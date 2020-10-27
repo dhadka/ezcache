@@ -3216,7 +3216,7 @@ async function matches(matchPatterns, followSymbolicLinks = false) {
     return false;
 }
 exports.matches = matches;
-async function hashFiles(matchPatterns, followSymbolicLinks = false, verbose = false) {
+async function hashFiles(matchPatterns, followSymbolicLinks = false, verbose = true) {
     const startTime = Date.now();
     let hasMatch = false;
     const result = crypto.createHash('sha256');
@@ -40489,7 +40489,7 @@ class DockerBuildX extends handler_1.CacheHandler {
         return [this.getCachePath()];
     }
     async getKey(version) {
-        return `${expressions_1.runner.os}-${version}-buildx-${await expressions_1.hashFiles(`${this.getCachePath()}/**`)}`;
+        return `${expressions_1.runner.os}-${version}-buildx-${await expressions_1.hashFiles(`${this.getCachePath()}`)}`;
     }
     async getRestoreKeys(version) {
         return [`${expressions_1.runner.os}-${version}-buildx-`];

@@ -26,6 +26,7 @@ jobs:
         with:
           type: buildx
           path: /tmp/.buildx-cache
+          version: v1
 
       - name: Docker Buildx (build)
         run: |
@@ -36,4 +37,6 @@ jobs:
             --output "type=image,push=false" \
             --tag crazymax/diun:dev \
             --file ./Dockerfile ./
+
+      - run: ls /tmp/.buildx-cache
 

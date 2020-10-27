@@ -16,7 +16,7 @@ class DockerBuildX extends CacheHandler {
   }
 
   async getKey(version?: string): Promise<string> {
-    return `${runner.os}-${version}-buildx-${await hashFiles(`${this.getCachePath()}/**`)}`
+    return `${runner.os}-${version}-buildx-${await hashFiles(`${this.getCachePath()}`)}`
   }
 
   async getRestoreKeys(version?: string): Promise<string[]> {
