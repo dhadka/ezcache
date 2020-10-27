@@ -3224,8 +3224,9 @@ async function hashFiles(matchPatterns, followSymbolicLinks = false, verbose = t
         matchPatterns = matchPatterns.join('\n');
     }
     const globber = await glob.create(matchPatterns, { followSymbolicLinks });
+    verbose && console.log(`Search paths: ${globber.getSearchPaths().join(',')}`);
     for await (const file of globber.globGenerator()) {
-        verbose && console.log(` > Processing ${file}`);
+        verbose && console.log(`Processing ${file}`);
         if (fs.statSync(file).isDirectory()) {
             verbose && console.log(`Skip directory '${file}'.`);
             continue;

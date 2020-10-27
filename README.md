@@ -32,6 +32,35 @@ management tools.  For example, caching NPM is as easy as adding the step:
 | Swift / Obj-C | Cocoapods  | `cocoapods` |
 | Swift    | SPM             | `spm`       |
 
+## Docker Configurations
+
+### BuildX
+
+The following example demonstrates how to cache the build artifacts from Docker's buildx by specifying the `--cache-from` and `--cache-to` options:
+
+```
+- name: Set up Docker Buildx
+  uses: docker/setup-buildx-action@v1
+  with:
+    version: latest
+
+- name: Cache Buildx
+  uses: dhadka/ezcache@master
+  with:
+    type: buildx
+    path: /tmp/.buildx-cache
+
+- name: Docker Buildx (build)
+  run: |
+    docker buildx build \
+      --cache-from "type=local,src=/tmp/.buildx-cache" \
+      --cache-to "type=local,dest=/tmp/.buildx-cache" \
+      --platform linux/386 \
+      --output "type=image,push=false" \
+      --tag myimage:latest \
+      --file ./Dockerfile ./
+```
+
 ## Special Configurations
 
 ### auto

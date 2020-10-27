@@ -26,7 +26,7 @@ jobs:
         with:
           type: buildx
           path: /tmp/.buildx-cache
-          version: v1
+          version: v2
 
       - name: Docker Buildx (build)
         run: |

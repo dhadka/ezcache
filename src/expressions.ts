@@ -60,8 +60,10 @@ export async function hashFiles(
 
   const globber = await glob.create(matchPatterns, { followSymbolicLinks })
 
+  verbose && console.log(`Search paths: ${globber.getSearchPaths().join(',')}`)
+
   for await (const file of globber.globGenerator()) {
-    verbose && console.log(` > Processing ${file}`)
+    verbose && console.log(`Processing ${file}`)
 
     if (fs.statSync(file).isDirectory()) {
       verbose && console.log(`Skip directory '${file}'.`)
