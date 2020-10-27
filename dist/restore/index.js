@@ -41152,8 +41152,11 @@ class DockerBuildX extends handler_1.CacheHandler {
     async getPaths() {
         return [this.getCachePath()];
     }
-    async getKey(version) {
-        return `${expressions_1.runner.os}-${version}-buildx-${await expressions_1.hashFiles(`${this.getCachePath()}`)}`;
+    async getKeyForRestore(version) {
+        return 'buildx-no-match-primary-key';
+    }
+    async getKeyForSave(version) {
+        return `${expressions_1.runner.os}-${version}-diff-${await expressions_1.hashFiles(await this.getCachePath())}`;
     }
     async getRestoreKeys(version) {
         return [`${expressions_1.runner.os}-${version}-buildx-`];
