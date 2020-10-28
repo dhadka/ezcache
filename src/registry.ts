@@ -1,3 +1,4 @@
+import * as core from '@actions/core'
 import { CacheHandler } from './handler'
 
 class Registry {
@@ -8,7 +9,7 @@ class Registry {
   }
 
   add(name: string, handler: CacheHandler) {
-    console.log(`Registering ${name} handler`)
+    core.debug(`Registering ${name} handler`)
     this.handlers.set(this.toCanonicalName(name), handler)
   }
 

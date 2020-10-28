@@ -2,22 +2,22 @@ import { registry } from '../../registry'
 import { hashFiles, matches, runner } from '../../expressions'
 import { CacheHandler } from '../../handler'
 
-class Maven extends CacheHandler {
+class Mint extends CacheHandler {
   async getPaths(): Promise<string[]> {
-    return ['~/.m2']
+    return ['mint']
   }
 
   async getKey(version?: string): Promise<string> {
-    return `${runner.os}-${version}-maven-${await hashFiles('**/pom.xml')}`
+    return `${runner.os}-${version}-mint-${await hashFiles('**/Mintfile')}`
   }
 
   async getRestoreKeys(version?: string): Promise<string[]> {
-    return [`${runner.os}-${version}-maven-`]
+    return [`${runner.os}-${version}-mint-`]
   }
 
   async shouldCache(): Promise<boolean> {
-    return await matches('**/pom.xml')
+    return await matches('**/Mintfile')
   }
 }
 
-registry.add('maven', new Maven())
+registry.add('mint', new Mint())

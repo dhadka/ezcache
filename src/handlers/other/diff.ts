@@ -17,7 +17,7 @@ class DiffCache extends CacheHandler {
   }
 
   async getKeyForRestore(version?: string): Promise<string> {
-    return `diff-no-match-primary-key`
+    return `diff-never-match-primary-key`
   }
 
   async getKeyForSave(version?: string): Promise<string> {

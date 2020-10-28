@@ -12,25 +12,28 @@ management tools.  For example, caching NPM is as easy as adding the step:
 
 ## Supported Languages
 
-| Language | Package Manager | Type        |
-| -------- | --------------- | ----------- |
-| C#       | Nuget           | `nuget`     |
-| D        | Dub             | `dub`       |
-| Elixir   | Mix             | `mix`       |
-| Go       |                 | `go`        |
-| Java     | Gradle          | `gradle`    |
-| Java     | Maven           | `maven`     |
-| Node     | NPM             | `npm`       |
-| Node     | Yarn            | `yarn`      |
-| PHP      | Composer        | `composer`  |
-| Python   | PIP             | `pip`       |
-| R        |                 | `renv`      | 
-| Ruby     | Bundler         | `bundler`   |
-| Rust     | Cargo           | `cargo`     |
-| Scala    | SBT             | `sbt`       |
-| Swift / Obj-C | Carthage   | `carthage`  |
-| Swift / Obj-C | Cocoapods  | `cocoapods` |
-| Swift    | SPM             | `spm`       |
+| Language | Package Manager    | Type        |
+| -------- | ------------------ | ----------- |
+| C#       | Nuget              | `nuget`     |
+| D        | Dub                | `dub`       |
+| Elixir   | Mix                | `mix`       |
+| Go       |                    | `go`        |
+| Java     | Gradle             | `gradle`    |
+| Java     | Maven              | `maven`     |
+| Node     | NPM                | `npm`       |
+| Node     | Yarn               | `yarn`      |
+| PHP      | Composer           | `composer`  |
+| Python   | Pip                | `pip`       |
+| Python   | Virtual Env w/ Pip | `pipenv`    |
+| Python   | Poetry             | `poetry`    |
+| R        |                    | `renv`      | 
+| Ruby     | Bundler            | `bundler`   |
+| Rust     | Cargo              | `cargo`     |
+| Scala    | SBT                | `sbt`       |
+| Swift / Obj-C | Carthage      | `carthage`  |
+| Swift / Obj-C | Cocoapods     | `cocoapods` |
+| Swfit    | Mint               | `mint`      |
+| Swift    | SPM                | `spm`       |
 
 ## Docker Configurations
 
@@ -65,7 +68,7 @@ The following example demonstrates how to cache the build artifacts from Docker'
 
 ### auto
 
-This is a special configuration that auto-detects the type of cache.  Furthermore, this can match
+Using `auto` will auto-detect which cache type is appropriate for your repo.  Furthermore, this can match
 multiple types, thus creating multiple caches.
 
 ```
@@ -76,9 +79,8 @@ multiple types, thus creating multiple caches.
 
 ### diff
 
-This is a special configuration for caching one or more folders, updating the cache if the folder
-contents change.  Contrary to what the name might suggest, each time the folder contents change a
-brand new cache is created with the full contents of the folders.
+A `diff` cache will store one (or more) folders.  As the name suggests, the cache is updated whenever
+the folder contents change.  Likewise, the last cache created on the branch is restored.
 
 ```
 - use: dhadka/ezcache@master
@@ -87,21 +89,42 @@ brand new cache is created with the full contents of the folders.
     path: ~/path/to/cache
 ```
 
-The `diff` configuration creates a linear cache (in time) along each branch.  This is an important
-distinction as reverts to the code will still restore the most recently created cache.
-
 ### run
 
-`run` is a special cache type that creates a unique cache for each run of the workflow.  This is most
-useful when sharing content between different jobs in a workflow.  Use the
-[needs](https://docs.github.com/en/free-pro-team@latest/actions/reference/workflow-syntax-for-github-actions#jobsjob_idneeds)
-field to ensure jobs that read the cache run after the job(s) that create the cache.
+Using `run` will create a new cache for every run of your workflow.  This can be used to share data between
+different jobs in a workflow.  Please use this with caution as caches can be evicted at any time, potentially
+leading to failing restores.
+
+Tip: Use the [needs](https://docs.github.com/en/free-pro-team@latest/actions/reference/workflow-syntax-for-github-actions#jobsjob_idneeds)
+field to ensure jobs that read the cache run after the job that create the cache.
 
 ```
 - use: dhadka/ezcache@master
   with:
     type: run
     path: ~/path/to/cache
+```
+
+## Handling Cache Misses
+
+Caches misses should be expected and handled by the workflow.  There are two types of caches misses:
+
+1. A **partial hit** where some of the cache contents are restored
+2. A **miss** where no matching cache was found
+
+In both cases, this action will output `cache-hit` set to `false`.  You can then conditionally run 
+
+```
+- uses: dhadka/ezcache@master
+  id: cache
+  with:
+    type: powershell
+- name: Install PowerShell modules
+  if: steps.cache.outputs.cache-hit != 'true'
+  shell: pwsh
+  run: |
+    Set-PSRepository PSGallery -InstallationPolicy Trusted
+    Install-Module SqlServer, PSScriptAnalyzer -ErrorAction Stop
 ```
 
 ## Versioning
@@ -126,3 +149,14 @@ normally require you to make a commit to change the version, but an alternative 
 ```
 
 If the cache is ever corrupted, you can "clear" the cache by quickly changing the value in the secret.
+
+# Contributing
+
+Want to add support for a new language or tool?  Great!  The caching logic for each language / tool is contained
+within a "handler", which are located in [src/handlers](src/handlers).  Once you have written your handler, register
+it inside [src/handlers/all.ts](src/handlers/all.ts).
+
+Once your contribution is ready and tested:
+1. Run `npm run build`
+2. Add, commit, and push your changes
+3. Create a pull request so it can be reviewed

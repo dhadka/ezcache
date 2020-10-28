@@ -7468,10 +7468,10 @@ const handler_1 = __webpack_require__(895);
 const execa = __webpack_require__(955);
 const path = __webpack_require__(622);
 const fs = __webpack_require__(747);
-const dockerCacheFolder = '.docker-cache';
+const defaultCacheFolder = '.docker-cache';
 class DockerImages extends handler_1.CacheHandler {
     async getPaths() {
-        return [dockerCacheFolder];
+        return [defaultCacheFolder];
     }
     async getKey(version) {
         return `${expressions_1.runner.os}-${version}-docker`;
@@ -7483,22 +7483,22 @@ class DockerImages extends handler_1.CacheHandler {
     async setup() {
         const existingImages = await this.listImages();
         core.saveState('EXISTING_DOCKER_IMAGES', existingImages.join(','));
-        fs.mkdirSync(dockerCacheFolder, { recursive: true });
+        fs.mkdirSync(defaultCacheFolder, { recursive: true });
     }
     async saveCache(options) {
         const images = new Set(await this.listImages());
         const existingImages = core.getState('EXISTING_DOCKER_IMAGES').split(',');
         existingImages.forEach(image => images.delete(image));
         for (const image of images) {
-            await execa('docker', ['save', '-o', path.join(dockerCacheFolder, `${image.replace(/\//g, '_')}.tar`), image], { stdout: process.stdout });
+            await execa('docker', ['save', '-o', path.join(defaultCacheFolder, `${image.replace(/\//g, '_')}.tar`), image], { stdout: process.stdout });
         }
         await super.saveCache(options);
     }
     async restoreCache(options) {
         const result = await super.restoreCache(options);
         if (result.type != handler_1.RestoreType.Miss) {
-            for (const file of fs.readdirSync(dockerCacheFolder)) {
-                await execa('docker', ['load', '-i', path.join(dockerCacheFolder, file)], { stdout: process.stdout });
+            for (const file of fs.readdirSync(defaultCacheFolder)) {
+                await execa('docker', ['load', '-i', path.join(defaultCacheFolder, file)], { stdout: process.stdout });
             }
         }
         return result;
@@ -38829,7 +38829,7 @@ class DiffCache extends handler_1.CacheHandler {
             .map((s) => s.trim());
     }
     async getKeyForRestore(version) {
-        return `diff-no-match-primary-key`;
+        return `diff-never-match-primary-key`;
     }
     async getKeyForSave(version) {
         return `${expressions_1.runner.os}-${version}-diff-${await expressions_1.hashFiles(await this.getPaths())}`;
@@ -41153,10 +41153,10 @@ class DockerBuildX extends handler_1.CacheHandler {
         return [this.getCachePath()];
     }
     async getKeyForRestore(version) {
-        return 'buildx-no-match-primary-key';
+        return 'buildx-never-match-primary-key';
     }
     async getKeyForSave(version) {
-        return `${expressions_1.runner.os}-${version}-diff-${await expressions_1.hashFiles(await this.getCachePath())}`;
+        return `${expressions_1.runner.os}-${version}-buildx-${await expressions_1.hashFiles(this.getCachePath())}`;
     }
     async getRestoreKeys(version) {
         return [`${expressions_1.runner.os}-${version}-buildx-`];
@@ -44802,7 +44802,7 @@ const expressions_1 = __webpack_require__(134);
 const handler_1 = __webpack_require__(895);
 class Maven extends handler_1.CacheHandler {
     async getPaths() {
-        return ['~/.m2/repository'];
+        return ['~/.m2'];
     }
     async getKey(version) {
         return `${expressions_1.runner.os}-${version}-maven-${await expressions_1.hashFiles('**/pom.xml')}`;
@@ -49289,12 +49289,13 @@ function sync (path, options) {
 /* 820 */,
 /* 821 */,
 /* 822 */
-/***/ (function(__unusedmodule, exports) {
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.registry = void 0;
+const core = __webpack_require__(470);
 class Registry {
     constructor() {
         this.handlers = new Map();
@@ -49303,7 +49304,7 @@ class Registry {
         return name.toLowerCase();
     }
     add(name, handler) {
-        console.log(`Registering ${name} handler`);
+        core.debug(`Registering ${name} handler`);
         this.handlers.set(this.toCanonicalName(name), handler);
     }
     getFirst(name) {
@@ -51626,7 +51627,33 @@ registry_1.registry.add('pip', new Pip());
 
 
 /***/ }),
-/* 860 */,
+/* 860 */
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const registry_1 = __webpack_require__(822);
+const expressions_1 = __webpack_require__(134);
+const handler_1 = __webpack_require__(895);
+class Mint extends handler_1.CacheHandler {
+    async getPaths() {
+        return ['mint'];
+    }
+    async getKey(version) {
+        return `${expressions_1.runner.os}-${version}-mint-${await expressions_1.hashFiles('**/Mintfile')}`;
+    }
+    async getRestoreKeys(version) {
+        return [`${expressions_1.runner.os}-${version}-mint-`];
+    }
+    async shouldCache() {
+        return await expressions_1.matches('**/Mintfile');
+    }
+}
+registry_1.registry.add('mint', new Mint());
+
+
+/***/ }),
 /* 861 */,
 /* 862 */,
 /* 863 */,
@@ -52130,12 +52157,15 @@ __webpack_require__(467);
 __webpack_require__(322);
 __webpack_require__(769);
 __webpack_require__(859);
+__webpack_require__(899);
+__webpack_require__(941);
 __webpack_require__(126);
 __webpack_require__(697);
 __webpack_require__(56);
 __webpack_require__(410);
 __webpack_require__(534);
 __webpack_require__(776);
+__webpack_require__(860);
 __webpack_require__(967);
 
 
@@ -55153,7 +55183,37 @@ exports.permuteDomain = permuteDomain;
 
 
 /***/ }),
-/* 899 */,
+/* 899 */
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const registry_1 = __webpack_require__(822);
+const expressions_1 = __webpack_require__(134);
+const handler_1 = __webpack_require__(895);
+class PipEnv extends handler_1.CacheHandler {
+    getPythonVersion() {
+        var _a;
+        return (_a = process.env['PYTHON_VERSION']) !== null && _a !== void 0 ? _a : 'undef';
+    }
+    async getPaths() {
+        return ['~/.local/share/virtualenvs'];
+    }
+    async getKey(version) {
+        return `${expressions_1.runner.os}-${version}-${this.getPythonVersion()}-pipenv-${await expressions_1.hashFiles('Pipfile.lock')}`;
+    }
+    async getRestoreKeys(version) {
+        return [`${expressions_1.runner.os}-${version}-${this.getPythonVersion()}-pipenv-`];
+    }
+    async shouldCache() {
+        return await expressions_1.matches('Pipfile.lock');
+    }
+}
+registry_1.registry.add('pipenv', new PipEnv());
+
+
+/***/ }),
 /* 900 */,
 /* 901 */,
 /* 902 */,
@@ -56081,7 +56141,33 @@ function terminator(callback)
 
 /***/ }),
 /* 940 */,
-/* 941 */,
+/* 941 */
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const registry_1 = __webpack_require__(822);
+const expressions_1 = __webpack_require__(134);
+const handler_1 = __webpack_require__(895);
+class Poetry extends handler_1.CacheHandler {
+    async getPaths() {
+        return ['~/.cache/pypoetry'];
+    }
+    async getKey(version) {
+        return `${expressions_1.runner.os}-${version}-poetry-${await expressions_1.hashFiles('**/poetry.lock')}`;
+    }
+    async getRestoreKeys(version) {
+        return [`${expressions_1.runner.os}-${version}-poetry-`];
+    }
+    async shouldCache() {
+        return await expressions_1.matches('**/poetry.lock');
+    }
+}
+registry_1.registry.add('poetry', new Poetry());
+
+
+/***/ }),
 /* 942 */,
 /* 943 */,
 /* 944 */,
