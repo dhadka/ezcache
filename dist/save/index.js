@@ -1407,7 +1407,7 @@ class LayerCache {
         return layerIds;
     }
 }
-LayerCache.ERROR_CACHE_ALREAD_EXISTS_STR = `Cache already exists`;
+LayerCache.ERROR_CACHE_ALREAD_EXISTS_STR = `Unable to reserve cache with key`;
 LayerCache.ERROR_LAYER_CACHE_NOT_FOUND_STR = `Layer cache not found`;
 class DockerLayers extends handler_1.CacheHandler {
     async getKey(version) {

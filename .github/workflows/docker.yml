@@ -19,7 +19,7 @@ jobs:
         uses: dhadka/ezcache@master
         with:
           type: layers
-          version: v1
+          version: v2
 
       - name: Build docker images
         run: |
