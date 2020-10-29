@@ -403,7 +403,7 @@ class DockerLayers extends CacheHandler {
     }
   
     const layerCache = new LayerCache(imagesToSave)
-    layerCache.concurrency = parseInt(core.getInput(`concurrency`, { required: true }), 10)
+    //layerCache.concurrency = parseInt(core.getInput(`concurrency`, { required: true }), 10)
   
     await layerCache.store(key)
     await layerCache.cleanUp()
