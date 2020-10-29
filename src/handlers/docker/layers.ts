@@ -28,7 +28,6 @@ import { registry } from '../../registry'
 import { runner } from '../../expressions'
 import { CacheHandler, ICacheOptions, IRestoreResult, RestoreType } from '../../handler'
 import * as state from '../../state'
-import { assertType } from 'typescript-is' 
 import * as execa from 'execa'
 import * as path from 'path'
 import * as fs from 'fs'
@@ -44,18 +43,25 @@ interface Manifest {
 
 type Manifests = Manifest[]
 
-function assertManifests(x: unknown): asserts x is Manifests {
-  assertType<Manifests>(x)
-}
-
 function loadRawManifests(path: string): string {
   return fs.readFileSync(`${path}/manifest.json`).toString()
 }
 
 function loadManifests(path: string): Manifests {
   const raw = loadRawManifests(path)
-  const manifests = JSON.parse(raw.toString())
-  assertManifests(manifests)
+  const rawManifests = JSON.parse(raw.toString())
+  const manifests: Manifests = []
+
+  for (const rawManifest of rawManifests) {
+    const manifest: Manifest = {
+      Config: rawManifest["Config"],
+      RepoTags: rawManifest["RepoTags"],
+      Layers: rawManifest["Layers"]
+    }
+
+    manifests.push(manifest)
+  }
+
   return manifests
 }
 
@@ -381,12 +387,9 @@ class DockerLayers extends CacheHandler {
     const key = await this.getKey(options?.version)
 
     const restoredKey = state.readRestoredKey(this)
-    const alreadyExistingImages = JSON.parse(core.getState(`already-existing-images`))
-    const restoredImages = JSON.parse(core.getState(`restored-images`))
-  
-    assertType<string[]>(alreadyExistingImages)
-    assertType<string[]>(restoredImages)
-  
+    const alreadyExistingImages: string[] = JSON.parse(core.getState(`already-existing-images`))
+    const restoredImages: string[] = JSON.parse(core.getState(`restored-images`))
+
     const imageDetector = new ImageDetector()
     if (await imageDetector.checkIfImageHasAdded(restoredImages)) {
       core.info(`Key ${restoredKey} already exists, not saving cache.`)
