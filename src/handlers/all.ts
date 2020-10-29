@@ -2,7 +2,7 @@
 require('./csharp/nuget')
 require('./d/dub')
 require('./docker/buildx')
-require('./docker/images')
+require('./docker/layers')
 require('./elixir/mix')
 require('./go/go')
 require('./java/gradle')

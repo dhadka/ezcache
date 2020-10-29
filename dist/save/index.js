@@ -1017,7 +1017,63 @@ exports.default = _default;
 /* 29 */,
 /* 30 */,
 /* 31 */,
-/* 32 */,
+/* 32 */
+/***/ (function(__unusedmodule, exports) {
+
+"use strict";
+
+Object.defineProperty(exports, '__esModule', { value: true })
+/** Promise Pool */
+class PromisePool {
+	/** Instantiate the PromisePool with the desired concurrency. */
+	constructor(concurrency = 0) {
+		this.concurrency = concurrency
+		this.running = 0
+		this.started = 0
+		this.queue = []
+	}
+	/** Add a task to the pool. */
+	open(task) {
+		// Create our promise and push its resolver to the queue.
+		// This has the effect that we can queue its execution for later, instead of right now.
+		const p = new Promise((resolve) => this.queue.push(resolve))
+			// Once the resolver has fired, update the counts accordingly.
+			.finally(() => {
+				this.started--
+				this.running++
+			})
+			// Fire our our task and store the result.
+			.then(task)
+			// Update our counts accordingly, and start the next queue item if there are any.
+			.finally(() => {
+				this.running--
+				if (this.queue.length) {
+					this.started++
+					const resolver = this.queue.shift()
+					resolver()
+				}
+			})
+		// If our pool is under capacity, then start the first item in the queue.
+		if (
+			this.queue.length &&
+			(!this.concurrency || this.running + this.started < this.concurrency)
+		) {
+			this.started++
+			const resolver = this.queue.shift()
+			resolver()
+		}
+		// Return the the promise that wraps the task,
+		// such that it resolves once the task has compelted and our wrappers have completed.
+		// This allows the user to do `Promise.all(Array<Task>.map((task) => pool.open(task)))`,
+		// so that they can queue something for when all their pooled tasks are completed.
+		// It also allows the user to do the mandatory `.catch` handling for task failures.
+		return p
+	}
+}
+exports.default = PromisePool
+
+
+/***/ }),
 /* 33 */
 /***/ (function(__unusedmodule, exports) {
 
@@ -1046,7 +1102,364 @@ Object.defineProperty(exports, "__esModule", { value: true });
 /* 35 */,
 /* 36 */,
 /* 37 */,
-/* 38 */,
+/* 38 */
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+// This code is derived from github.com/satackey/action-docker-layer-caching.
+//
+// MIT License
+//
+// Copyright (c) 2020 satackey
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.ImageDetector = void 0;
+const core = __webpack_require__(470);
+const cache = __webpack_require__(692);
+const registry_1 = __webpack_require__(822);
+const expressions_1 = __webpack_require__(134);
+const handler_1 = __webpack_require__(895);
+const state = __webpack_require__(77);
+const typescript_is_1 = __webpack_require__(322);
+const execa = __webpack_require__(955);
+const path = __webpack_require__(622);
+const fs = __webpack_require__(747);
+const native_promise_pool_1 = __webpack_require__(32);
+const recursiveReaddir = __webpack_require__(92);
+const crypto = __webpack_require__(417);
+function assertManifests(x) {
+    typescript_is_1.assertType(x);
+}
+function loadRawManifests(path) {
+    return fs.readFileSync(`${path}/manifest.json`).toString();
+}
+function loadManifests(path) {
+    const raw = loadRawManifests(path);
+    const manifests = JSON.parse(raw.toString());
+    assertManifests(manifests);
+    return manifests;
+}
+class ImageDetector {
+    async getExistingImages() {
+        const existingSet = new Set([]);
+        const ids = (await execa('docker', ['image', 'ls', '-q'])).stdout.split(`\n`).filter(id => id !== ``);
+        const repotags = (await execa('docker', ['image', 'ls', '--format', '{{.Repository}}:{{.Tag}}', '--filter', 'dangling=false'])).stdout.split(`\n`).filter(id => id !== ``);
+        core.debug(JSON.stringify({ log: "getExistingImages", ids, repotags }));
+        ([...ids, ...repotags]).forEach(image => existingSet.add(image));
+        core.debug(JSON.stringify({ existingSet }));
+        return Array.from(existingSet);
+    }
+    async getImagesShouldSave(alreadRegisteredImages) {
+        const resultSet = new Set(await this.getExistingImages());
+        alreadRegisteredImages.forEach(image => resultSet.delete(image));
+        return Array.from(resultSet);
+    }
+    async checkIfImageHasAdded(restoredImages) {
+        const existing = await this.getExistingImages();
+        return JSON.stringify(restoredImages) === JSON.stringify(existing);
+    }
+}
+exports.ImageDetector = ImageDetector;
+class LayerCache {
+    constructor(ids) {
+        this.ids = [];
+        this.unformattedSaveKey = '';
+        this.restoredRootKey = '';
+        this.imagesDir = `/tmp/.docker-layer-cache`;
+        this.enabledParallel = true;
+        this.concurrency = 4;
+        this.ids = ids;
+    }
+    async store(key) {
+        this.unformattedSaveKey = key;
+        await this.saveImageAsUnpacked();
+        if (this.enabledParallel) {
+            await this.separateAllLayerCaches();
+        }
+        if (await this.storeRoot() === undefined) {
+            core.info(`cache key already exists, aborting.`);
+            return false;
+        }
+        await Promise.all(this.enabledParallel ? await this.storeLayers() : []);
+        return true;
+    }
+    async saveImageAsUnpacked() {
+        fs.mkdirSync(this.getSavedImageTarDir(), { recursive: true });
+        await execa(`docker save '${(await this.makeRepotagsDockerSaveArgReady(this.ids)).join(`' '`)}' | tar xf - -C .`, { shell: true, cwd: this.getSavedImageTarDir() });
+    }
+    async makeRepotagsDockerSaveArgReady(repotags) {
+        const getMiddleIdsWithRepotag = async (id) => {
+            return [id, ...(await this.getAllImageIdsFrom(id))];
+        };
+        return (await Promise.all(repotags.map(getMiddleIdsWithRepotag))).flat();
+    }
+    async getAllImageIdsFrom(repotag) {
+        const rawHistoryIds = (await execa('docker', ['history', '-q', repotag])).stdout;
+        const historyIds = rawHistoryIds.split(`\n`).filter(id => id !== `<missing>` && id !== ``);
+        return historyIds;
+    }
+    async getManifests() {
+        return loadManifests(this.getUnpackedTarDir());
+    }
+    async storeRoot() {
+        const rootKey = await this.generateRootSaveKey();
+        const paths = [
+            this.getUnpackedTarDir(),
+        ];
+        core.info(`Start storing root cache, key: ${rootKey}, dir: ${paths}`);
+        const cacheId = await LayerCache.dismissError(cache.saveCache(paths, rootKey), LayerCache.ERROR_CACHE_ALREAD_EXISTS_STR, -1);
+        core.info(`Stored root cache, key: ${rootKey}, id: ${cacheId}`);
+        return cacheId !== -1 ? cacheId : undefined;
+    }
+    async separateAllLayerCaches() {
+        await this.moveLayerTarsInDir(this.getUnpackedTarDir(), this.getLayerCachesDir());
+    }
+    async joinAllLayerCaches() {
+        await this.moveLayerTarsInDir(this.getLayerCachesDir(), this.getUnpackedTarDir());
+    }
+    async moveLayerTarsInDir(fromDir, toDir) {
+        const layerTars = (await recursiveReaddir(fromDir))
+            .filter(path => path.endsWith(`/layer.tar`))
+            .map(path => path.replace(`${fromDir}/`, ``));
+        const moveLayer = async (layer) => {
+            const from = `${fromDir}/${layer}`;
+            const to = `${toDir}/${layer}`;
+            core.debug(`Moving layer tar from ${from} to ${to}`);
+            fs.mkdirSync(`${path.dirname(to)}`, { recursive: true });
+            fs.renameSync(from, to);
+        };
+        await Promise.all(layerTars.map(moveLayer));
+    }
+    async storeLayers() {
+        const pool = new native_promise_pool_1.default(this.concurrency);
+        const result = Promise.all((await this.getLayerIds()).map(layerId => {
+            return pool.open(() => this.storeSingleLayerBy(layerId));
+        }));
+        return result;
+    }
+    static async dismissError(promise, dismissStr, defaultResult) {
+        try {
+            return await promise;
+        }
+        catch (e) {
+            core.debug(`catch error: ${e.toString()}`);
+            if (typeof e.message !== 'string' || !e.message.includes(dismissStr)) {
+                core.error(`Unexpected error: ${e.toString()}`);
+                throw e;
+            }
+            core.info(`${dismissStr}: ${e.toString()}`);
+            core.debug(e);
+            return defaultResult;
+        }
+    }
+    async storeSingleLayerBy(layerId) {
+        const path = this.genSingleLayerStorePath(layerId);
+        const key = await this.generateSingleLayerSaveKey(layerId);
+        core.info(`Start storing layer cache: ${JSON.stringify({ layerId, key })}`);
+        const cacheId = await LayerCache.dismissError(cache.saveCache([path], key), LayerCache.ERROR_CACHE_ALREAD_EXISTS_STR, -1);
+        core.info(`Stored layer cache: ${JSON.stringify({ key, cacheId })}`);
+        core.debug(JSON.stringify({ log: `storeSingleLayerBy`, layerId, path, key, cacheId }));
+        return cacheId;
+    }
+    // ---
+    async restore(primaryKey, restoreKeys) {
+        const restoredCacheKey = await this.restoreRoot(primaryKey, restoreKeys);
+        if (restoredCacheKey === undefined) {
+            core.info(`Root cache could not be found. aborting.`);
+            return undefined;
+        }
+        if (this.enabledParallel) {
+            const hasRestoredAllLayers = await this.restoreLayers();
+            if (!hasRestoredAllLayers) {
+                core.info(`Some layer cache could not be found. aborting.`);
+                return undefined;
+            }
+            await this.joinAllLayerCaches();
+        }
+        await this.loadImageFromUnpacked();
+        return restoredCacheKey;
+    }
+    async restoreRoot(primaryKey, restoreKeys) {
+        core.debug(`Trying to restore root cache: ${JSON.stringify({ restoreKeys, dir: this.getUnpackedTarDir() })}`);
+        const restoredRootKey = await cache.restoreCache([this.getUnpackedTarDir()], primaryKey, restoreKeys);
+        core.debug(`restoredRootKey: ${restoredRootKey}`);
+        if (restoredRootKey === undefined) {
+            return undefined;
+        }
+        this.restoredRootKey = restoredRootKey;
+        return restoredRootKey;
+    }
+    async restoreLayers() {
+        const pool = new native_promise_pool_1.default(this.concurrency);
+        const tasks = (await this.getLayerIds()).map(layerId => pool.open(() => this.restoreSingleLayerBy(layerId)));
+        try {
+            await Promise.all(tasks);
+        }
+        catch (e) {
+            if (typeof e.message === `string` && e.message.includes(LayerCache.ERROR_LAYER_CACHE_NOT_FOUND_STR)) {
+                core.info(e.message);
+                // Avoid UnhandledPromiseRejectionWarning
+                tasks.map(task => task.catch(core.info));
+                return false;
+            }
+            throw e;
+        }
+        return true;
+    }
+    async restoreSingleLayerBy(id) {
+        const path = this.genSingleLayerStorePath(id);
+        const key = await this.recoverSingleLayerKey(id);
+        const dir = path.replace(/[^/\\]+$/, ``);
+        core.debug(JSON.stringify({ log: `restoreSingleLayerBy`, id, path, dir, key }));
+        fs.mkdirSync(dir, { recursive: true });
+        const result = await cache.restoreCache([path], key);
+        if (result == null) {
+            throw new Error(`${LayerCache.ERROR_LAYER_CACHE_NOT_FOUND_STR}: ${JSON.stringify({ id })}`);
+        }
+        return result;
+    }
+    async loadImageFromUnpacked() {
+        await execa(`tar cf - . | docker load`, { cwd: this.getUnpackedTarDir(), shell: true });
+    }
+    async cleanUp() {
+        fs.rmdirSync(this.getImagesDir(), { recursive: true });
+    }
+    // ---
+    getImagesDir() {
+        return this.imagesDir;
+    }
+    getUnpackedTarDir() {
+        return `${this.getImagesDir()}/${this.getCurrentTarStoreDir()}`;
+    }
+    getLayerCachesDir() {
+        return `${this.getUnpackedTarDir()}-layers`;
+    }
+    getSavedImageTarDir() {
+        return `${this.getImagesDir()}/${this.getCurrentTarStoreDir()}`;
+    }
+    getCurrentTarStoreDir() {
+        return 'image';
+    }
+    genSingleLayerStorePath(id) {
+        return `${this.getLayerCachesDir()}/${id}/layer.tar`;
+    }
+    async generateRootHashFromManifest() {
+        const manifest = await loadRawManifests(this.getUnpackedTarDir());
+        return crypto.createHash(`sha256`).update(manifest, `utf8`).digest(`hex`);
+    }
+    async generateRootSaveKey() {
+        const rootHash = await this.generateRootHashFromManifest();
+        const formatted = await this.getFormattedSaveKey(rootHash);
+        core.debug(JSON.stringify({ log: `generateRootSaveKey`, rootHash, formatted }));
+        return `${formatted}-root`;
+    }
+    async generateSingleLayerSaveKey(id) {
+        const formatted = await this.getFormattedSaveKey(id);
+        core.debug(JSON.stringify({ log: `generateSingleLayerSaveKey`, formatted, id }));
+        return `layer-${formatted}`;
+    }
+    async recoverSingleLayerKey(id) {
+        const unformatted = await this.recoverUnformattedSaveKey();
+        return `layer-${unformatted}`.replace('{hash}', id);
+    }
+    async getFormattedSaveKey(hash) {
+        const result = this.unformattedSaveKey.replace('{hash}', hash);
+        core.debug(JSON.stringify({ log: `getFormattedSaveKey`, hash, result }));
+        return result;
+    }
+    async recoverUnformattedSaveKey() {
+        const hash = await this.generateRootHashFromManifest();
+        core.debug(JSON.stringify({ log: `recoverUnformattedSaveKey`, hash }));
+        return this.restoredRootKey.replace(hash, `{hash}`).replace(/-root$/, ``);
+    }
+    async getLayerTarFiles() {
+        const getTarFilesFromManifest = (manifest) => manifest.Layers;
+        const tarFilesThatMayDuplicate = (await this.getManifests()).flatMap(getTarFilesFromManifest);
+        const tarFiles = [...new Set(tarFilesThatMayDuplicate)];
+        return tarFiles;
+    }
+    async getLayerIds() {
+        const getIdfromLayerRelativePath = (path) => path.replace('/layer.tar', '');
+        const layerIds = (await this.getLayerTarFiles()).map(getIdfromLayerRelativePath);
+        core.debug(JSON.stringify({ log: `getLayerIds`, layerIds }));
+        return layerIds;
+    }
+}
+LayerCache.ERROR_CACHE_ALREAD_EXISTS_STR = `Cache already exists`;
+LayerCache.ERROR_LAYER_CACHE_NOT_FOUND_STR = `Layer cache not found`;
+class Docker extends handler_1.CacheHandler {
+    async getKey(version) {
+        return `${expressions_1.runner.os}-${version}-docker`;
+    }
+    async saveCache(options) {
+        const key = await this.getKey(options === null || options === void 0 ? void 0 : options.version);
+        const restoredKey = JSON.parse(core.getState(`restored-key`));
+        const alreadyExistingImages = JSON.parse(core.getState(`already-existing-images`));
+        const restoredImages = JSON.parse(core.getState(`restored-images`));
+        typescript_is_1.assertType(restoredKey);
+        typescript_is_1.assertType(alreadyExistingImages);
+        typescript_is_1.assertType(restoredImages);
+        const imageDetector = new ImageDetector();
+        if (await imageDetector.checkIfImageHasAdded(restoredImages)) {
+            core.info(`Key ${restoredKey} already exists, not saving cache.`);
+            return;
+        }
+        const imagesToSave = await imageDetector.getImagesShouldSave(alreadyExistingImages);
+        if (imagesToSave.length < 1) {
+            core.info(`There is no image to save.`);
+            return;
+        }
+        const layerCache = new LayerCache(imagesToSave);
+        layerCache.concurrency = parseInt(core.getInput(`concurrency`, { required: true }), 10);
+        await layerCache.store(key);
+        await layerCache.cleanUp();
+    }
+    async restoreCache(options) {
+        const key = await this.getKey(options === null || options === void 0 ? void 0 : options.version);
+        const restoreKeys = await this.getRestoreKeys(options === null || options === void 0 ? void 0 : options.version);
+        const imageDetector = new ImageDetector();
+        const alreadyExistingImages = await imageDetector.getExistingImages();
+        const layerCache = new LayerCache([]);
+        layerCache.concurrency = parseInt(core.getInput(`concurrency`, { required: true }), 10);
+        const restoredKey = await layerCache.restore(key, restoreKeys);
+        await layerCache.cleanUp();
+        core.saveState(`restored-key`, JSON.stringify(restoredKey !== undefined ? restoredKey : ''));
+        core.saveState(`already-existing-images`, JSON.stringify(alreadyExistingImages));
+        core.saveState(`restored-images`, JSON.stringify(await imageDetector.getImagesShouldSave(alreadyExistingImages)));
+        state.savePrimaryKey(this, key);
+        state.addHandler(this);
+        if (restoredKey) {
+            console.log(`Restored cache with key '${restoredKey}'`);
+            state.saveRestoredKey(this, restoredKey);
+        }
+        return {
+            type: restoredKey ? (key === restoredKey ? handler_1.RestoreType.Full : handler_1.RestoreType.Partial) : handler_1.RestoreType.Miss,
+            restoredKey: restoredKey,
+        };
+    }
+}
+registry_1.registry.add('docker-layers', new Docker());
+
+
+/***/ }),
 /* 39 */
 /***/ (function(module) {
 
@@ -1548,7 +1961,108 @@ function serial(list, iterator, callback)
 
 
 /***/ }),
-/* 92 */,
+/* 92 */
+/***/ (function(module, __unusedexports, __webpack_require__) {
+
+var fs = __webpack_require__(747);
+var p = __webpack_require__(622);
+var minimatch = __webpack_require__(93);
+
+function patternMatcher(pattern) {
+  return function(path, stats) {
+    var minimatcher = new minimatch.Minimatch(pattern, { matchBase: true });
+    return (!minimatcher.negate || stats.isFile()) && minimatcher.match(path);
+  };
+}
+
+function toMatcherFunction(ignoreEntry) {
+  if (typeof ignoreEntry == "function") {
+    return ignoreEntry;
+  } else {
+    return patternMatcher(ignoreEntry);
+  }
+}
+
+function readdir(path, ignores, callback) {
+  if (typeof ignores == "function") {
+    callback = ignores;
+    ignores = [];
+  }
+
+  if (!callback) {
+    return new Promise(function(resolve, reject) {
+      readdir(path, ignores || [], function(err, data) {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(data);
+        }
+      });
+    });
+  }
+
+  ignores = ignores.map(toMatcherFunction);
+
+  var list = [];
+
+  fs.readdir(path, function(err, files) {
+    if (err) {
+      return callback(err);
+    }
+
+    var pending = files.length;
+    if (!pending) {
+      // we are done, woop woop
+      return callback(null, list);
+    }
+
+    files.forEach(function(file) {
+      var filePath = p.join(path, file);
+      fs.stat(filePath, function(_err, stats) {
+        if (_err) {
+          return callback(_err);
+        }
+
+        if (
+          ignores.some(function(matcher) {
+            return matcher(filePath, stats);
+          })
+        ) {
+          pending -= 1;
+          if (!pending) {
+            return callback(null, list);
+          }
+          return null;
+        }
+
+        if (stats.isDirectory()) {
+          readdir(filePath, ignores, function(__err, res) {
+            if (__err) {
+              return callback(__err);
+            }
+
+            list = list.concat(res);
+            pending -= 1;
+            if (!pending) {
+              return callback(null, list);
+            }
+          });
+        } else {
+          list.push(filePath);
+          pending -= 1;
+          if (!pending) {
+            return callback(null, list);
+          }
+        }
+      });
+    });
+  });
+}
+
+module.exports = readdir;
+
+
+/***/ }),
 /* 93 */
 /***/ (function(module, __unusedexports, __webpack_require__) {
 
@@ -6791,60 +7305,7 @@ exports.paginateRest = paginateRest;
 /* 300 */,
 /* 301 */,
 /* 302 */,
-/* 303 */
-/***/ (function(__unusedmodule, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-const core = __webpack_require__(470);
-const registry_1 = __webpack_require__(822);
-const expressions_1 = __webpack_require__(134);
-const handler_1 = __webpack_require__(895);
-const execa = __webpack_require__(955);
-const path = __webpack_require__(622);
-const fs = __webpack_require__(747);
-const defaultCacheFolder = '.docker-cache';
-class DockerImages extends handler_1.CacheHandler {
-    async getPaths() {
-        return [defaultCacheFolder];
-    }
-    async getKey(version) {
-        return `${expressions_1.runner.os}-${version}-docker`;
-    }
-    async listImages() {
-        const result = await execa('docker', ['image', 'ls', '--format', '{{.Repository}}:{{.Tag}}', '--filter', 'dangling=false']);
-        return result.stdout.split(`\n`).filter(id => id !== ``);
-    }
-    async setup() {
-        const existingImages = await this.listImages();
-        core.saveState('EXISTING_DOCKER_IMAGES', existingImages.join(','));
-        fs.mkdirSync(defaultCacheFolder, { recursive: true });
-    }
-    async saveCache(options) {
-        const images = new Set(await this.listImages());
-        const existingImages = core.getState('EXISTING_DOCKER_IMAGES').split(',');
-        existingImages.forEach(image => images.delete(image));
-        for (const image of images) {
-            await execa('docker', ['save', '-o', path.join(defaultCacheFolder, `${image.replace(/\//g, '_')}.tar`), image], { stdout: process.stdout });
-        }
-        await super.saveCache(options);
-    }
-    async restoreCache(options) {
-        const result = await super.restoreCache(options);
-        if (result.type != handler_1.RestoreType.Miss) {
-            for (const file of fs.readdirSync(defaultCacheFolder)) {
-                await execa('docker', ['load', '-i', path.join(defaultCacheFolder, file)], { stdout: process.stdout });
-            }
-        }
-        return result;
-    }
-}
-registry_1.registry.add('docker', new DockerImages());
-registry_1.registry.add('docker-images', new DockerImages());
-
-
-/***/ }),
+/* 303 */,
 /* 304 */
 /***/ (function(module) {
 
@@ -7059,7 +7520,1143 @@ function expand(str, isTop) {
 
 
 /***/ }),
-/* 307 */,
+/* 307 */
+/***/ (function() {
+
+/*! *****************************************************************************
+Copyright (C) Microsoft. All rights reserved.
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use
+this file except in compliance with the License. You may obtain a copy of the
+License at http://www.apache.org/licenses/LICENSE-2.0
+
+THIS CODE IS PROVIDED ON AN *AS IS* BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION ANY IMPLIED
+WARRANTIES OR CONDITIONS OF TITLE, FITNESS FOR A PARTICULAR PURPOSE,
+MERCHANTABLITY OR NON-INFRINGEMENT.
+
+See the Apache Version 2.0 License for specific language governing permissions
+and limitations under the License.
+***************************************************************************** */
+var Reflect;
+(function (Reflect) {
+    // Metadata Proposal
+    // https://rbuckton.github.io/reflect-metadata/
+    (function (factory) {
+        var root = typeof global === "object" ? global :
+            typeof self === "object" ? self :
+                typeof this === "object" ? this :
+                    Function("return this;")();
+        var exporter = makeExporter(Reflect);
+        if (typeof root.Reflect === "undefined") {
+            root.Reflect = Reflect;
+        }
+        else {
+            exporter = makeExporter(root.Reflect, exporter);
+        }
+        factory(exporter);
+        function makeExporter(target, previous) {
+            return function (key, value) {
+                if (typeof target[key] !== "function") {
+                    Object.defineProperty(target, key, { configurable: true, writable: true, value: value });
+                }
+                if (previous)
+                    previous(key, value);
+            };
+        }
+    })(function (exporter) {
+        var hasOwn = Object.prototype.hasOwnProperty;
+        // feature test for Symbol support
+        var supportsSymbol = typeof Symbol === "function";
+        var toPrimitiveSymbol = supportsSymbol && typeof Symbol.toPrimitive !== "undefined" ? Symbol.toPrimitive : "@@toPrimitive";
+        var iteratorSymbol = supportsSymbol && typeof Symbol.iterator !== "undefined" ? Symbol.iterator : "@@iterator";
+        var supportsCreate = typeof Object.create === "function"; // feature test for Object.create support
+        var supportsProto = { __proto__: [] } instanceof Array; // feature test for __proto__ support
+        var downLevel = !supportsCreate && !supportsProto;
+        var HashMap = {
+            // create an object in dictionary mode (a.k.a. "slow" mode in v8)
+            create: supportsCreate
+                ? function () { return MakeDictionary(Object.create(null)); }
+                : supportsProto
+                    ? function () { return MakeDictionary({ __proto__: null }); }
+                    : function () { return MakeDictionary({}); },
+            has: downLevel
+                ? function (map, key) { return hasOwn.call(map, key); }
+                : function (map, key) { return key in map; },
+            get: downLevel
+                ? function (map, key) { return hasOwn.call(map, key) ? map[key] : undefined; }
+                : function (map, key) { return map[key]; },
+        };
+        // Load global or shim versions of Map, Set, and WeakMap
+        var functionPrototype = Object.getPrototypeOf(Function);
+        var usePolyfill = typeof process === "object" && process.env && process.env["REFLECT_METADATA_USE_MAP_POLYFILL"] === "true";
+        var _Map = !usePolyfill && typeof Map === "function" && typeof Map.prototype.entries === "function" ? Map : CreateMapPolyfill();
+        var _Set = !usePolyfill && typeof Set === "function" && typeof Set.prototype.entries === "function" ? Set : CreateSetPolyfill();
+        var _WeakMap = !usePolyfill && typeof WeakMap === "function" ? WeakMap : CreateWeakMapPolyfill();
+        // [[Metadata]] internal slot
+        // https://rbuckton.github.io/reflect-metadata/#ordinary-object-internal-methods-and-internal-slots
+        var Metadata = new _WeakMap();
+        /**
+         * Applies a set of decorators to a property of a target object.
+         * @param decorators An array of decorators.
+         * @param target The target object.
+         * @param propertyKey (Optional) The property key to decorate.
+         * @param attributes (Optional) The property descriptor for the target key.
+         * @remarks Decorators are applied in reverse order.
+         * @example
+         *
+         *     class Example {
+         *         // property declarations are not part of ES6, though they are valid in TypeScript:
+         *         // static staticProperty;
+         *         // property;
+         *
+         *         constructor(p) { }
+         *         static staticMethod(p) { }
+         *         method(p) { }
+         *     }
+         *
+         *     // constructor
+         *     Example = Reflect.decorate(decoratorsArray, Example);
+         *
+         *     // property (on constructor)
+         *     Reflect.decorate(decoratorsArray, Example, "staticProperty");
+         *
+         *     // property (on prototype)
+         *     Reflect.decorate(decoratorsArray, Example.prototype, "property");
+         *
+         *     // method (on constructor)
+         *     Object.defineProperty(Example, "staticMethod",
+         *         Reflect.decorate(decoratorsArray, Example, "staticMethod",
+         *             Object.getOwnPropertyDescriptor(Example, "staticMethod")));
+         *
+         *     // method (on prototype)
+         *     Object.defineProperty(Example.prototype, "method",
+         *         Reflect.decorate(decoratorsArray, Example.prototype, "method",
+         *             Object.getOwnPropertyDescriptor(Example.prototype, "method")));
+         *
+         */
+        function decorate(decorators, target, propertyKey, attributes) {
+            if (!IsUndefined(propertyKey)) {
+                if (!IsArray(decorators))
+                    throw new TypeError();
+                if (!IsObject(target))
+                    throw new TypeError();
+                if (!IsObject(attributes) && !IsUndefined(attributes) && !IsNull(attributes))
+                    throw new TypeError();
+                if (IsNull(attributes))
+                    attributes = undefined;
+                propertyKey = ToPropertyKey(propertyKey);
+                return DecorateProperty(decorators, target, propertyKey, attributes);
+            }
+            else {
+                if (!IsArray(decorators))
+                    throw new TypeError();
+                if (!IsConstructor(target))
+                    throw new TypeError();
+                return DecorateConstructor(decorators, target);
+            }
+        }
+        exporter("decorate", decorate);
+        // 4.1.2 Reflect.metadata(metadataKey, metadataValue)
+        // https://rbuckton.github.io/reflect-metadata/#reflect.metadata
+        /**
+         * A default metadata decorator factory that can be used on a class, class member, or parameter.
+         * @param metadataKey The key for the metadata entry.
+         * @param metadataValue The value for the metadata entry.
+         * @returns A decorator function.
+         * @remarks
+         * If `metadataKey` is already defined for the target and target key, the
+         * metadataValue for that key will be overwritten.
+         * @example
+         *
+         *     // constructor
+         *     @Reflect.metadata(key, value)
+         *     class Example {
+         *     }
+         *
+         *     // property (on constructor, TypeScript only)
+         *     class Example {
+         *         @Reflect.metadata(key, value)
+         *         static staticProperty;
+         *     }
+         *
+         *     // property (on prototype, TypeScript only)
+         *     class Example {
+         *         @Reflect.metadata(key, value)
+         *         property;
+         *     }
+         *
+         *     // method (on constructor)
+         *     class Example {
+         *         @Reflect.metadata(key, value)
+         *         static staticMethod() { }
+         *     }
+         *
+         *     // method (on prototype)
+         *     class Example {
+         *         @Reflect.metadata(key, value)
+         *         method() { }
+         *     }
+         *
+         */
+        function metadata(metadataKey, metadataValue) {
+            function decorator(target, propertyKey) {
+                if (!IsObject(target))
+                    throw new TypeError();
+                if (!IsUndefined(propertyKey) && !IsPropertyKey(propertyKey))
+                    throw new TypeError();
+                OrdinaryDefineOwnMetadata(metadataKey, metadataValue, target, propertyKey);
+            }
+            return decorator;
+        }
+        exporter("metadata", metadata);
+        /**
+         * Define a unique metadata entry on the target.
+         * @param metadataKey A key used to store and retrieve metadata.
+         * @param metadataValue A value that contains attached metadata.
+         * @param target The target object on which to define metadata.
+         * @param propertyKey (Optional) The property key for the target.
+         * @example
+         *
+         *     class Example {
+         *         // property declarations are not part of ES6, though they are valid in TypeScript:
+         *         // static staticProperty;
+         *         // property;
+         *
+         *         constructor(p) { }
+         *         static staticMethod(p) { }
+         *         method(p) { }
+         *     }
+         *
+         *     // constructor
+         *     Reflect.defineMetadata("custom:annotation", options, Example);
+         *
+         *     // property (on constructor)
+         *     Reflect.defineMetadata("custom:annotation", options, Example, "staticProperty");
+         *
+         *     // property (on prototype)
+         *     Reflect.defineMetadata("custom:annotation", options, Example.prototype, "property");
+         *
+         *     // method (on constructor)
+         *     Reflect.defineMetadata("custom:annotation", options, Example, "staticMethod");
+         *
+         *     // method (on prototype)
+         *     Reflect.defineMetadata("custom:annotation", options, Example.prototype, "method");
+         *
+         *     // decorator factory as metadata-producing annotation.
+         *     function MyAnnotation(options): Decorator {
+         *         return (target, key?) => Reflect.defineMetadata("custom:annotation", options, target, key);
+         *     }
+         *
+         */
+        function defineMetadata(metadataKey, metadataValue, target, propertyKey) {
+            if (!IsObject(target))
+                throw new TypeError();
+            if (!IsUndefined(propertyKey))
+                propertyKey = ToPropertyKey(propertyKey);
+            return OrdinaryDefineOwnMetadata(metadataKey, metadataValue, target, propertyKey);
+        }
+        exporter("defineMetadata", defineMetadata);
+        /**
+         * Gets a value indicating whether the target object or its prototype chain has the provided metadata key defined.
+         * @param metadataKey A key used to store and retrieve metadata.
+         * @param target The target object on which the metadata is defined.
+         * @param propertyKey (Optional) The property key for the target.
+         * @returns `true` if the metadata key was defined on the target object or its prototype chain; otherwise, `false`.
+         * @example
+         *
+         *     class Example {
+         *         // property declarations are not part of ES6, though they are valid in TypeScript:
+         *         // static staticProperty;
+         *         // property;
+         *
+         *         constructor(p) { }
+         *         static staticMethod(p) { }
+         *         method(p) { }
+         *     }
+         *
+         *     // constructor
+         *     result = Reflect.hasMetadata("custom:annotation", Example);
+         *
+         *     // property (on constructor)
+         *     result = Reflect.hasMetadata("custom:annotation", Example, "staticProperty");
+         *
+         *     // property (on prototype)
+         *     result = Reflect.hasMetadata("custom:annotation", Example.prototype, "property");
+         *
+         *     // method (on constructor)
+         *     result = Reflect.hasMetadata("custom:annotation", Example, "staticMethod");
+         *
+         *     // method (on prototype)
+         *     result = Reflect.hasMetadata("custom:annotation", Example.prototype, "method");
+         *
+         */
+        function hasMetadata(metadataKey, target, propertyKey) {
+            if (!IsObject(target))
+                throw new TypeError();
+            if (!IsUndefined(propertyKey))
+                propertyKey = ToPropertyKey(propertyKey);
+            return OrdinaryHasMetadata(metadataKey, target, propertyKey);
+        }
+        exporter("hasMetadata", hasMetadata);
+        /**
+         * Gets a value indicating whether the target object has the provided metadata key defined.
+         * @param metadataKey A key used to store and retrieve metadata.
+         * @param target The target object on which the metadata is defined.
+         * @param propertyKey (Optional) The property key for the target.
+         * @returns `true` if the metadata key was defined on the target object; otherwise, `false`.
+         * @example
+         *
+         *     class Example {
+         *         // property declarations are not part of ES6, though they are valid in TypeScript:
+         *         // static staticProperty;
+         *         // property;
+         *
+         *         constructor(p) { }
+         *         static staticMethod(p) { }
+         *         method(p) { }
+         *     }
+         *
+         *     // constructor
+         *     result = Reflect.hasOwnMetadata("custom:annotation", Example);
+         *
+         *     // property (on constructor)
+         *     result = Reflect.hasOwnMetadata("custom:annotation", Example, "staticProperty");
+         *
+         *     // property (on prototype)
+         *     result = Reflect.hasOwnMetadata("custom:annotation", Example.prototype, "property");
+         *
+         *     // method (on constructor)
+         *     result = Reflect.hasOwnMetadata("custom:annotation", Example, "staticMethod");
+         *
+         *     // method (on prototype)
+         *     result = Reflect.hasOwnMetadata("custom:annotation", Example.prototype, "method");
+         *
+         */
+        function hasOwnMetadata(metadataKey, target, propertyKey) {
+            if (!IsObject(target))
+                throw new TypeError();
+            if (!IsUndefined(propertyKey))
+                propertyKey = ToPropertyKey(propertyKey);
+            return OrdinaryHasOwnMetadata(metadataKey, target, propertyKey);
+        }
+        exporter("hasOwnMetadata", hasOwnMetadata);
+        /**
+         * Gets the metadata value for the provided metadata key on the target object or its prototype chain.
+         * @param metadataKey A key used to store and retrieve metadata.
+         * @param target The target object on which the metadata is defined.
+         * @param propertyKey (Optional) The property key for the target.
+         * @returns The metadata value for the metadata key if found; otherwise, `undefined`.
+         * @example
+         *
+         *     class Example {
+         *         // property declarations are not part of ES6, though they are valid in TypeScript:
+         *         // static staticProperty;
+         *         // property;
+         *
+         *         constructor(p) { }
+         *         static staticMethod(p) { }
+         *         method(p) { }
+         *     }
+         *
+         *     // constructor
+         *     result = Reflect.getMetadata("custom:annotation", Example);
+         *
+         *     // property (on constructor)
+         *     result = Reflect.getMetadata("custom:annotation", Example, "staticProperty");
+         *
+         *     // property (on prototype)
+         *     result = Reflect.getMetadata("custom:annotation", Example.prototype, "property");
+         *
+         *     // method (on constructor)
+         *     result = Reflect.getMetadata("custom:annotation", Example, "staticMethod");
+         *
+         *     // method (on prototype)
+         *     result = Reflect.getMetadata("custom:annotation", Example.prototype, "method");
+         *
+         */
+        function getMetadata(metadataKey, target, propertyKey) {
+            if (!IsObject(target))
+                throw new TypeError();
+            if (!IsUndefined(propertyKey))
+                propertyKey = ToPropertyKey(propertyKey);
+            return OrdinaryGetMetadata(metadataKey, target, propertyKey);
+        }
+        exporter("getMetadata", getMetadata);
+        /**
+         * Gets the metadata value for the provided metadata key on the target object.
+         * @param metadataKey A key used to store and retrieve metadata.
+         * @param target The target object on which the metadata is defined.
+         * @param propertyKey (Optional) The property key for the target.
+         * @returns The metadata value for the metadata key if found; otherwise, `undefined`.
+         * @example
+         *
+         *     class Example {
+         *         // property declarations are not part of ES6, though they are valid in TypeScript:
+         *         // static staticProperty;
+         *         // property;
+         *
+         *         constructor(p) { }
+         *         static staticMethod(p) { }
+         *         method(p) { }
+         *     }
+         *
+         *     // constructor
+         *     result = Reflect.getOwnMetadata("custom:annotation", Example);
+         *
+         *     // property (on constructor)
+         *     result = Reflect.getOwnMetadata("custom:annotation", Example, "staticProperty");
+         *
+         *     // property (on prototype)
+         *     result = Reflect.getOwnMetadata("custom:annotation", Example.prototype, "property");
+         *
+         *     // method (on constructor)
+         *     result = Reflect.getOwnMetadata("custom:annotation", Example, "staticMethod");
+         *
+         *     // method (on prototype)
+         *     result = Reflect.getOwnMetadata("custom:annotation", Example.prototype, "method");
+         *
+         */
+        function getOwnMetadata(metadataKey, target, propertyKey) {
+            if (!IsObject(target))
+                throw new TypeError();
+            if (!IsUndefined(propertyKey))
+                propertyKey = ToPropertyKey(propertyKey);
+            return OrdinaryGetOwnMetadata(metadataKey, target, propertyKey);
+        }
+        exporter("getOwnMetadata", getOwnMetadata);
+        /**
+         * Gets the metadata keys defined on the target object or its prototype chain.
+         * @param target The target object on which the metadata is defined.
+         * @param propertyKey (Optional) The property key for the target.
+         * @returns An array of unique metadata keys.
+         * @example
+         *
+         *     class Example {
+         *         // property declarations are not part of ES6, though they are valid in TypeScript:
+         *         // static staticProperty;
+         *         // property;
+         *
+         *         constructor(p) { }
+         *         static staticMethod(p) { }
+         *         method(p) { }
+         *     }
+         *
+         *     // constructor
+         *     result = Reflect.getMetadataKeys(Example);
+         *
+         *     // property (on constructor)
+         *     result = Reflect.getMetadataKeys(Example, "staticProperty");
+         *
+         *     // property (on prototype)
+         *     result = Reflect.getMetadataKeys(Example.prototype, "property");
+         *
+         *     // method (on constructor)
+         *     result = Reflect.getMetadataKeys(Example, "staticMethod");
+         *
+         *     // method (on prototype)
+         *     result = Reflect.getMetadataKeys(Example.prototype, "method");
+         *
+         */
+        function getMetadataKeys(target, propertyKey) {
+            if (!IsObject(target))
+                throw new TypeError();
+            if (!IsUndefined(propertyKey))
+                propertyKey = ToPropertyKey(propertyKey);
+            return OrdinaryMetadataKeys(target, propertyKey);
+        }
+        exporter("getMetadataKeys", getMetadataKeys);
+        /**
+         * Gets the unique metadata keys defined on the target object.
+         * @param target The target object on which the metadata is defined.
+         * @param propertyKey (Optional) The property key for the target.
+         * @returns An array of unique metadata keys.
+         * @example
+         *
+         *     class Example {
+         *         // property declarations are not part of ES6, though they are valid in TypeScript:
+         *         // static staticProperty;
+         *         // property;
+         *
+         *         constructor(p) { }
+         *         static staticMethod(p) { }
+         *         method(p) { }
+         *     }
+         *
+         *     // constructor
+         *     result = Reflect.getOwnMetadataKeys(Example);
+         *
+         *     // property (on constructor)
+         *     result = Reflect.getOwnMetadataKeys(Example, "staticProperty");
+         *
+         *     // property (on prototype)
+         *     result = Reflect.getOwnMetadataKeys(Example.prototype, "property");
+         *
+         *     // method (on constructor)
+         *     result = Reflect.getOwnMetadataKeys(Example, "staticMethod");
+         *
+         *     // method (on prototype)
+         *     result = Reflect.getOwnMetadataKeys(Example.prototype, "method");
+         *
+         */
+        function getOwnMetadataKeys(target, propertyKey) {
+            if (!IsObject(target))
+                throw new TypeError();
+            if (!IsUndefined(propertyKey))
+                propertyKey = ToPropertyKey(propertyKey);
+            return OrdinaryOwnMetadataKeys(target, propertyKey);
+        }
+        exporter("getOwnMetadataKeys", getOwnMetadataKeys);
+        /**
+         * Deletes the metadata entry from the target object with the provided key.
+         * @param metadataKey A key used to store and retrieve metadata.
+         * @param target The target object on which the metadata is defined.
+         * @param propertyKey (Optional) The property key for the target.
+         * @returns `true` if the metadata entry was found and deleted; otherwise, false.
+         * @example
+         *
+         *     class Example {
+         *         // property declarations are not part of ES6, though they are valid in TypeScript:
+         *         // static staticProperty;
+         *         // property;
+         *
+         *         constructor(p) { }
+         *         static staticMethod(p) { }
+         *         method(p) { }
+         *     }
+         *
+         *     // constructor
+         *     result = Reflect.deleteMetadata("custom:annotation", Example);
+         *
+         *     // property (on constructor)
+         *     result = Reflect.deleteMetadata("custom:annotation", Example, "staticProperty");
+         *
+         *     // property (on prototype)
+         *     result = Reflect.deleteMetadata("custom:annotation", Example.prototype, "property");
+         *
+         *     // method (on constructor)
+         *     result = Reflect.deleteMetadata("custom:annotation", Example, "staticMethod");
+         *
+         *     // method (on prototype)
+         *     result = Reflect.deleteMetadata("custom:annotation", Example.prototype, "method");
+         *
+         */
+        function deleteMetadata(metadataKey, target, propertyKey) {
+            if (!IsObject(target))
+                throw new TypeError();
+            if (!IsUndefined(propertyKey))
+                propertyKey = ToPropertyKey(propertyKey);
+            var metadataMap = GetOrCreateMetadataMap(target, propertyKey, /*Create*/ false);
+            if (IsUndefined(metadataMap))
+                return false;
+            if (!metadataMap.delete(metadataKey))
+                return false;
+            if (metadataMap.size > 0)
+                return true;
+            var targetMetadata = Metadata.get(target);
+            targetMetadata.delete(propertyKey);
+            if (targetMetadata.size > 0)
+                return true;
+            Metadata.delete(target);
+            return true;
+        }
+        exporter("deleteMetadata", deleteMetadata);
+        function DecorateConstructor(decorators, target) {
+            for (var i = decorators.length - 1; i >= 0; --i) {
+                var decorator = decorators[i];
+                var decorated = decorator(target);
+                if (!IsUndefined(decorated) && !IsNull(decorated)) {
+                    if (!IsConstructor(decorated))
+                        throw new TypeError();
+                    target = decorated;
+                }
+            }
+            return target;
+        }
+        function DecorateProperty(decorators, target, propertyKey, descriptor) {
+            for (var i = decorators.length - 1; i >= 0; --i) {
+                var decorator = decorators[i];
+                var decorated = decorator(target, propertyKey, descriptor);
+                if (!IsUndefined(decorated) && !IsNull(decorated)) {
+                    if (!IsObject(decorated))
+                        throw new TypeError();
+                    descriptor = decorated;
+                }
+            }
+            return descriptor;
+        }
+        function GetOrCreateMetadataMap(O, P, Create) {
+            var targetMetadata = Metadata.get(O);
+            if (IsUndefined(targetMetadata)) {
+                if (!Create)
+                    return undefined;
+                targetMetadata = new _Map();
+                Metadata.set(O, targetMetadata);
+            }
+            var metadataMap = targetMetadata.get(P);
+            if (IsUndefined(metadataMap)) {
+                if (!Create)
+                    return undefined;
+                metadataMap = new _Map();
+                targetMetadata.set(P, metadataMap);
+            }
+            return metadataMap;
+        }
+        // 3.1.1.1 OrdinaryHasMetadata(MetadataKey, O, P)
+        // https://rbuckton.github.io/reflect-metadata/#ordinaryhasmetadata
+        function OrdinaryHasMetadata(MetadataKey, O, P) {
+            var hasOwn = OrdinaryHasOwnMetadata(MetadataKey, O, P);
+            if (hasOwn)
+                return true;
+            var parent = OrdinaryGetPrototypeOf(O);
+            if (!IsNull(parent))
+                return OrdinaryHasMetadata(MetadataKey, parent, P);
+            return false;
+        }
+        // 3.1.2.1 OrdinaryHasOwnMetadata(MetadataKey, O, P)
+        // https://rbuckton.github.io/reflect-metadata/#ordinaryhasownmetadata
+        function OrdinaryHasOwnMetadata(MetadataKey, O, P) {
+            var metadataMap = GetOrCreateMetadataMap(O, P, /*Create*/ false);
+            if (IsUndefined(metadataMap))
+                return false;
+            return ToBoolean(metadataMap.has(MetadataKey));
+        }
+        // 3.1.3.1 OrdinaryGetMetadata(MetadataKey, O, P)
+        // https://rbuckton.github.io/reflect-metadata/#ordinarygetmetadata
+        function OrdinaryGetMetadata(MetadataKey, O, P) {
+            var hasOwn = OrdinaryHasOwnMetadata(MetadataKey, O, P);
+            if (hasOwn)
+                return OrdinaryGetOwnMetadata(MetadataKey, O, P);
+            var parent = OrdinaryGetPrototypeOf(O);
+            if (!IsNull(parent))
+                return OrdinaryGetMetadata(MetadataKey, parent, P);
+            return undefined;
+        }
+        // 3.1.4.1 OrdinaryGetOwnMetadata(MetadataKey, O, P)
+        // https://rbuckton.github.io/reflect-metadata/#ordinarygetownmetadata
+        function OrdinaryGetOwnMetadata(MetadataKey, O, P) {
+            var metadataMap = GetOrCreateMetadataMap(O, P, /*Create*/ false);
+            if (IsUndefined(metadataMap))
+                return undefined;
+            return metadataMap.get(MetadataKey);
+        }
+        // 3.1.5.1 OrdinaryDefineOwnMetadata(MetadataKey, MetadataValue, O, P)
+        // https://rbuckton.github.io/reflect-metadata/#ordinarydefineownmetadata
+        function OrdinaryDefineOwnMetadata(MetadataKey, MetadataValue, O, P) {
+            var metadataMap = GetOrCreateMetadataMap(O, P, /*Create*/ true);
+            metadataMap.set(MetadataKey, MetadataValue);
+        }
+        // 3.1.6.1 OrdinaryMetadataKeys(O, P)
+        // https://rbuckton.github.io/reflect-metadata/#ordinarymetadatakeys
+        function OrdinaryMetadataKeys(O, P) {
+            var ownKeys = OrdinaryOwnMetadataKeys(O, P);
+            var parent = OrdinaryGetPrototypeOf(O);
+            if (parent === null)
+                return ownKeys;
+            var parentKeys = OrdinaryMetadataKeys(parent, P);
+            if (parentKeys.length <= 0)
+                return ownKeys;
+            if (ownKeys.length <= 0)
+                return parentKeys;
+            var set = new _Set();
+            var keys = [];
+            for (var _i = 0, ownKeys_1 = ownKeys; _i < ownKeys_1.length; _i++) {
+                var key = ownKeys_1[_i];
+                var hasKey = set.has(key);
+                if (!hasKey) {
+                    set.add(key);
+                    keys.push(key);
+                }
+            }
+            for (var _a = 0, parentKeys_1 = parentKeys; _a < parentKeys_1.length; _a++) {
+                var key = parentKeys_1[_a];
+                var hasKey = set.has(key);
+                if (!hasKey) {
+                    set.add(key);
+                    keys.push(key);
+                }
+            }
+            return keys;
+        }
+        // 3.1.7.1 OrdinaryOwnMetadataKeys(O, P)
+        // https://rbuckton.github.io/reflect-metadata/#ordinaryownmetadatakeys
+        function OrdinaryOwnMetadataKeys(O, P) {
+            var keys = [];
+            var metadataMap = GetOrCreateMetadataMap(O, P, /*Create*/ false);
+            if (IsUndefined(metadataMap))
+                return keys;
+            var keysObj = metadataMap.keys();
+            var iterator = GetIterator(keysObj);
+            var k = 0;
+            while (true) {
+                var next = IteratorStep(iterator);
+                if (!next) {
+                    keys.length = k;
+                    return keys;
+                }
+                var nextValue = IteratorValue(next);
+                try {
+                    keys[k] = nextValue;
+                }
+                catch (e) {
+                    try {
+                        IteratorClose(iterator);
+                    }
+                    finally {
+                        throw e;
+                    }
+                }
+                k++;
+            }
+        }
+        // 6 ECMAScript Data Typ0es and Values
+        // https://tc39.github.io/ecma262/#sec-ecmascript-data-types-and-values
+        function Type(x) {
+            if (x === null)
+                return 1 /* Null */;
+            switch (typeof x) {
+                case "undefined": return 0 /* Undefined */;
+                case "boolean": return 2 /* Boolean */;
+                case "string": return 3 /* String */;
+                case "symbol": return 4 /* Symbol */;
+                case "number": return 5 /* Number */;
+                case "object": return x === null ? 1 /* Null */ : 6 /* Object */;
+                default: return 6 /* Object */;
+            }
+        }
+        // 6.1.1 The Undefined Type
+        // https://tc39.github.io/ecma262/#sec-ecmascript-language-types-undefined-type
+        function IsUndefined(x) {
+            return x === undefined;
+        }
+        // 6.1.2 The Null Type
+        // https://tc39.github.io/ecma262/#sec-ecmascript-language-types-null-type
+        function IsNull(x) {
+            return x === null;
+        }
+        // 6.1.5 The Symbol Type
+        // https://tc39.github.io/ecma262/#sec-ecmascript-language-types-symbol-type
+        function IsSymbol(x) {
+            return typeof x === "symbol";
+        }
+        // 6.1.7 The Object Type
+        // https://tc39.github.io/ecma262/#sec-object-type
+        function IsObject(x) {
+            return typeof x === "object" ? x !== null : typeof x === "function";
+        }
+        // 7.1 Type Conversion
+        // https://tc39.github.io/ecma262/#sec-type-conversion
+        // 7.1.1 ToPrimitive(input [, PreferredType])
+        // https://tc39.github.io/ecma262/#sec-toprimitive
+        function ToPrimitive(input, PreferredType) {
+            switch (Type(input)) {
+                case 0 /* Undefined */: return input;
+                case 1 /* Null */: return input;
+                case 2 /* Boolean */: return input;
+                case 3 /* String */: return input;
+                case 4 /* Symbol */: return input;
+                case 5 /* Number */: return input;
+            }
+            var hint = PreferredType === 3 /* String */ ? "string" : PreferredType === 5 /* Number */ ? "number" : "default";
+            var exoticToPrim = GetMethod(input, toPrimitiveSymbol);
+            if (exoticToPrim !== undefined) {
+                var result = exoticToPrim.call(input, hint);
+                if (IsObject(result))
+                    throw new TypeError();
+                return result;
+            }
+            return OrdinaryToPrimitive(input, hint === "default" ? "number" : hint);
+        }
+        // 7.1.1.1 OrdinaryToPrimitive(O, hint)
+        // https://tc39.github.io/ecma262/#sec-ordinarytoprimitive
+        function OrdinaryToPrimitive(O, hint) {
+            if (hint === "string") {
+                var toString_1 = O.toString;
+                if (IsCallable(toString_1)) {
+                    var result = toString_1.call(O);
+                    if (!IsObject(result))
+                        return result;
+                }
+                var valueOf = O.valueOf;
+                if (IsCallable(valueOf)) {
+                    var result = valueOf.call(O);
+                    if (!IsObject(result))
+                        return result;
+                }
+            }
+            else {
+                var valueOf = O.valueOf;
+                if (IsCallable(valueOf)) {
+                    var result = valueOf.call(O);
+                    if (!IsObject(result))
+                        return result;
+                }
+                var toString_2 = O.toString;
+                if (IsCallable(toString_2)) {
+                    var result = toString_2.call(O);
+                    if (!IsObject(result))
+                        return result;
+                }
+            }
+            throw new TypeError();
+        }
+        // 7.1.2 ToBoolean(argument)
+        // https://tc39.github.io/ecma262/2016/#sec-toboolean
+        function ToBoolean(argument) {
+            return !!argument;
+        }
+        // 7.1.12 ToString(argument)
+        // https://tc39.github.io/ecma262/#sec-tostring
+        function ToString(argument) {
+            return "" + argument;
+        }
+        // 7.1.14 ToPropertyKey(argument)
+        // https://tc39.github.io/ecma262/#sec-topropertykey
+        function ToPropertyKey(argument) {
+            var key = ToPrimitive(argument, 3 /* String */);
+            if (IsSymbol(key))
+                return key;
+            return ToString(key);
+        }
+        // 7.2 Testing and Comparison Operations
+        // https://tc39.github.io/ecma262/#sec-testing-and-comparison-operations
+        // 7.2.2 IsArray(argument)
+        // https://tc39.github.io/ecma262/#sec-isarray
+        function IsArray(argument) {
+            return Array.isArray
+                ? Array.isArray(argument)
+                : argument instanceof Object
+                    ? argument instanceof Array
+                    : Object.prototype.toString.call(argument) === "[object Array]";
+        }
+        // 7.2.3 IsCallable(argument)
+        // https://tc39.github.io/ecma262/#sec-iscallable
+        function IsCallable(argument) {
+            // NOTE: This is an approximation as we cannot check for [[Call]] internal method.
+            return typeof argument === "function";
+        }
+        // 7.2.4 IsConstructor(argument)
+        // https://tc39.github.io/ecma262/#sec-isconstructor
+        function IsConstructor(argument) {
+            // NOTE: This is an approximation as we cannot check for [[Construct]] internal method.
+            return typeof argument === "function";
+        }
+        // 7.2.7 IsPropertyKey(argument)
+        // https://tc39.github.io/ecma262/#sec-ispropertykey
+        function IsPropertyKey(argument) {
+            switch (Type(argument)) {
+                case 3 /* String */: return true;
+                case 4 /* Symbol */: return true;
+                default: return false;
+            }
+        }
+        // 7.3 Operations on Objects
+        // https://tc39.github.io/ecma262/#sec-operations-on-objects
+        // 7.3.9 GetMethod(V, P)
+        // https://tc39.github.io/ecma262/#sec-getmethod
+        function GetMethod(V, P) {
+            var func = V[P];
+            if (func === undefined || func === null)
+                return undefined;
+            if (!IsCallable(func))
+                throw new TypeError();
+            return func;
+        }
+        // 7.4 Operations on Iterator Objects
+        // https://tc39.github.io/ecma262/#sec-operations-on-iterator-objects
+        function GetIterator(obj) {
+            var method = GetMethod(obj, iteratorSymbol);
+            if (!IsCallable(method))
+                throw new TypeError(); // from Call
+            var iterator = method.call(obj);
+            if (!IsObject(iterator))
+                throw new TypeError();
+            return iterator;
+        }
+        // 7.4.4 IteratorValue(iterResult)
+        // https://tc39.github.io/ecma262/2016/#sec-iteratorvalue
+        function IteratorValue(iterResult) {
+            return iterResult.value;
+        }
+        // 7.4.5 IteratorStep(iterator)
+        // https://tc39.github.io/ecma262/#sec-iteratorstep
+        function IteratorStep(iterator) {
+            var result = iterator.next();
+            return result.done ? false : result;
+        }
+        // 7.4.6 IteratorClose(iterator, completion)
+        // https://tc39.github.io/ecma262/#sec-iteratorclose
+        function IteratorClose(iterator) {
+            var f = iterator["return"];
+            if (f)
+                f.call(iterator);
+        }
+        // 9.1 Ordinary Object Internal Methods and Internal Slots
+        // https://tc39.github.io/ecma262/#sec-ordinary-object-internal-methods-and-internal-slots
+        // 9.1.1.1 OrdinaryGetPrototypeOf(O)
+        // https://tc39.github.io/ecma262/#sec-ordinarygetprototypeof
+        function OrdinaryGetPrototypeOf(O) {
+            var proto = Object.getPrototypeOf(O);
+            if (typeof O !== "function" || O === functionPrototype)
+                return proto;
+            // TypeScript doesn't set __proto__ in ES5, as it's non-standard.
+            // Try to determine the superclass constructor. Compatible implementations
+            // must either set __proto__ on a subclass constructor to the superclass constructor,
+            // or ensure each class has a valid `constructor` property on its prototype that
+            // points back to the constructor.
+            // If this is not the same as Function.[[Prototype]], then this is definately inherited.
+            // This is the case when in ES6 or when using __proto__ in a compatible browser.
+            if (proto !== functionPrototype)
+                return proto;
+            // If the super prototype is Object.prototype, null, or undefined, then we cannot determine the heritage.
+            var prototype = O.prototype;
+            var prototypeProto = prototype && Object.getPrototypeOf(prototype);
+            if (prototypeProto == null || prototypeProto === Object.prototype)
+                return proto;
+            // If the constructor was not a function, then we cannot determine the heritage.
+            var constructor = prototypeProto.constructor;
+            if (typeof constructor !== "function")
+                return proto;
+            // If we have some kind of self-reference, then we cannot determine the heritage.
+            if (constructor === O)
+                return proto;
+            // we have a pretty good guess at the heritage.
+            return constructor;
+        }
+        // naive Map shim
+        function CreateMapPolyfill() {
+            var cacheSentinel = {};
+            var arraySentinel = [];
+            var MapIterator = /** @class */ (function () {
+                function MapIterator(keys, values, selector) {
+                    this._index = 0;
+                    this._keys = keys;
+                    this._values = values;
+                    this._selector = selector;
+                }
+                MapIterator.prototype["@@iterator"] = function () { return this; };
+                MapIterator.prototype[iteratorSymbol] = function () { return this; };
+                MapIterator.prototype.next = function () {
+                    var index = this._index;
+                    if (index >= 0 && index < this._keys.length) {
+                        var result = this._selector(this._keys[index], this._values[index]);
+                        if (index + 1 >= this._keys.length) {
+                            this._index = -1;
+                            this._keys = arraySentinel;
+                            this._values = arraySentinel;
+                        }
+                        else {
+                            this._index++;
+                        }
+                        return { value: result, done: false };
+                    }
+                    return { value: undefined, done: true };
+                };
+                MapIterator.prototype.throw = function (error) {
+                    if (this._index >= 0) {
+                        this._index = -1;
+                        this._keys = arraySentinel;
+                        this._values = arraySentinel;
+                    }
+                    throw error;
+                };
+                MapIterator.prototype.return = function (value) {
+                    if (this._index >= 0) {
+                        this._index = -1;
+                        this._keys = arraySentinel;
+                        this._values = arraySentinel;
+                    }
+                    return { value: value, done: true };
+                };
+                return MapIterator;
+            }());
+            return /** @class */ (function () {
+                function Map() {
+                    this._keys = [];
+                    this._values = [];
+                    this._cacheKey = cacheSentinel;
+                    this._cacheIndex = -2;
+                }
+                Object.defineProperty(Map.prototype, "size", {
+                    get: function () { return this._keys.length; },
+                    enumerable: true,
+                    configurable: true
+                });
+                Map.prototype.has = function (key) { return this._find(key, /*insert*/ false) >= 0; };
+                Map.prototype.get = function (key) {
+                    var index = this._find(key, /*insert*/ false);
+                    return index >= 0 ? this._values[index] : undefined;
+                };
+                Map.prototype.set = function (key, value) {
+                    var index = this._find(key, /*insert*/ true);
+                    this._values[index] = value;
+                    return this;
+                };
+                Map.prototype.delete = function (key) {
+                    var index = this._find(key, /*insert*/ false);
+                    if (index >= 0) {
+                        var size = this._keys.length;
+                        for (var i = index + 1; i < size; i++) {
+                            this._keys[i - 1] = this._keys[i];
+                            this._values[i - 1] = this._values[i];
+                        }
+                        this._keys.length--;
+                        this._values.length--;
+                        if (key === this._cacheKey) {
+                            this._cacheKey = cacheSentinel;
+                            this._cacheIndex = -2;
+                        }
+                        return true;
+                    }
+                    return false;
+                };
+                Map.prototype.clear = function () {
+                    this._keys.length = 0;
+                    this._values.length = 0;
+                    this._cacheKey = cacheSentinel;
+                    this._cacheIndex = -2;
+                };
+                Map.prototype.keys = function () { return new MapIterator(this._keys, this._values, getKey); };
+                Map.prototype.values = function () { return new MapIterator(this._keys, this._values, getValue); };
+                Map.prototype.entries = function () { return new MapIterator(this._keys, this._values, getEntry); };
+                Map.prototype["@@iterator"] = function () { return this.entries(); };
+                Map.prototype[iteratorSymbol] = function () { return this.entries(); };
+                Map.prototype._find = function (key, insert) {
+                    if (this._cacheKey !== key) {
+                        this._cacheIndex = this._keys.indexOf(this._cacheKey = key);
+                    }
+                    if (this._cacheIndex < 0 && insert) {
+                        this._cacheIndex = this._keys.length;
+                        this._keys.push(key);
+                        this._values.push(undefined);
+                    }
+                    return this._cacheIndex;
+                };
+                return Map;
+            }());
+            function getKey(key, _) {
+                return key;
+            }
+            function getValue(_, value) {
+                return value;
+            }
+            function getEntry(key, value) {
+                return [key, value];
+            }
+        }
+        // naive Set shim
+        function CreateSetPolyfill() {
+            return /** @class */ (function () {
+                function Set() {
+                    this._map = new _Map();
+                }
+                Object.defineProperty(Set.prototype, "size", {
+                    get: function () { return this._map.size; },
+                    enumerable: true,
+                    configurable: true
+                });
+                Set.prototype.has = function (value) { return this._map.has(value); };
+                Set.prototype.add = function (value) { return this._map.set(value, value), this; };
+                Set.prototype.delete = function (value) { return this._map.delete(value); };
+                Set.prototype.clear = function () { this._map.clear(); };
+                Set.prototype.keys = function () { return this._map.keys(); };
+                Set.prototype.values = function () { return this._map.values(); };
+                Set.prototype.entries = function () { return this._map.entries(); };
+                Set.prototype["@@iterator"] = function () { return this.keys(); };
+                Set.prototype[iteratorSymbol] = function () { return this.keys(); };
+                return Set;
+            }());
+        }
+        // naive WeakMap shim
+        function CreateWeakMapPolyfill() {
+            var UUID_SIZE = 16;
+            var keys = HashMap.create();
+            var rootKey = CreateUniqueKey();
+            return /** @class */ (function () {
+                function WeakMap() {
+                    this._key = CreateUniqueKey();
+                }
+                WeakMap.prototype.has = function (target) {
+                    var table = GetOrCreateWeakMapTable(target, /*create*/ false);
+                    return table !== undefined ? HashMap.has(table, this._key) : false;
+                };
+                WeakMap.prototype.get = function (target) {
+                    var table = GetOrCreateWeakMapTable(target, /*create*/ false);
+                    return table !== undefined ? HashMap.get(table, this._key) : undefined;
+                };
+                WeakMap.prototype.set = function (target, value) {
+                    var table = GetOrCreateWeakMapTable(target, /*create*/ true);
+                    table[this._key] = value;
+                    return this;
+                };
+                WeakMap.prototype.delete = function (target) {
+                    var table = GetOrCreateWeakMapTable(target, /*create*/ false);
+                    return table !== undefined ? delete table[this._key] : false;
+                };
+                WeakMap.prototype.clear = function () {
+                    // NOTE: not a real clear, just makes the previous data unreachable
+                    this._key = CreateUniqueKey();
+                };
+                return WeakMap;
+            }());
+            function CreateUniqueKey() {
+                var key;
+                do
+                    key = "@@WeakMap@@" + CreateUUID();
+                while (HashMap.has(keys, key));
+                keys[key] = true;
+                return key;
+            }
+            function GetOrCreateWeakMapTable(target, create) {
+                if (!hasOwn.call(target, rootKey)) {
+                    if (!create)
+                        return undefined;
+                    Object.defineProperty(target, rootKey, { value: HashMap.create() });
+                }
+                return target[rootKey];
+            }
+            function FillRandomBytes(buffer, size) {
+                for (var i = 0; i < size; ++i)
+                    buffer[i] = Math.random() * 0xff | 0;
+                return buffer;
+            }
+            function GenRandomBytes(size) {
+                if (typeof Uint8Array === "function") {
+                    if (typeof crypto !== "undefined")
+                        return crypto.getRandomValues(new Uint8Array(size));
+                    if (typeof msCrypto !== "undefined")
+                        return msCrypto.getRandomValues(new Uint8Array(size));
+                    return FillRandomBytes(new Uint8Array(size), size);
+                }
+                return FillRandomBytes(new Array(size), size);
+            }
+            function CreateUUID() {
+                var data = GenRandomBytes(UUID_SIZE);
+                // mark as random - RFC 4122 § 4.4
+                data[6] = data[6] & 0x4f | 0x40;
+                data[8] = data[8] & 0xbf | 0x80;
+                var result = "";
+                for (var offset = 0; offset < UUID_SIZE; ++offset) {
+                    var byte = data[offset];
+                    if (offset === 4 || offset === 6 || offset === 8)
+                        result += "-";
+                    if (byte < 16)
+                        result += "0";
+                    result += byte.toString(16).toLowerCase();
+                }
+                return result;
+            }
+        }
+        // uses a heuristic used by v8 and chakra to force an object into dictionary mode.
+        function MakeDictionary(obj) {
+            obj.__ = undefined;
+            delete obj.__;
+            return obj;
+        }
+    });
+})(Reflect || (Reflect = {}));
+
+
+/***/ }),
 /* 308 */,
 /* 309 */,
 /* 310 */,
@@ -7398,28 +8995,125 @@ Object.defineProperty(exports, "__esModule", { value: true });
 /* 320 */,
 /* 321 */,
 /* 322 */
-/***/ (function(__unusedmodule, exports, __webpack_require__) {
+/***/ (function(module, __unusedexports, __webpack_require__) {
 
-"use strict";
+let defaultGetErrorObject = undefined;
 
-Object.defineProperty(exports, "__esModule", { value: true });
-const core = __webpack_require__(470);
-const github = __webpack_require__(469);
-const registry_1 = __webpack_require__(822);
-const expressions_1 = __webpack_require__(134);
-const handler_1 = __webpack_require__(895);
-class PerRunCache extends handler_1.CacheHandler {
-    async getPaths() {
-        return core
-            .getInput('path')
-            .split('\n')
-            .map((s) => s.trim());
-    }
-    async getKey(version) {
-        return `${expressions_1.runner.os}-${version}-run-${github.context.runId}`;
+function checkGetErrorObject(getErrorObject) {
+    if (typeof getErrorObject !== 'function') {
+        throw new Error('This module should not be used in runtime. Instead, use a transformer during compilation.');
     }
 }
-registry_1.registry.add('run', new PerRunCache());
+
+const assertionsMetadataKey = Symbol('assertions');
+
+function inputObjectAtPath(path, inputObject) {
+    let subField = inputObject;
+    for (const key of path.slice(1)) {
+        subField = subField[
+            key.startsWith("[") ? parseInt(key.replace("[", "").replace("]", "")) : key
+        ];
+    }
+    return subField;
+}
+
+function appendInputToErrorMessage(message, path, inputObject) {
+    const foundInputObject = inputObjectAtPath(path, inputObject);
+    try {
+        return message + ', found: ' + __webpack_require__(669).inspect(foundInputObject);
+    } catch (error) {
+    }
+    try {
+        return message + ', found: ' + JSON.stringify(foundInputObject);
+    } catch (error) {
+    }
+    return message;
+}
+
+class TypeGuardError extends Error {
+    constructor(errorObject, inputObject) {
+        super(appendInputToErrorMessage(errorObject.message, errorObject.path, inputObject));
+        this.name = 'TypeGuardError';
+        this.path = errorObject.path;
+        this.reason = errorObject.reason;
+        this.input = inputObject;
+    }
+}
+
+function AssertType(assertion, options = {}) {
+    __webpack_require__(307);
+    return function (target, propertyKey, parameterIndex) {
+        const assertions = Reflect.getOwnMetadata(assertionsMetadataKey, target, propertyKey) || [];
+        assertions[parameterIndex] = { assertion, options };
+        Reflect.defineMetadata(assertionsMetadataKey, assertions, target, propertyKey);
+    };
+}
+
+function ValidateClass(errorConstructor = TypeGuardError) {
+    __webpack_require__(307);
+    return function (target) {
+        for (const propertyKey of Object.getOwnPropertyNames(target.prototype)) {
+            const assertions = Reflect.getOwnMetadata(assertionsMetadataKey, target.prototype, propertyKey);
+            if (assertions) {
+                const originalMethod = target.prototype[propertyKey];
+                target.prototype[propertyKey] = function (...args) {
+                    for (let i = 0; i < assertions.length; i++) {
+                        const errorObject = assertions[i].assertion(args[i]);
+                        if (errorObject !== null) {
+                            throw new errorConstructor(errorObject, args[i]);
+                        }
+                    }
+                    return originalMethod.apply(this, args);
+                };
+            }
+        }
+    };
+}
+
+function is(obj, getErrorObject = defaultGetErrorObject) {
+    checkGetErrorObject(getErrorObject);
+    const errorObject = getErrorObject(obj);
+    return errorObject === null;
+}
+
+function assertType(obj, getErrorObject = defaultGetErrorObject) {
+    checkGetErrorObject(getErrorObject);
+    const errorObject = getErrorObject(obj);
+    if (errorObject === null) {
+        return obj;
+    } else {
+        throw new TypeGuardError(errorObject, obj);
+    }
+}
+
+function createIs(getErrorObject = defaultGetErrorObject) {
+    checkGetErrorObject(getErrorObject);
+    return (obj) => is(obj, getErrorObject);
+}
+
+function createAssertType(getErrorObject = defaultGetErrorObject) {
+    checkGetErrorObject(getErrorObject);
+    return (obj) => assertType(obj, getErrorObject);
+}
+
+function setDefaultGetErrorObject(getErrorObject) {
+    defaultGetErrorObject = getErrorObject;
+}
+
+module.exports = {
+    is,
+    assertType,
+    createIs,
+    createAssertType,
+    equals: is,
+    createEquals: createIs,
+    assertEquals: assertType,
+    createAssertEquals: createAssertType,
+    AssertType,
+    ValidateClass,
+    TypeGuardError,
+    setDefaultGetErrorObject
+};
 
 
 /***/ }),
@@ -45926,7 +47620,32 @@ exports.SearchState = SearchState;
 //# sourceMappingURL=internal-search-state.js.map
 
 /***/ }),
-/* 729 */,
+/* 729 */
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const core = __webpack_require__(470);
+const github = __webpack_require__(469);
+const registry_1 = __webpack_require__(822);
+const expressions_1 = __webpack_require__(134);
+const handler_1 = __webpack_require__(895);
+class PerRunCache extends handler_1.CacheHandler {
+    async getPaths() {
+        return core
+            .getInput('path')
+            .split('\n')
+            .map((s) => s.trim());
+    }
+    async getKey(version) {
+        return `${expressions_1.runner.os}-${version}-run-${github.context.runId}`;
+    }
+}
+registry_1.registry.add('run', new PerRunCache());
+
+
+/***/ }),
 /* 730 */,
 /* 731 */,
 /* 732 */,
@@ -51586,7 +53305,7 @@ class Pip extends handler_1.CacheHandler {
     async getPaths() {
         switch (expressions_1.runner.os) {
             case 'Windows':
-                return ['~AppDataLocalpipCache'];
+                return ['~/AppData/Local/pip/Cache'];
             case 'Linux':
                 return ['~/.cache/pip'];
             case 'macOS':
@@ -52126,7 +53845,7 @@ exports.TraceAPI = TraceAPI;
 __webpack_require__(200);
 __webpack_require__(981);
 __webpack_require__(552);
-__webpack_require__(303);
+__webpack_require__(38);
 __webpack_require__(948);
 __webpack_require__(780);
 __webpack_require__(905);
@@ -52134,7 +53853,7 @@ __webpack_require__(664);
 __webpack_require__(648);
 __webpack_require__(484);
 __webpack_require__(467);
-__webpack_require__(322);
+__webpack_require__(729);
 __webpack_require__(769);
 __webpack_require__(859);
 __webpack_require__(899);
@@ -55054,7 +56773,7 @@ class CacheHandler {
         state.addHandler(this);
         if (restoredKey) {
             console.log(`Restored cache with key '${restoredKey}'`);
-            state.saveRestoredKey(this, restoredKey !== null && restoredKey !== void 0 ? restoredKey : '');
+            state.saveRestoredKey(this, restoredKey);
         }
         return {
             type: restoredKey ? (key === restoredKey ? RestoreType.Full : RestoreType.Partial) : RestoreType.Miss,

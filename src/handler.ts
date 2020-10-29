@@ -69,7 +69,7 @@ export class CacheHandler {
 
     if (restoredKey) {
       console.log(`Restored cache with key '${restoredKey}'`)
-      state.saveRestoredKey(this, restoredKey ?? '')
+      state.saveRestoredKey(this, restoredKey)
     }
 
     return {

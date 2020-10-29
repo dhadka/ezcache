@@ -8,13 +8,16 @@ class Powershell extends CacheHandler {
       case 'Windows':
         return ['~\Documents\PowerShell\Modules']
       case 'Linux':
-        return ['~/.local/share/powershell/Modules']
       case 'macOS':
         return ['~/.local/share/powershell/Modules']
     }
   }
 
-  async getKey(version?: string): Promise<string> {
+  async getKeyForRestore(version?: string): Promise<string> {
+    return `powershell-never-match-primary-key`
+  }
+
+  async getKeyForSave(version?: string): Promise<string> {
     return `${runner.os}-${version}-powershell-${await hashFiles(await this.getPaths())}`
   }
 

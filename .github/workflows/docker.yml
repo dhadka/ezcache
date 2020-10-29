@@ -8,7 +8,24 @@ on:
 
 jobs:
 
-  test:
+  test-layers:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          repository: crazy-max/diun
+
+      - name: Cache docker layers
+        uses: dhadka/ezcache@master
+        with:
+          type: layers
+          version: v1
+
+      - name: Build docker images
+        run: |
+          docker build . --file Dockerfile --tag diun:$(date +%s)
+
+  test-buildx:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -37,6 +54,3 @@ jobs:
             --output "type=image,push=false" \
             --tag crazymax/diun:dev \
             --file ./Dockerfile ./
-
-      - run: ls /tmp/.buildx-cache
-

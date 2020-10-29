@@ -6,7 +6,7 @@ class Pip extends CacheHandler {
   async getPaths(): Promise<string[]> {
     switch (runner.os) {
       case 'Windows':
-        return ['~AppDataLocalpipCache']
+        return ['~/AppData/Local/pip/Cache']
       case 'Linux':
         return ['~/.cache/pip']
       case 'macOS':

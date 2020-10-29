@@ -37,6 +37,18 @@ management tools.  For example, caching NPM is as easy as adding the step:
 
 ## Docker Configurations
 
+### Build Layers
+
+Using `layers` will cache all Docker layers found on the runner, ignoring any images that existed previously on the runner.
+This was originally developed by [satackey/action-docker-layer-caching](https://github.com/satackey/action-docker-layer-caching).
+
+```
+- name: Cache docker layers
+  uses: dhadka/ezcache@master
+  with:
+    type: layers
+```
+
 ### BuildX
 
 The following example demonstrates how to cache the build artifacts from Docker's buildx by specifying the `--cache-from` and `--cache-to` options:
@@ -109,16 +121,18 @@ field to ensure jobs that read the cache run after the job that create the cache
 
 Caches misses should be expected and handled by the workflow.  There are two types of caches misses:
 
-1. A **partial hit** where some of the cache contents are restored
-2. A **miss** where no matching cache was found
+1. A **miss** where no matching cache was found
+2. A **partial hit** where some of the cache contents are restored
 
 In both cases, this action will output `cache-hit` set to `false`.  You can then conditionally run 
+any steps to install the remaining dependencies.  Here is an example for Powershell:
 
 ```
 - uses: dhadka/ezcache@master
   id: cache
   with:
     type: powershell
+
 - name: Install PowerShell modules
   if: steps.cache.outputs.cache-hit != 'true'
   shell: pwsh
