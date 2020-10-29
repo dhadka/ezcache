@@ -1998,7 +1998,7 @@ class DockerLayers extends handler_1.CacheHandler {
         const imageDetector = new ImageDetector();
         const alreadyExistingImages = await imageDetector.getExistingImages();
         const layerCache = new LayerCache([]);
-        layerCache.concurrency = parseInt(core.getInput(`concurrency`, { required: true }), 10);
+        //layerCache.concurrency = parseInt(core.getInput(`concurrency`, { required: true }), 10)
         const restoredKey = await layerCache.restore(key, restoreKeys);
         await layerCache.cleanUp();
         core.saveState(`already-existing-images`, JSON.stringify(alreadyExistingImages));
