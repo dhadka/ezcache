@@ -1,4 +1,5 @@
-import { saveCache, restoreCache } from '@actions/cache'
+import * as core from '@actions/core'
+import { saveCache, restoreCache, ReserveCacheError } from '@actions/cache'
 import * as state from './state'
 
 export interface ICacheOptions {
@@ -49,10 +50,19 @@ export class CacheHandler {
     const restoredKey = state.readRestoredKey(this)
 
     if (key === restoredKey) {
-      console.log(`Cache hit on primary key '${key}', skip saving cache`)
+      core.info(`Cache hit on primary key '${key}', skip saving cache`)
     } else {
-      console.log(`Calling saveCache('${paths}', '${key}')`)
-      await saveCache(paths, key)
+      core.info(`Calling saveCache('${paths}', '${key}')`)
+
+      try {
+        await saveCache(paths, key)
+      } catch (error) {
+        if (error instanceof ReserveCacheError) {
+          core.info(`Cache already exists, skip saving cache`)
+        } else {
+          throw error
+        }
+      }
     }
   }
 
@@ -61,14 +71,14 @@ export class CacheHandler {
     const key = await this.getKeyForRestore(options?.version)
     const restoreKeys = await this.getRestoreKeys(options?.version)
 
-    console.log(`Calling restoreCache('${paths}', '${key}', ${restoreKeys})`)
+    core.info(`Calling restoreCache('${paths}', '${key}', ${restoreKeys})`)
     const restoredKey = await restoreCache(paths, key, restoreKeys)
 
     state.savePrimaryKey(this, key)
     state.addHandler(this)
 
     if (restoredKey) {
-      console.log(`Restored cache with key '${restoredKey}'`)
+      core.info(`Restored cache with key '${restoredKey}'`)
       state.saveRestoredKey(this, restoredKey)
     }
 

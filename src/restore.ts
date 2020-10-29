@@ -10,7 +10,7 @@ async function run() {
   let isFullRestore = true
 
   for (const handler of await registry.getAll(type)) {
-    console.log(`Restoring cache with ${handler.constructor.name} handler`)
+    core.info(`Restoring cache with ${handler.constructor.name} handler`)
     await handler.setup()
     const result = await handler.restoreCache({ version })
 
@@ -23,6 +23,6 @@ async function run() {
 }
 
 run().catch((e) => {
-  console.error(e)
+  core.error(e)
   core.setFailed(e)
 })

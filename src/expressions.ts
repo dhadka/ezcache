@@ -1,3 +1,4 @@
+import * as core from '@actions/core'
 import * as glob from '@actions/glob'
 import * as crypto from 'crypto'
 import * as fs from 'fs'
@@ -47,8 +48,7 @@ export async function matches(
 
 export async function hashFiles(
   matchPatterns: string | string[],
-  followSymbolicLinks: boolean = false,
-  verbose: boolean = true
+  followSymbolicLinks: boolean = false
 ): Promise<string> {
   const startTime = Date.now()
   let hasMatch = false
@@ -60,13 +60,13 @@ export async function hashFiles(
 
   const globber = await glob.create(matchPatterns, { followSymbolicLinks })
 
-  verbose && console.log(`Search paths: ${globber.getSearchPaths().join(',')}`)
+  core.debug(`Search paths: ${globber.getSearchPaths().join(',')}`)
 
   for await (const file of globber.globGenerator()) {
-    verbose && console.log(`Processing ${file}`)
+    core.debug(`Processing ${file}`)
 
     if (fs.statSync(file).isDirectory()) {
-      verbose && console.log(`Skip directory '${file}'.`)
+      core.debug(`Skip directory '${file}'.`)
       continue
     }
 
@@ -79,7 +79,7 @@ export async function hashFiles(
   }
 
   result.end()
-  console.log(`Calculated hash in ${Date.now() - startTime} ms`)
+  core.info(`Calculated hash in ${Date.now() - startTime} ms`)
 
   if (hasMatch) {
     return result.digest('hex')

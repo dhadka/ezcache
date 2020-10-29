@@ -1966,16 +1966,15 @@ class LayerCache {
 }
 LayerCache.ERROR_CACHE_ALREAD_EXISTS_STR = `Cache already exists`;
 LayerCache.ERROR_LAYER_CACHE_NOT_FOUND_STR = `Layer cache not found`;
-class Docker extends handler_1.CacheHandler {
+class DockerLayers extends handler_1.CacheHandler {
     async getKey(version) {
         return `${expressions_1.runner.os}-${version}-docker`;
     }
     async saveCache(options) {
         const key = await this.getKey(options === null || options === void 0 ? void 0 : options.version);
-        const restoredKey = JSON.parse(core.getState(`restored-key`));
+        const restoredKey = state.readRestoredKey(this);
         const alreadyExistingImages = JSON.parse(core.getState(`already-existing-images`));
         const restoredImages = JSON.parse(core.getState(`restored-images`));
-        typescript_is_1.assertType(restoredKey);
         typescript_is_1.assertType(alreadyExistingImages);
         typescript_is_1.assertType(restoredImages);
         const imageDetector = new ImageDetector();
@@ -2002,13 +2001,12 @@ class Docker extends handler_1.CacheHandler {
         layerCache.concurrency = parseInt(core.getInput(`concurrency`, { required: true }), 10);
         const restoredKey = await layerCache.restore(key, restoreKeys);
         await layerCache.cleanUp();
-        core.saveState(`restored-key`, JSON.stringify(restoredKey !== undefined ? restoredKey : ''));
         core.saveState(`already-existing-images`, JSON.stringify(alreadyExistingImages));
         core.saveState(`restored-images`, JSON.stringify(await imageDetector.getImagesShouldSave(alreadyExistingImages)));
         state.savePrimaryKey(this, key);
         state.addHandler(this);
         if (restoredKey) {
-            console.log(`Restored cache with key '${restoredKey}'`);
+            core.info(`Restored cache with key '${restoredKey}'`);
             state.saveRestoredKey(this, restoredKey);
         }
         return {
@@ -2017,7 +2015,7 @@ class Docker extends handler_1.CacheHandler {
         };
     }
 }
-registry_1.registry.add('docker-layers', new Docker());
+registry_1.registry.add('layers', new DockerLayers());
 
 
 /***/ }),
@@ -4286,6 +4284,7 @@ module.exports = require("child_process");
 
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.hashFiles = exports.matches = exports.exec = exports.runner = void 0;
+const core = __webpack_require__(470);
 const glob = __webpack_require__(281);
 const crypto = __webpack_require__(417);
 const fs = __webpack_require__(747);
@@ -4323,7 +4322,7 @@ async function matches(matchPatterns, followSymbolicLinks = false) {
     return false;
 }
 exports.matches = matches;
-async function hashFiles(matchPatterns, followSymbolicLinks = false, verbose = true) {
+async function hashFiles(matchPatterns, followSymbolicLinks = false) {
     const startTime = Date.now();
     let hasMatch = false;
     const result = crypto.createHash('sha256');
@@ -4331,11 +4330,11 @@ async function hashFiles(matchPatterns, followSymbolicLinks = false, verbose = t
         matchPatterns = matchPatterns.join('\n');
     }
     const globber = await glob.create(matchPatterns, { followSymbolicLinks });
-    verbose && console.log(`Search paths: ${globber.getSearchPaths().join(',')}`);
+    core.debug(`Search paths: ${globber.getSearchPaths().join(',')}`);
     for await (const file of globber.globGenerator()) {
-        verbose && console.log(`Processing ${file}`);
+        core.debug(`Processing ${file}`);
         if (fs.statSync(file).isDirectory()) {
-            verbose && console.log(`Skip directory '${file}'.`);
+            core.debug(`Skip directory '${file}'.`);
             continue;
         }
         const hash = crypto.createHash('sha256');
@@ -4345,7 +4344,7 @@ async function hashFiles(matchPatterns, followSymbolicLinks = false, verbose = t
         hasMatch = true;
     }
     result.end();
-    console.log(`Calculated hash in ${Date.now() - startTime} ms`);
+    core.info(`Calculated hash in ${Date.now() - startTime} ms`);
     if (hasMatch) {
         return result.digest('hex');
     }
@@ -49185,7 +49184,7 @@ async function run() {
     let version = core.getInput('version');
     let isFullRestore = true;
     for (const handler of await registry_1.registry.getAll(type)) {
-        console.log(`Restoring cache with ${handler.constructor.name} handler`);
+        core.info(`Restoring cache with ${handler.constructor.name} handler`);
         await handler.setup();
         const result = await handler.restoreCache({ version });
         if (result.type != handler_1.RestoreType.Full) {
@@ -49195,7 +49194,7 @@ async function run() {
     core.setOutput('cache-hit', isFullRestore);
 }
 run().catch((e) => {
-    console.error(e);
+    core.error(e);
     core.setFailed(e);
 });
 
@@ -56742,6 +56741,7 @@ exports.default = _default;
 
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CacheHandler = exports.RestoreType = void 0;
+const core = __webpack_require__(470);
 const cache_1 = __webpack_require__(692);
 const state = __webpack_require__(77);
 var RestoreType;
@@ -56776,23 +56776,33 @@ class CacheHandler {
         const key = await this.getKeyForSave(options === null || options === void 0 ? void 0 : options.version);
         const restoredKey = state.readRestoredKey(this);
         if (key === restoredKey) {
-            console.log(`Cache hit on primary key '${key}', skip saving cache`);
+            core.info(`Cache hit on primary key '${key}', skip saving cache`);
         }
         else {
-            console.log(`Calling saveCache('${paths}', '${key}')`);
-            await cache_1.saveCache(paths, key);
+            core.info(`Calling saveCache('${paths}', '${key}')`);
+            try {
+                await cache_1.saveCache(paths, key);
+            }
+            catch (error) {
+                if (error instanceof cache_1.ReserveCacheError) {
+                    core.info(`Cache already exists, skip saving cache`);
+                }
+                else {
+                    throw error;
+                }
+            }
         }
     }
     async restoreCache(options) {
         const paths = await this.getPaths();
         const key = await this.getKeyForRestore(options === null || options === void 0 ? void 0 : options.version);
         const restoreKeys = await this.getRestoreKeys(options === null || options === void 0 ? void 0 : options.version);
-        console.log(`Calling restoreCache('${paths}', '${key}', ${restoreKeys})`);
+        core.info(`Calling restoreCache('${paths}', '${key}', ${restoreKeys})`);
         const restoredKey = await cache_1.restoreCache(paths, key, restoreKeys);
         state.savePrimaryKey(this, key);
         state.addHandler(this);
         if (restoredKey) {
-            console.log(`Restored cache with key '${restoredKey}'`);
+            core.info(`Restored cache with key '${restoredKey}'`);
             state.saveRestoredKey(this, restoredKey);
         }
         return {

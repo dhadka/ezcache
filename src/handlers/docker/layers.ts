@@ -372,7 +372,7 @@ class LayerCache {
   }
 }
 
-class Docker extends CacheHandler {
+class DockerLayers extends CacheHandler {
   async getKey(version?: string): Promise<string> {
     return `${runner.os}-${version}-docker`
   }
@@ -380,11 +380,10 @@ class Docker extends CacheHandler {
   async saveCache(options?: ICacheOptions): Promise<void> {
     const key = await this.getKey(options?.version)
 
-    const restoredKey = JSON.parse(core.getState(`restored-key`))
+    const restoredKey = state.readRestoredKey(this)
     const alreadyExistingImages = JSON.parse(core.getState(`already-existing-images`))
     const restoredImages = JSON.parse(core.getState(`restored-images`))
   
-    assertType<string>(restoredKey)
     assertType<string[]>(alreadyExistingImages)
     assertType<string[]>(restoredImages)
   
@@ -419,7 +418,6 @@ class Docker extends CacheHandler {
     const restoredKey = await layerCache.restore(key, restoreKeys)
     await layerCache.cleanUp()
   
-    core.saveState(`restored-key`, JSON.stringify(restoredKey !== undefined ? restoredKey : ''))
     core.saveState(`already-existing-images`, JSON.stringify(alreadyExistingImages))
     core.saveState(`restored-images`, JSON.stringify(await imageDetector.getImagesShouldSave(alreadyExistingImages)))
 
@@ -427,7 +425,7 @@ class Docker extends CacheHandler {
     state.addHandler(this)
 
     if (restoredKey) {
-      console.log(`Restored cache with key '${restoredKey}'`)
+      core.info(`Restored cache with key '${restoredKey}'`)
       state.saveRestoredKey(this, restoredKey)
     }
 
@@ -438,4 +436,4 @@ class Docker extends CacheHandler {
   }
 }
 
-registry.add('docker-layers', new Docker())
+registry.add('layers', new DockerLayers())

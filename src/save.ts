@@ -8,12 +8,12 @@ async function run() {
   let version = core.getInput('version')
 
   for (const handler of await registry.getAll(type)) {
-    console.log(`Saving cache with ${handler.constructor.name} handler`)
+    core.info(`Saving cache with ${handler.constructor.name} handler`)
     await handler.saveCache({ version })
   }
 }
 
 run().catch((e) => {
-  console.error(e)
+  core.error(e)
   core.setFailed(e)
 })
