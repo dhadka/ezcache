@@ -88,3 +88,18 @@ jobs:
           type: auto
       - name: Install dependencies
         run: npm ci
+
+  test-daily:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Daily cache
+        uses: ./
+        with:
+          type: daily
+          path: nodejs
+      - name: Checkout node source code
+        uses: actions/checkout@v2
+        with:
+          repository: nodejs/node
+          path: nodejs

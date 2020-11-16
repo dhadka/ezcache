@@ -5,7 +5,7 @@ setting up the cache by providing predefined configurations for different langua
 management tools.  For example, caching NPM is as easy as adding the step:
 
 ```
-- use: dhadka/ezcache@master
+- uses: dhadka/ezcache@master
   with:
     type: npm
 ```
@@ -84,9 +84,24 @@ Using `auto` will auto-detect which cache type is appropriate for your repo.  Fu
 multiple types, thus creating multiple caches.
 
 ```
-- use: dhadka/ezcache@master
+- uses: dhadka/ezcache@master
   with:
     type: auto
+```
+
+### daily
+
+A `daily` cache stores one (or more) folders such that the cache is updated once a day.  This is useful when caching
+some content that changes frequently, but we don't want to create new caches for every change.  For example,
+this could be used to cache the `.git` folder for a large repo, where a full checkout is slow but pulling
+new changes is relatively fast.
+
+```
+- uses: dhadka/ezcache@master
+  with:
+    type: daily
+    path: .git
+- uses: actions/checkout@v2
 ```
 
 ### diff
@@ -95,7 +110,7 @@ A `diff` cache will store one (or more) folders.  As the name suggests, the cach
 the folder contents change.  Likewise, the last cache created on the branch is restored.
 
 ```
-- use: dhadka/ezcache@master
+- uses: dhadka/ezcache@master
   with:
     type: diff
     path: ~/path/to/cache
@@ -111,7 +126,7 @@ Tip: Use the [needs](https://docs.github.com/en/free-pro-team@latest/actions/ref
 field to ensure jobs that read the cache run after the job that create the cache.
 
 ```
-- use: dhadka/ezcache@master
+- uses: dhadka/ezcache@master
   with:
     type: run
     path: ~/path/to/cache
@@ -146,7 +161,7 @@ any steps to install the remaining dependencies.  Here is an example for Powersh
 Most caches can also be versioned by specifying the `version` input, for example:
 
 ```
-- use: dhadka/ezcache@master
+- uses: dhadka/ezcache@master
   with:
     type: npm
     version: v2
@@ -156,7 +171,7 @@ The version can be any arbitrary string and is useful when needing to "clear" th
 normally require you to make a commit to change the version, but an alternative is to use a secret value:
 
 ```
-- use: dhadka/ezcache@master
+- uses: dhadka/ezcache@master
   with:
     type: npm
     version: ${{ secrets.CACHE_VERSION }}

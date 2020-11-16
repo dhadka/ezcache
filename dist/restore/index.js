@@ -51260,7 +51260,45 @@ module.exports = __webpack_require__(512)
 
 /***/ }),
 /* 853 */,
-/* 854 */,
+/* 854 */
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const core = __webpack_require__(470);
+const registry_1 = __webpack_require__(822);
+const expressions_1 = __webpack_require__(134);
+const handler_1 = __webpack_require__(895);
+/**
+ * Creates a cache of an arbitrary path (or paths) that updates once a day.
+ */
+class DailyCache extends handler_1.CacheHandler {
+    constructor() {
+        super();
+        this.today = new Date();
+    }
+    async getPaths() {
+        return core
+            .getInput('path')
+            .split('\n')
+            .map((s) => s.trim());
+    }
+    async getKey(version) {
+        return `${expressions_1.runner.os}-${version}-daily-${this.today.getFullYear()}-${this.today.getMonth()}-${this.today.getDate()}`;
+    }
+    async getRestoreKeys(version) {
+        return [
+            `${expressions_1.runner.os}-${version}-daily-${this.today.getFullYear()}-${this.today.getMonth()}-`,
+            `${expressions_1.runner.os}-${version}-daily-${this.today.getFullYear()}-`,
+            `${expressions_1.runner.os}-${version}-daily-`,
+        ];
+    }
+}
+registry_1.registry.add('daily', new DailyCache());
+
+
+/***/ }),
 /* 855 */
 /***/ (function(module, __unusedexports, __webpack_require__) {
 
@@ -52615,6 +52653,7 @@ __webpack_require__(905);
 __webpack_require__(664);
 __webpack_require__(648);
 __webpack_require__(484);
+__webpack_require__(854);
 __webpack_require__(467);
 __webpack_require__(322);
 __webpack_require__(769);
