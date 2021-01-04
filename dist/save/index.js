@@ -36262,7 +36262,52 @@ exports.default = {
 /***/ }),
 /* 441 */,
 /* 442 */,
-/* 443 */,
+/* 443 */
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const core = __webpack_require__(470);
+const registry_1 = __webpack_require__(822);
+const expressions_1 = __webpack_require__(134);
+const handler_1 = __webpack_require__(895);
+const state = __webpack_require__(77);
+/**
+ * Creates a new cache when an environment variable changes.  This works by
+ * appending a unique value, such as the current time (yes, this is not guaranteed
+ * to be unique but should be good enough), to the key when the UPDATE_CACHE
+ * env var is set to 'true'.
+ */
+class EnvCache extends handler_1.CacheHandler {
+    async getPaths() {
+        return core
+            .getInput('path')
+            .split('\n')
+            .map((s) => s.trim());
+    }
+    async getKeyForRestore(version) {
+        return `env-never-match-primary-key`;
+    }
+    async getKeyForSave(version) {
+        var _a;
+        const restoredKey = state.readRestoredKey(this);
+        if (((_a = process.env['UPDATE_CACHE']) === null || _a === void 0 ? void 0 : _a.toLowerCase()) === 'true' ||
+            !restoredKey || restoredKey === '') {
+            return `${expressions_1.runner.os}-${version}-env-${Date.now()}`;
+        }
+        else {
+            return restoredKey;
+        }
+    }
+    async getRestoreKeys(version) {
+        return [`${expressions_1.runner.os}-${version}-env-`];
+    }
+}
+registry_1.registry.add('env', new EnvCache());
+
+
+/***/ }),
 /* 444 */,
 /* 445 */,
 /* 446 */,
@@ -52635,6 +52680,7 @@ __webpack_require__(648);
 __webpack_require__(484);
 __webpack_require__(854);
 __webpack_require__(467);
+__webpack_require__(443);
 __webpack_require__(322);
 __webpack_require__(769);
 __webpack_require__(859);
