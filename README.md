@@ -133,6 +133,7 @@ The last saved cache is restored.
     if [[ MY_VERSION != LATEST_VERSION ]]; then
       ...install new version...
       echo "UPDATE_CACHE=true" >> $GITHUB_ENV
+    fi
 ```
 
 ### run
