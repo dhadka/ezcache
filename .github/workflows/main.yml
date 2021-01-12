@@ -103,3 +103,33 @@ jobs:
         with:
           repository: nodejs/node
           path: nodejs
+
+  test-env-create-or-update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Env cache
+        uses: ./
+        with:
+          type: env
+          path: ~/.npm
+      - name: Install dependencies
+        run: |
+          npm ci
+          echo "UPDATE_CACHE=true" >> $GITHUB_ENV
+
+  test-env-no-update:
+    needs: test-env-create-or-update
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Env cache
+        uses: ./
+        with:
+          type: env
+          path: ~/.npm
+      - name: Install dependencies
+        run: |
+          npm ci
+
+

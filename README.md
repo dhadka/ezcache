@@ -116,6 +116,25 @@ the folder contents change.  Likewise, the last cache created on the branch is r
     path: ~/path/to/cache
 ```
 
+### env
+
+A `env` cache triggers cache updates by setting the `UPDATE_CACHE` environment variable to `true`.
+The last saved cache is restored.
+
+```
+- uses: dhadka/ezcache@master
+  with:
+    type: env
+    path: ~/path/to/cache
+- name: Install dependencies
+  run: |
+    MY_VERSION=$(foo --version)
+    LATEST_VERSION=$(...get latest version number...)
+    if [[ MY_VERSION != LATEST_VERSION ]]; then
+      ...install new version...
+      echo "UPDATE_CACHE=true" >> $GITHUB_ENV
+```
+
 ### run
 
 Using `run` will create a new cache for every run of your workflow.  This can be used to share data between
