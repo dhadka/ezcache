@@ -4181,7 +4181,7 @@ module.exports = require("child_process");
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.hashFiles = exports.matches = exports.exec = exports.runner = void 0;
+exports.hashFiles = exports.matches = exports.execNoFail = exports.exec = exports.runner = void 0;
 const core = __webpack_require__(470);
 const glob = __webpack_require__(281);
 const crypto = __webpack_require__(417);
@@ -4209,6 +4209,10 @@ async function exec(cmd, ...args) {
     return (await execa(cmd, args, {})).stdout;
 }
 exports.exec = exec;
+async function execNoFail(cmd, ...args) {
+    return (await execa(cmd, args, {})).exitCode;
+}
+exports.execNoFail = execNoFail;
 async function matches(matchPatterns, followSymbolicLinks = false) {
     if (Array.isArray(matchPatterns)) {
         matchPatterns = matchPatterns.join('\n');
@@ -43611,7 +43615,7 @@ class LocalStorageProvider extends provider_1.StorageProvider {
     async copyFolderNative(source, target) {
         switch (expressions_1.runner.os) {
             case 'Windows':
-                await expressions_1.exec("robocopy", source.toString(), target.toString(), "/E", "/MT:32", "/NP", "/NS", "/NC", "/NFL", "/NDL");
+                await expressions_1.execNoFail("robocopy", source.toString(), target.toString(), "/E", "/MT:32", "/NP", "/NS", "/NC", "/NFL", "/NDL");
             case 'Linux':
             case 'macOS':
                 this.copyFolderInternal(source, target);

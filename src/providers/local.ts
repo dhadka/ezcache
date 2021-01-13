@@ -5,7 +5,7 @@ import * as crypto from 'crypto'
 import * as core from '@actions/core'
 import * as github from '@actions/github'
 import { StorageProvider } from '../provider'
-import { exec, runner } from '../expressions'
+import { exec, execNoFail, runner } from '../expressions'
 
 interface IRepo {
   owner: string
@@ -188,7 +188,7 @@ export class LocalStorageProvider extends StorageProvider {
   private async copyFolderNative(source: fs.PathLike, target: fs.PathLike): Promise<void> {
     switch (runner.os) {
       case 'Windows':
-        await exec("robocopy", source.toString(), target.toString(), "/E", "/MT:32", "/NP", "/NS", "/NC", "/NFL", "/NDL")
+        await execNoFail("robocopy", source.toString(), target.toString(), "/E", "/MT:32", "/NP", "/NS", "/NC", "/NFL", "/NDL")
       case 'Linux':
       case 'macOS':
         this.copyFolderInternal(source, target)

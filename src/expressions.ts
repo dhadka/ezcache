@@ -29,6 +29,10 @@ export async function exec(cmd: string, ...args: string[]): Promise<string> {
   return (await execa(cmd, args, {})).stdout
 }
 
+export async function execNoFail(cmd: string, ...args: string[]): Promise<number> {
+  return (await execa(cmd, args, {})).exitCode
+}
+
 export async function matches(
   matchPatterns: string | string[],
   followSymbolicLinks: boolean = false,
