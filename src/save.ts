@@ -2,6 +2,7 @@ import * as core from '@actions/core'
 import { handlers } from './registry'
 
 require('./handlers/all')
+require('./providers/all')
 
 async function run() {
   let type = core.getInput('type')

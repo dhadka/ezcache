@@ -1098,7 +1098,17 @@ Object.defineProperty(exports, "__esModule", { value: true });
 //# sourceMappingURL=HttpTextPropagator.js.map
 
 /***/ }),
-/* 34 */,
+/* 34 */
+/***/ (function(__unusedmodule, __unusedexports, __webpack_require__) {
+
+"use strict";
+
+// Explicit list of all providers so they are compiled by ncc.
+__webpack_require__(285);
+__webpack_require__(643);
+
+
+/***/ }),
 /* 35 */,
 /* 36 */,
 /* 37 */,
@@ -6718,7 +6728,41 @@ exports.create = create;
 /* 282 */,
 /* 283 */,
 /* 284 */,
-/* 285 */,
+/* 285 */
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const core = __webpack_require__(470);
+const cache_1 = __webpack_require__(692);
+const registry_1 = __webpack_require__(822);
+const provider_1 = __webpack_require__(880);
+/**
+ * Stores cache content using the GitHub Actions Cache.
+ */
+class HostedStorageProvider extends provider_1.StorageProvider {
+    async restoreCache(paths, primaryKey, restoreKeys) {
+        return await cache_1.restoreCache(paths, primaryKey, restoreKeys);
+    }
+    async saveCache(paths, key) {
+        try {
+            await cache_1.saveCache(paths, key);
+        }
+        catch (error) {
+            if (error instanceof cache_1.ReserveCacheError) {
+                core.info(`Cache already exists, skip saving cache`);
+            }
+            else {
+                throw error;
+            }
+        }
+    }
+}
+registry_1.providers.add('hosted', new HostedStorageProvider());
+
+
+/***/ }),
 /* 286 */,
 /* 287 */,
 /* 288 */,
@@ -42981,7 +43025,285 @@ module.exports = {"application/1d-interleaved-parityfec":{"source":"iana"},"appl
 /* 640 */,
 /* 641 */,
 /* 642 */,
-/* 643 */,
+/* 643 */
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.LocalStorageProvider = void 0;
+const os = __webpack_require__(87);
+const path = __webpack_require__(622);
+const fs = __webpack_require__(747);
+const crypto = __webpack_require__(417);
+const execa = __webpack_require__(955);
+const core = __webpack_require__(470);
+const github = __webpack_require__(469);
+const registry_1 = __webpack_require__(822);
+const provider_1 = __webpack_require__(880);
+const expressions_1 = __webpack_require__(134);
+/**
+ * Stores cache content on the local file system.  This is useful for self-hosted runners and
+ * GitHub Enterprise Server.
+ *
+ * There are several key functional differences between local and hosted storage, namely:
+ *
+ *   1. No individual or total cache size limit.
+ *   2. No scoping of caches to individual branches.  Caches are shared across branches.
+ *   3. Eviction occurs during the save operation.
+ *   4. Caches are only shareable on the local machine.
+ *
+ * Local caches are structured as follows:
+ *
+ *   <root>
+ *     |- <owner1>
+ *          |- <repo1>
+ *               |- lastEviction.tstamp
+ *                   |- <key1>
+ *                        |- committed.tstamp
+ *                        |- lastAccessed.tstamp
+ *                        |- <path1>
+ *                        |- <path2>
+ *                   |- <key2>
+ *                        |- lastAccessed.tstamp
+ *                        |- <path1>
+ *
+ * Future work:
+ *   1. Can a repo owner or name contain invalid characters on an OS?
+ *   2. Override root folder, eviction settings, with env vars
+ */
+class LocalStorageProvider extends provider_1.StorageProvider {
+    getRepo() {
+        return { owner: github.context.repo.owner, name: github.context.repo.repo };
+    }
+    getCacheRoot() {
+        return path.join(os.homedir(), '.RunnerCache');
+    }
+    getRepoFolder(repo) {
+        return path.join(this.getCacheRoot(), repo.owner, repo.name);
+    }
+    getKeyFolder(key) {
+        return path.join(this.getRepoFolder(key.repo), key.value);
+    }
+    getCachePathFolder(cachePath) {
+        // Use a hash to map the path (e.g., ~/.npm) to the folder in the local cache.
+        const pathHash = crypto.createHash('sha256').update(cachePath.path.toString()).digest('hex');
+        return path.join(this.getKeyFolder(cachePath.key), pathHash);
+    }
+    getLastAccessedPath(key) {
+        return path.join(this.getKeyFolder(key), 'lastAccessed.tstamp');
+    }
+    getLastEvictedPath(repo) {
+        return path.join(this.getRepoFolder(repo), 'lastEvicted.tstamp');
+    }
+    getCommittedPath(key) {
+        return path.join(this.getKeyFolder(key), 'committed.tstamp');
+    }
+    writeTimestamp(file, timestamp) {
+        fs.writeFileSync(file, timestamp.toUTCString(), { encoding: 'utf8' });
+    }
+    readTimestamp(file) {
+        const timestamp = fs.readFileSync(file, { encoding: 'utf8' }).toString();
+        return new Date(timestamp);
+    }
+    getLastAccessed(key) {
+        return this.readTimestamp(this.getLastAccessedPath(key));
+    }
+    updateLastAccessed(key) {
+        this.writeTimestamp(this.getLastAccessedPath(key), new Date());
+    }
+    getLastEvicted(repo) {
+        try {
+            return this.readTimestamp(this.getLastEvictedPath(repo));
+        }
+        catch {
+            return new Date();
+        }
+    }
+    updateLastEvicted(repo) {
+        this.writeTimestamp(this.getLastEvictedPath(repo), new Date());
+    }
+    commit(key) {
+        this.writeTimestamp(this.getCommittedPath(key), new Date());
+    }
+    isCommitted(key) {
+        return fs.existsSync(this.getKeyFolder(key)) &&
+            fs.existsSync(this.getCommittedPath(key));
+    }
+    concatenateKeys(primaryKey, restoreKeys) {
+        var result = [primaryKey];
+        if (restoreKeys) {
+            result = result.concat(restoreKeys);
+        }
+        return result;
+    }
+    preprocessPaths(paths) {
+        return paths.map(p => {
+            if (p.startsWith('~')) {
+                p = os.homedir() + p.substr(1);
+            }
+            return path.normalize(p);
+        });
+    }
+    async restoreFolder(paths, key) {
+        const start = Date.now();
+        core.debug(`Restoring cache ${key.value}`);
+        for (const path of this.preprocessPaths(paths)) {
+            const sourcePath = this.getCachePathFolder({ key: key, path: path });
+            core.debug(`Copying ${sourcePath} to ${path}`);
+            await this.copyFolder(sourcePath, path);
+        }
+        core.debug(`Updating last accessed time`);
+        this.updateLastAccessed(key);
+        core.info(`Cache successfully restored in ${Date.now() - start} ms`);
+    }
+    async saveFolder(paths, key) {
+        const start = Date.now();
+        core.debug(`Saving cache ${key.value}`);
+        for (const path of this.preprocessPaths(paths)) {
+            const targetPath = this.getCachePathFolder({ key: key, path: path });
+            core.debug(`Copying ${path} to ${targetPath}`);
+            await this.copyFolder(path, targetPath);
+        }
+        core.debug(`Committing cache ${key.value}`);
+        this.updateLastAccessed(key);
+        this.commit(key);
+        core.info(`Cache successfully saved in ${Date.now() - start} ms`);
+    }
+    copyFolderInternal(source, target) {
+        fs.mkdirSync(target, { recursive: true });
+        for (const file of fs.readdirSync(source)) {
+            const sourcePath = path.join(source, file);
+            const targetPath = path.join(target, file);
+            const fstat = fs.statSync(sourcePath);
+            if (fstat.isDirectory()) {
+                this.copyFolderInternal(sourcePath, targetPath);
+            }
+            else {
+                fs.copyFileSync(sourcePath, targetPath);
+            }
+        }
+    }
+    async copyFolderWindows(source, target) {
+        var _a;
+        const process = execa("robocopy", [source, target, "/E", "/MT:32", "/NP", "/NS", "/NC", "/NFL", "/NDL"]);
+        try {
+            await process;
+        }
+        catch (e) {
+            // Robocopy has non-standard exit codes.
+            const exitCode = (_a = process.exitCode) !== null && _a !== void 0 ? _a : 0;
+            if (exitCode & 0x8 || exitCode & 0x10) {
+                throw e;
+            }
+        }
+    }
+    async copyFolderNative(source, target) {
+        switch (expressions_1.runner.os) {
+            case 'Windows':
+                await this.copyFolderWindows(source, target);
+            case 'Linux':
+            case 'macOS':
+                this.copyFolderInternal(source, target);
+        }
+    }
+    async copyFolder(source, target) {
+        if (process.env["CACHE_DISABLE_NATIVE"] === 'true') {
+            this.copyFolderInternal(source, target);
+        }
+        else {
+            await this.copyFolderNative(source, target);
+        }
+    }
+    listKeys(repo) {
+        const path = this.getRepoFolder(repo);
+        if (fs.existsSync(path)) {
+            return fs.readdirSync(path).map(p => {
+                return { repo: repo, value: p };
+            });
+        }
+        else {
+            return [];
+        }
+    }
+    async restoreCache(paths, primaryKey, restoreKeys) {
+        const keys = this.concatenateKeys(primaryKey, restoreKeys);
+        const repo = this.getRepo();
+        for (const key of keys) {
+            const cacheKey = { repo: repo, value: key };
+            // Exact match
+            if (this.isCommitted(cacheKey)) {
+                await this.restoreFolder(paths, cacheKey);
+                return cacheKey.value;
+            }
+            // Prefix match
+            for (const testKey of this.listKeys(repo)) {
+                if (testKey.value.startsWith(key) && this.isCommitted(testKey)) {
+                    await this.restoreFolder(paths, testKey);
+                    return testKey.value;
+                }
+            }
+        }
+    }
+    daysInPast(days) {
+        const date = new Date();
+        date.setDate(date.getDate() - days);
+        return date;
+    }
+    shouldRunEviction(repo) {
+        return this.getLastEvicted(repo) < this.daysInPast(1);
+    }
+    shouldEvictKey(key) {
+        return this.getLastAccessed(key) < this.daysInPast(7);
+    }
+    shouldEvictUncommittedKey(key) {
+        return fs.statSync(this.getKeyFolder(key)).ctime < this.daysInPast(1);
+    }
+    evict(repo) {
+        const start = Date.now();
+        core.debug(`Evicting stale caches from ${repo.owner}/${repo.name}`);
+        for (const key of this.listKeys(repo)) {
+            if (this.isCommitted(key)) {
+                if (this.shouldEvictKey(key)) {
+                    core.debug(`Evicting cache ${key}`);
+                    this.evictKey(key);
+                }
+            }
+            else if (this.shouldEvictUncommittedKey(key)) {
+                core.debug(`Evicting uncommitted cache ${key}`);
+                this.evictKey(key);
+            }
+        }
+        this.updateLastEvicted(repo);
+        core.debug(`Eviction successfully completed in ${Date.now() - start} ms`);
+    }
+    evictKey(key) {
+        // It's technically possible for a machine to have multiple runners where a job
+        // tries to restore a cache that is being evicted.  However, given that we only
+        // evict after a cache has been unused for 7 days, this is very unlikely.
+        fs.rmSync(this.getCommittedPath(key), { force: true });
+        fs.rmSync(this.getKeyFolder(key), { recursive: true, force: true });
+    }
+    async saveCache(paths, key) {
+        const repo = this.getRepo();
+        const cacheKey = { repo: repo, value: key };
+        const cacheFolder = this.getKeyFolder(cacheKey);
+        if (fs.existsSync(cacheFolder)) {
+            core.info(`Cache already exists, skip saving cache`);
+        }
+        else {
+            await this.saveFolder(paths, cacheKey);
+        }
+        if (this.shouldRunEviction(repo)) {
+            this.evict(repo);
+        }
+    }
+}
+exports.LocalStorageProvider = LocalStorageProvider;
+registry_1.providers.add('local', new LocalStorageProvider());
+
+
+/***/ }),
 /* 644 */,
 /* 645 */
 /***/ (function(__unusedmodule, exports, __webpack_require__) {
@@ -47940,6 +48262,7 @@ const core = __webpack_require__(470);
 const registry_1 = __webpack_require__(822);
 const handler_1 = __webpack_require__(895);
 __webpack_require__(877);
+__webpack_require__(34);
 async function run() {
     let type = core.getInput('type');
     let version = core.getInput('version');
@@ -52716,7 +53039,19 @@ __webpack_require__(967);
 /***/ }),
 /* 878 */,
 /* 879 */,
-/* 880 */,
+/* 880 */
+/***/ (function(__unusedmodule, exports) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.StorageProvider = void 0;
+class StorageProvider {
+}
+exports.StorageProvider = StorageProvider;
+
+
+/***/ }),
 /* 881 */
 /***/ (function(module) {
 
@@ -55595,9 +55930,10 @@ class CacheHandler {
     }
     async setup() { }
     getStorageProvider(options) {
-        const provider = registry_1.providers.getFirst((options === null || options === void 0 ? void 0 : options.provider) || 'hosted');
+        const name = (options === null || options === void 0 ? void 0 : options.provider) || 'hosted';
+        const provider = registry_1.providers.getFirst(name);
         if (!provider) {
-            throw Error(`No provider found for ${options === null || options === void 0 ? void 0 : options.provider}`);
+            throw Error(`No provider found for ${name}`);
         }
         return provider;
     }

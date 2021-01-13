@@ -3,6 +3,7 @@ import { handlers } from './registry'
 import { RestoreType } from './handler'
 
 require('./handlers/all')
+require('./providers/all')
 
 async function run() {
   let type = core.getInput('type')

@@ -46,10 +46,11 @@ export abstract class CacheHandler {
   async setup(): Promise<void> {}
 
   getStorageProvider(options?: ICacheOptions): StorageProvider {
-    const provider = providers.getFirst(options?.provider || 'hosted')
+    const name = options?.provider || 'hosted'
+    const provider = providers.getFirst(name)
 
     if (!provider) {
-      throw Error(`No provider found for ${options?.provider}`)
+      throw Error(`No provider found for ${name}`)
     }
 
     return provider
