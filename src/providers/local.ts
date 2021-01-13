@@ -186,20 +186,24 @@ export class LocalStorageProvider extends StorageProvider {
     }
   }
 
+  private async copyFolderWindows(source: fs.PathLike, target: fs.PathLike): Promise<void> {
+    const process = execa("robocopy", [source.toString(), target.toString(), "/E", "/MT:32", "/NP", "/NS", "/NC", "/NFL", "/NDL"])
+    try {
+      await process
+    } catch (e) {
+      // Robocopy has non-standard exit codes.
+      const exitCode = process.exitCode ?? 0
+
+      if (exitCode & 0x8 || exitCode & 0x10) {
+        throw e
+      }
+    }
+  }
+
   private async copyFolderNative(source: fs.PathLike, target: fs.PathLike): Promise<void> {
     switch (runner.os) {
       case 'Windows':
-        const process = execa("robocopy", [source.toString(), target.toString(), "/E", "/MT:32", "/NP", "/NS", "/NC", "/NFL", "/NDL"])
-        try {
-          await process
-        } catch (e) {
-          // Robocopy returns non-zero exit codes on success, so we need to filter these out
-          const exitCode = process.exitCode ?? 0xF
-
-          if (exitCode ^ 0x8 || exitCode ^ 0xF) {
-            throw e
-          }
-        }
+        await this.copyFolderWindows(source, target)
       case 'Linux':
       case 'macOS':
         this.copyFolderInternal(source, target)

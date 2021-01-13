@@ -43129,21 +43129,24 @@ class LocalStorageProvider extends provider_1.StorageProvider {
             }
         }
     }
-    async copyFolderNative(source, target) {
+    async copyFolderWindows(source, target) {
         var _a;
+        const process = execa("robocopy", [source.toString(), target.toString(), "/E", "/MT:32", "/NP", "/NS", "/NC", "/NFL", "/NDL"]);
+        try {
+            await process;
+        }
+        catch (e) {
+            // Robocopy has non-standard exit codes.
+            const exitCode = (_a = process.exitCode) !== null && _a !== void 0 ? _a : 0;
+            if (exitCode & 0x8 || exitCode & 0x10) {
+                throw e;
+            }
+        }
+    }
+    async copyFolderNative(source, target) {
         switch (expressions_1.runner.os) {
             case 'Windows':
-                const process = execa("robocopy", [source.toString(), target.toString(), "/E", "/MT:32", "/NP", "/NS", "/NC", "/NFL", "/NDL"]);
-                try {
-                    await process;
-                }
-                catch (e) {
-                    // Robocopy returns non-zero exit codes on success, so we need to filter these out
-                    const exitCode = (_a = process.exitCode) !== null && _a !== void 0 ? _a : 0xF;
-                    if (exitCode ^ 0x8 || exitCode ^ 0xF) {
-                        throw e;
-                    }
-                }
+                await this.copyFolderWindows(source, target);
             case 'Linux':
             case 'macOS':
                 this.copyFolderInternal(source, target);
@@ -55920,7 +55923,7 @@ class CacheHandler {
         else {
             const storageProvider = this.getStorageProvider(options);
             core.info(`Calling saveCache('${paths}', '${key}') using ${storageProvider.constructor.name}`);
-            storageProvider.saveCache(paths, key);
+            await storageProvider.saveCache(paths, key);
         }
     }
     async restoreCache(options) {
