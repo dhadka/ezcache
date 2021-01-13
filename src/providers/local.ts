@@ -135,7 +135,7 @@ export class LocalStorageProvider extends StorageProvider {
     return result
   }
 
-  private restoreFolder(paths: fs.PathLike[], key: IKey): void {
+  private async restoreFolder(paths: fs.PathLike[], key: IKey): Promise<void> {
     const start = Date.now()
     core.debug(`Restoring cache ${key.value}`)
 
@@ -143,7 +143,7 @@ export class LocalStorageProvider extends StorageProvider {
       const sourcePath = this.getCachePathFolder({ key: key, path: path })
 
       core.debug(`Copying ${sourcePath} to ${path}`)
-      this.copyFolder(sourcePath, path)
+      await this.copyFolder(sourcePath, path)
     }
 
     core.debug(`Updating last accessed time`)
@@ -152,7 +152,7 @@ export class LocalStorageProvider extends StorageProvider {
     core.info(`Cache successfully restored in ${Date.now() - start} ms`)
   }
 
-  private saveFolder(paths: fs.PathLike[], key: IKey): void {
+  private async saveFolder(paths: fs.PathLike[], key: IKey): Promise<void> {
     const start = Date.now()
     core.debug(`Saving cache ${key.value}`)
 
@@ -160,7 +160,7 @@ export class LocalStorageProvider extends StorageProvider {
       const targetPath = this.getCachePathFolder({ key: key, path: path })
 
       core.debug(`Copying ${path} to ${targetPath}`)
-      this.copyFolder(path, targetPath)
+      await this.copyFolder(path, targetPath)
     }
 
     core.debug(`Committing cache ${key.value}`)
@@ -179,7 +179,7 @@ export class LocalStorageProvider extends StorageProvider {
       const fstat = fs.statSync(sourcePath)
 
       if (fstat.isDirectory()) {
-        this.copyFolder(sourcePath, targetPath)
+        this.copyFolderInternal(sourcePath, targetPath)
       } else {
         fs.copyFileSync(sourcePath, targetPath)
       }
@@ -225,14 +225,14 @@ export class LocalStorageProvider extends StorageProvider {
 
       // Exact match
       if (this.isCommitted(cacheKey)) {
-        this.restoreFolder(paths, cacheKey)
+        await this.restoreFolder(paths, cacheKey)
         return cacheKey.value
       }
 
       // Prefix match
       for (const testKey of this.listKeys(repo)) {
         if (testKey.value.startsWith(key) && this.isCommitted(testKey)) {
-          this.restoreFolder(paths, testKey)
+          await this.restoreFolder(paths, testKey)
           return testKey.value
         }
       }
@@ -289,7 +289,7 @@ export class LocalStorageProvider extends StorageProvider {
     if (fs.existsSync(cacheFolder)) {
       core.info(`Cache already exists, skip saving cache`)
     } else {
-      this.saveFolder(paths, cacheKey)
+      await this.saveFolder(paths, cacheKey)
     }
 
     if (this.shouldRunEviction(repo)) {
