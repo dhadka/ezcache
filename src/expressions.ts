@@ -48,7 +48,7 @@ export async function matches(
 
 export async function hashFiles(
   matchPatterns: string | string[],
-  followSymbolicLinks: boolean = false
+  followSymbolicLinks: boolean = false,
 ): Promise<string> {
   const startTime = Date.now()
   let hasMatch = false

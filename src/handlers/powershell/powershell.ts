@@ -6,7 +6,7 @@ class Powershell extends CacheHandler {
   async getPaths(): Promise<string[]> {
     switch (runner.os) {
       case 'Windows':
-        return ['~\Documents\PowerShell\Modules']
+        return ['~DocumentsPowerShellModules']
       case 'Linux':
       case 'macOS':
         return ['~/.local/share/powershell/Modules']

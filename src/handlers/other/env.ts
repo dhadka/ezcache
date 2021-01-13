@@ -25,8 +25,7 @@ class EnvCache extends CacheHandler {
   async getKeyForSave(version?: string): Promise<string> {
     const restoredKey = state.readRestoredKey(this)
 
-    if (process.env['UPDATE_CACHE']?.toLowerCase() === 'true' ||
-        !restoredKey || restoredKey === '') {
+    if (process.env['UPDATE_CACHE']?.toLowerCase() === 'true' || !restoredKey || restoredKey === '') {
       return `${runner.os}-${version}-env-${Date.now()}`
     } else {
       return restoredKey

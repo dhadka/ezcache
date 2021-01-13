@@ -54,9 +54,9 @@ function loadManifests(path: string): Manifests {
 
   for (const rawManifest of rawManifests) {
     const manifest: Manifest = {
-      Config: rawManifest["Config"],
-      RepoTags: rawManifest["RepoTags"],
-      Layers: rawManifest["Layers"]
+      Config: rawManifest['Config'],
+      RepoTags: rawManifest['RepoTags'],
+      Layers: rawManifest['Layers'],
     }
 
     manifests.push(manifest)
@@ -68,18 +68,22 @@ function loadManifests(path: string): Manifests {
 export class ImageDetector {
   async getExistingImages(): Promise<string[]> {
     const existingSet = new Set<string>([])
-    
-    const ids = (await execa('docker', ['image', 'ls', '-q'])).stdout.split(`\n`).filter(id => id !== ``)
-    const repotags = (await execa('docker', ['image', 'ls', '--format', '{{.Repository}}:{{.Tag}}', '--filter', 'dangling=false'])).stdout.split(`\n`).filter(id => id !== ``);
-    core.debug(JSON.stringify({ log: "getExistingImages", ids, repotags }));
-    ([...ids, ...repotags]).forEach(image => existingSet.add(image))
+
+    const ids = (await execa('docker', ['image', 'ls', '-q'])).stdout.split(`\n`).filter((id) => id !== ``)
+    const repotags = (
+      await execa('docker', ['image', 'ls', '--format', '{{.Repository}}:{{.Tag}}', '--filter', 'dangling=false'])
+    ).stdout
+      .split(`\n`)
+      .filter((id) => id !== ``)
+    core.debug(JSON.stringify({ log: 'getExistingImages', ids, repotags }))
+    ;[...ids, ...repotags].forEach((image) => existingSet.add(image))
     core.debug(JSON.stringify({ existingSet }))
     return Array.from(existingSet)
   }
 
   async getImagesShouldSave(alreadRegisteredImages: string[]): Promise<string[]> {
     const resultSet = new Set(await this.getExistingImages())
-    alreadRegisteredImages.forEach(image => resultSet.delete(image))
+    alreadRegisteredImages.forEach((image) => resultSet.delete(image))
     return Array.from(resultSet)
   }
 
@@ -112,7 +116,7 @@ class LayerCache {
       await this.separateAllLayerCaches()
     }
 
-    if (await this.storeRoot() === undefined) {
+    if ((await this.storeRoot()) === undefined) {
       core.info(`cache key already exists, aborting.`)
       return false
     }
@@ -123,7 +127,10 @@ class LayerCache {
 
   private async saveImageAsUnpacked() {
     fs.mkdirSync(this.getSavedImageTarDir(), { recursive: true })
-    await execa(`docker save '${(await this.makeRepotagsDockerSaveArgReady(this.ids)).join(`' '`)}' | tar xf - -C .`, { shell: true, cwd: this.getSavedImageTarDir() })
+    await execa(`docker save '${(await this.makeRepotagsDockerSaveArgReady(this.ids)).join(`' '`)}' | tar xf - -C .`, {
+      shell: true,
+      cwd: this.getSavedImageTarDir(),
+    })
   }
 
   private async makeRepotagsDockerSaveArgReady(repotags: string[]): Promise<string[]> {
@@ -135,7 +142,7 @@ class LayerCache {
 
   private async getAllImageIdsFrom(repotag: string): Promise<string[]> {
     const rawHistoryIds = (await execa('docker', ['history', '-q', repotag])).stdout
-    const historyIds = rawHistoryIds.split(`\n`).filter(id => id !== `<missing>` && id !== ``)
+    const historyIds = rawHistoryIds.split(`\n`).filter((id) => id !== `<missing>` && id !== ``)
     return historyIds
   }
 
@@ -145,11 +152,13 @@ class LayerCache {
 
   private async storeRoot() {
     const rootKey = await this.generateRootSaveKey()
-    const paths = [
-      this.getUnpackedTarDir(),
-    ]
+    const paths = [this.getUnpackedTarDir()]
     core.info(`Start storing root cache, key: ${rootKey}, dir: ${paths}`)
-    const cacheId = await LayerCache.dismissError(cache.saveCache(paths, rootKey), LayerCache.ERROR_CACHE_ALREAD_EXISTS_STR, -1)
+    const cacheId = await LayerCache.dismissError(
+      cache.saveCache(paths, rootKey),
+      LayerCache.ERROR_CACHE_ALREAD_EXISTS_STR,
+      -1,
+    )
     core.info(`Stored root cache, key: ${rootKey}, id: ${cacheId}`)
     return cacheId !== -1 ? cacheId : undefined
   }
@@ -164,8 +173,8 @@ class LayerCache {
 
   private async moveLayerTarsInDir(fromDir: string, toDir: string) {
     const layerTars = (await recursiveReaddir(fromDir))
-      .filter(path => path.endsWith(`/layer.tar`))
-      .map(path => path.replace(`${fromDir}/`, ``))
+      .filter((path) => path.endsWith(`/layer.tar`))
+      .map((path) => path.replace(`${fromDir}/`, ``))
 
     const moveLayer = async (layer: string) => {
       const from = `${fromDir}/${layer}`
@@ -180,12 +189,10 @@ class LayerCache {
   private async storeLayers(): Promise<number[]> {
     const pool = new PromisePool(this.concurrency)
 
-    const result =  Promise.all(
-      (await this.getLayerIds()).map(
-        layerId => {
-          return pool.open(() => this.storeSingleLayerBy(layerId))
-        }
-      )
+    const result = Promise.all(
+      (await this.getLayerIds()).map((layerId) => {
+        return pool.open(() => this.storeSingleLayerBy(layerId))
+      }),
     )
     return result
   }
@@ -211,10 +218,14 @@ class LayerCache {
     const key = await this.generateSingleLayerSaveKey(layerId)
 
     core.info(`Start storing layer cache: ${JSON.stringify({ layerId, key })}`)
-    const cacheId = await LayerCache.dismissError(cache.saveCache([path], key), LayerCache.ERROR_CACHE_ALREAD_EXISTS_STR, -1)
+    const cacheId = await LayerCache.dismissError(
+      cache.saveCache([path], key),
+      LayerCache.ERROR_CACHE_ALREAD_EXISTS_STR,
+      -1,
+    )
     core.info(`Stored layer cache: ${JSON.stringify({ key, cacheId })}`)
 
-    core.debug(JSON.stringify({ log: `storeSingleLayerBy`, layerId, path, key, cacheId}))
+    core.debug(JSON.stringify({ log: `storeSingleLayerBy`, layerId, path, key, cacheId }))
     return cacheId
   }
 
@@ -239,7 +250,7 @@ class LayerCache {
   }
 
   private async restoreRoot(primaryKey: string, restoreKeys?: string[]): Promise<string | undefined> {
-    core.debug(`Trying to restore root cache: ${ JSON.stringify({ restoreKeys, dir: this.getUnpackedTarDir() }) }`)
+    core.debug(`Trying to restore root cache: ${JSON.stringify({ restoreKeys, dir: this.getUnpackedTarDir() })}`)
     const restoredRootKey = await cache.restoreCache([this.getUnpackedTarDir()], primaryKey, restoreKeys)
     core.debug(`restoredRootKey: ${restoredRootKey}`)
     if (restoredRootKey === undefined) {
@@ -251,12 +262,8 @@ class LayerCache {
   }
 
   private async restoreLayers(): Promise<boolean> {
-
-    
     const pool = new PromisePool(this.concurrency)
-    const tasks = (await this.getLayerIds()).map(
-      layerId => pool.open(() => this.restoreSingleLayerBy(layerId))
-    )
+    const tasks = (await this.getLayerIds()).map((layerId) => pool.open(() => this.restoreSingleLayerBy(layerId)))
 
     try {
       await Promise.all(tasks)
@@ -265,7 +272,7 @@ class LayerCache {
         core.info(e.message)
 
         // Avoid UnhandledPromiseRejectionWarning
-        tasks.map(task => task.catch(core.info))
+        tasks.map((task) => task.catch(core.info))
 
         return false
       }
@@ -343,7 +350,7 @@ class LayerCache {
     core.debug(JSON.stringify({ log: `generateSingleLayerSaveKey`, formatted, id }))
     return `layer-${formatted}`
   }
-  
+
   async recoverSingleLayerKey(id: string) {
     const unformatted = await this.recoverUnformattedSaveKey()
     return `layer-${unformatted}`.replace('{hash}', id)
@@ -357,7 +364,7 @@ class LayerCache {
 
   async recoverUnformattedSaveKey() {
     const hash = await this.generateRootHashFromManifest()
-    core.debug(JSON.stringify({ log: `recoverUnformattedSaveKey`, hash}))
+    core.debug(JSON.stringify({ log: `recoverUnformattedSaveKey`, hash }))
 
     return this.restoredRootKey.replace(hash, `{hash}`).replace(/-root$/, ``)
   }
@@ -372,13 +379,17 @@ class LayerCache {
 
   async getLayerIds(): Promise<string[]> {
     const getIdfromLayerRelativePath = (path: string) => path.replace('/layer.tar', '')
-    const layerIds = (await this.getLayerTarFiles()).map(getIdfromLayerRelativePath);
+    const layerIds = (await this.getLayerTarFiles()).map(getIdfromLayerRelativePath)
     core.debug(JSON.stringify({ log: `getLayerIds`, layerIds }))
     return layerIds
   }
 }
 
 class DockerLayers extends CacheHandler {
+  async getPaths(): Promise<string[]> {
+    throw Error('Not implemented')
+  }
+
   async getKey(version?: string): Promise<string> {
     return `${runner.os}-${version}-docker`
   }
@@ -395,16 +406,16 @@ class DockerLayers extends CacheHandler {
       core.info(`Key ${restoredKey} already exists, not saving cache.`)
       return
     }
-  
+
     const imagesToSave = await imageDetector.getImagesShouldSave(alreadyExistingImages)
     if (imagesToSave.length < 1) {
       core.info(`There is no image to save.`)
       return
     }
-  
+
     const layerCache = new LayerCache(imagesToSave)
     //layerCache.concurrency = parseInt(core.getInput(`concurrency`, { required: true }), 10)
-  
+
     await layerCache.store(key)
     await layerCache.cleanUp()
   }
@@ -413,14 +424,14 @@ class DockerLayers extends CacheHandler {
     const key = await this.getKey(options?.version)
     const restoreKeys = await this.getRestoreKeys(options?.version)
     const imageDetector = new ImageDetector()
-  
+
     const alreadyExistingImages = await imageDetector.getExistingImages()
-  
+
     const layerCache = new LayerCache([])
     //layerCache.concurrency = parseInt(core.getInput(`concurrency`, { required: true }), 10)
     const restoredKey = await layerCache.restore(key, restoreKeys)
     await layerCache.cleanUp()
-  
+
     core.saveState(`already-existing-images`, JSON.stringify(alreadyExistingImages))
     core.saveState(`restored-images`, JSON.stringify(await imageDetector.getImagesShouldSave(alreadyExistingImages)))
 

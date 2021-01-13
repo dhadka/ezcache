@@ -3,13 +3,14 @@ import { registry } from './registry'
 
 require('./handlers/all')
 
-async function run() {
+export async function run() {
   let type = core.getInput('type', { required: true })
   let version = core.getInput('version')
+  let provider = core.getInput('provider')
 
   for (const handler of await registry.getAll(type)) {
     core.info(`Saving cache with ${handler.constructor.name} handler`)
-    await handler.saveCache({ version })
+    await handler.saveCache({ version, provider })
   }
 }
 

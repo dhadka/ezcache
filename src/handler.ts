@@ -1,9 +1,12 @@
 import * as core from '@actions/core'
-import { saveCache, restoreCache, ReserveCacheError } from '@actions/cache'
+import { StorageProvider } from './provider'
+import { HostedStorageProvider } from './providers/hosted'
+import { LocalStorageProvider } from './providers/local'
 import * as state from './state'
 
 export interface ICacheOptions {
   version?: string
+  provider?: string
 }
 
 export enum RestoreType {
@@ -17,13 +20,11 @@ export interface IRestoreResult {
   restoredKey: string | undefined
 }
 
-export class CacheHandler {
-  async getPaths(): Promise<string[]> {
-    throw Error('not implemented')
-  }
+export abstract class CacheHandler {
+  abstract getPaths(): Promise<string[]>
 
   async getKey(version?: string): Promise<string> {
-    throw Error('not implemented')
+    throw new Error('Not implemented')
   }
 
   async getKeyForRestore(version?: string): Promise<string> {
@@ -31,6 +32,7 @@ export class CacheHandler {
   }
 
   async getKeyForSave(version?: string): Promise<string> {
+    core.debug(`PrimaryKey: ${state.readPrimaryKey(this)}`)
     return state.readPrimaryKey(this) ?? this.getKey(version)
   }
 
@@ -44,25 +46,33 @@ export class CacheHandler {
 
   async setup(): Promise<void> {}
 
+  getStorageProvider(options?: ICacheOptions): StorageProvider {
+    // TODO: Make this extensible
+    if (!options?.provider || options?.provider === 'hosted') {
+      return new HostedStorageProvider()
+    } else if (options?.provider === 'local') {
+      return new LocalStorageProvider()
+    } else {
+      throw Error(`Provider not recognized: ${options?.provider}`)
+    }
+  }
+
   async saveCache(options?: ICacheOptions): Promise<void> {
     const paths = await this.getPaths()
     const key = await this.getKeyForSave(options?.version)
     const restoredKey = state.readRestoredKey(this)
 
+    core.debug(`Paths: ${paths}`)
+    core.debug(`Key: ${key}`)
+    core.debug(`RestoredKey: ${restoredKey}`)
+
     if (key === restoredKey) {
       core.info(`Cache hit on primary key '${key}', skip saving cache`)
     } else {
-      core.info(`Calling saveCache('${paths}', '${key}')`)
+      const storageProvider = this.getStorageProvider(options)
+      core.info(`Calling saveCache('${paths}', '${key}') using ${storageProvider.constructor.name}`)
 
-      try {
-        await saveCache(paths, key)
-      } catch (error) {
-        if (error instanceof ReserveCacheError) {
-          core.info(`Cache already exists, skip saving cache`)
-        } else {
-          throw error
-        }
-      }
+      storageProvider.saveCache(paths, key)
     }
   }
 
@@ -70,9 +80,10 @@ export class CacheHandler {
     const paths = await this.getPaths()
     const key = await this.getKeyForRestore(options?.version)
     const restoreKeys = await this.getRestoreKeys(options?.version)
+    const storageProvider = this.getStorageProvider(options)
 
-    core.info(`Calling restoreCache('${paths}', '${key}', ${restoreKeys})`)
-    const restoredKey = await restoreCache(paths, key, restoreKeys)
+    core.info(`Calling restoreCache('${paths}', '${key}', ${restoreKeys}) using ${storageProvider.constructor.name}`)
+    const restoredKey = await storageProvider.restoreCache(paths, key, restoreKeys)
 
     state.savePrimaryKey(this, key)
     state.addHandler(this)

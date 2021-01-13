@@ -1153,9 +1153,9 @@ function loadManifests(path) {
     const manifests = [];
     for (const rawManifest of rawManifests) {
         const manifest = {
-            Config: rawManifest["Config"],
-            RepoTags: rawManifest["RepoTags"],
-            Layers: rawManifest["Layers"]
+            Config: rawManifest['Config'],
+            RepoTags: rawManifest['RepoTags'],
+            Layers: rawManifest['Layers'],
         };
         manifests.push(manifest);
     }
@@ -1164,16 +1164,18 @@ function loadManifests(path) {
 class ImageDetector {
     async getExistingImages() {
         const existingSet = new Set([]);
-        const ids = (await execa('docker', ['image', 'ls', '-q'])).stdout.split(`\n`).filter(id => id !== ``);
-        const repotags = (await execa('docker', ['image', 'ls', '--format', '{{.Repository}}:{{.Tag}}', '--filter', 'dangling=false'])).stdout.split(`\n`).filter(id => id !== ``);
-        core.debug(JSON.stringify({ log: "getExistingImages", ids, repotags }));
-        ([...ids, ...repotags]).forEach(image => existingSet.add(image));
+        const ids = (await execa('docker', ['image', 'ls', '-q'])).stdout.split(`\n`).filter((id) => id !== ``);
+        const repotags = (await execa('docker', ['image', 'ls', '--format', '{{.Repository}}:{{.Tag}}', '--filter', 'dangling=false'])).stdout
+            .split(`\n`)
+            .filter((id) => id !== ``);
+        core.debug(JSON.stringify({ log: 'getExistingImages', ids, repotags }));
+        [...ids, ...repotags].forEach((image) => existingSet.add(image));
         core.debug(JSON.stringify({ existingSet }));
         return Array.from(existingSet);
     }
     async getImagesShouldSave(alreadRegisteredImages) {
         const resultSet = new Set(await this.getExistingImages());
-        alreadRegisteredImages.forEach(image => resultSet.delete(image));
+        alreadRegisteredImages.forEach((image) => resultSet.delete(image));
         return Array.from(resultSet);
     }
     async checkIfImageHasAdded(restoredImages) {
@@ -1198,7 +1200,7 @@ class LayerCache {
         if (this.enabledParallel) {
             await this.separateAllLayerCaches();
         }
-        if (await this.storeRoot() === undefined) {
+        if ((await this.storeRoot()) === undefined) {
             core.info(`cache key already exists, aborting.`);
             return false;
         }
@@ -1207,7 +1209,10 @@ class LayerCache {
     }
     async saveImageAsUnpacked() {
         fs.mkdirSync(this.getSavedImageTarDir(), { recursive: true });
-        await execa(`docker save '${(await this.makeRepotagsDockerSaveArgReady(this.ids)).join(`' '`)}' | tar xf - -C .`, { shell: true, cwd: this.getSavedImageTarDir() });
+        await execa(`docker save '${(await this.makeRepotagsDockerSaveArgReady(this.ids)).join(`' '`)}' | tar xf - -C .`, {
+            shell: true,
+            cwd: this.getSavedImageTarDir(),
+        });
     }
     async makeRepotagsDockerSaveArgReady(repotags) {
         const getMiddleIdsWithRepotag = async (id) => {
@@ -1217,7 +1222,7 @@ class LayerCache {
     }
     async getAllImageIdsFrom(repotag) {
         const rawHistoryIds = (await execa('docker', ['history', '-q', repotag])).stdout;
-        const historyIds = rawHistoryIds.split(`\n`).filter(id => id !== `<missing>` && id !== ``);
+        const historyIds = rawHistoryIds.split(`\n`).filter((id) => id !== `<missing>` && id !== ``);
         return historyIds;
     }
     async getManifests() {
@@ -1225,9 +1230,7 @@ class LayerCache {
     }
     async storeRoot() {
         const rootKey = await this.generateRootSaveKey();
-        const paths = [
-            this.getUnpackedTarDir(),
-        ];
+        const paths = [this.getUnpackedTarDir()];
         core.info(`Start storing root cache, key: ${rootKey}, dir: ${paths}`);
         const cacheId = await LayerCache.dismissError(cache.saveCache(paths, rootKey), LayerCache.ERROR_CACHE_ALREAD_EXISTS_STR, -1);
         core.info(`Stored root cache, key: ${rootKey}, id: ${cacheId}`);
@@ -1241,8 +1244,8 @@ class LayerCache {
     }
     async moveLayerTarsInDir(fromDir, toDir) {
         const layerTars = (await recursiveReaddir(fromDir))
-            .filter(path => path.endsWith(`/layer.tar`))
-            .map(path => path.replace(`${fromDir}/`, ``));
+            .filter((path) => path.endsWith(`/layer.tar`))
+            .map((path) => path.replace(`${fromDir}/`, ``));
         const moveLayer = async (layer) => {
             const from = `${fromDir}/${layer}`;
             const to = `${toDir}/${layer}`;
@@ -1254,7 +1257,7 @@ class LayerCache {
     }
     async storeLayers() {
         const pool = new native_promise_pool_1.default(this.concurrency);
-        const result = Promise.all((await this.getLayerIds()).map(layerId => {
+        const result = Promise.all((await this.getLayerIds()).map((layerId) => {
             return pool.open(() => this.storeSingleLayerBy(layerId));
         }));
         return result;
@@ -1313,7 +1316,7 @@ class LayerCache {
     }
     async restoreLayers() {
         const pool = new native_promise_pool_1.default(this.concurrency);
-        const tasks = (await this.getLayerIds()).map(layerId => pool.open(() => this.restoreSingleLayerBy(layerId)));
+        const tasks = (await this.getLayerIds()).map((layerId) => pool.open(() => this.restoreSingleLayerBy(layerId)));
         try {
             await Promise.all(tasks);
         }
@@ -1321,7 +1324,7 @@ class LayerCache {
             if (typeof e.message === `string` && e.message.includes(LayerCache.ERROR_LAYER_CACHE_NOT_FOUND_STR)) {
                 core.info(e.message);
                 // Avoid UnhandledPromiseRejectionWarning
-                tasks.map(task => task.catch(core.info));
+                tasks.map((task) => task.catch(core.info));
                 return false;
             }
             throw e;
@@ -1410,6 +1413,9 @@ class LayerCache {
 LayerCache.ERROR_CACHE_ALREAD_EXISTS_STR = `Unable to reserve cache with key`;
 LayerCache.ERROR_LAYER_CACHE_NOT_FOUND_STR = `Layer cache not found`;
 class DockerLayers extends handler_1.CacheHandler {
+    async getPaths() {
+        throw Error('Not implemented');
+    }
     async getKey(version) {
         return `${expressions_1.runner.os}-${version}-docker`;
     }
@@ -6722,7 +6728,41 @@ exports.create = create;
 /* 282 */,
 /* 283 */,
 /* 284 */,
-/* 285 */,
+/* 285 */
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.HostedStorageProvider = void 0;
+const core = __webpack_require__(470);
+const cache_1 = __webpack_require__(692);
+const provider_1 = __webpack_require__(880);
+/**
+ * Stores cache content using the GitHub Actions Cache.
+ */
+class HostedStorageProvider extends provider_1.StorageProvider {
+    async restoreCache(paths, primaryKey, restoreKeys) {
+        return await cache_1.restoreCache(paths, primaryKey, restoreKeys);
+    }
+    async saveCache(paths, key) {
+        try {
+            await cache_1.saveCache(paths, key);
+        }
+        catch (error) {
+            if (error instanceof cache_1.ReserveCacheError) {
+                core.info(`Cache already exists, skip saving cache`);
+            }
+            else {
+                throw error;
+            }
+        }
+    }
+}
+exports.HostedStorageProvider = HostedStorageProvider;
+
+
+/***/ }),
 /* 286 */,
 /* 287 */,
 /* 288 */,
@@ -36292,8 +36332,7 @@ class EnvCache extends handler_1.CacheHandler {
     async getKeyForSave(version) {
         var _a;
         const restoredKey = state.readRestoredKey(this);
-        if (((_a = process.env['UPDATE_CACHE']) === null || _a === void 0 ? void 0 : _a.toLowerCase()) === 'true' ||
-            !restoredKey || restoredKey === '') {
+        if (((_a = process.env['UPDATE_CACHE']) === null || _a === void 0 ? void 0 : _a.toLowerCase()) === 'true' || !restoredKey || restoredKey === '') {
             return `${expressions_1.runner.os}-${version}-env-${Date.now()}`;
         }
         else {
@@ -42941,7 +42980,235 @@ module.exports = {"application/1d-interleaved-parityfec":{"source":"iana"},"appl
 /* 640 */,
 /* 641 */,
 /* 642 */,
-/* 643 */,
+/* 643 */
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.LocalStorageProvider = void 0;
+const os = __webpack_require__(87);
+const path = __webpack_require__(622);
+const fs = __webpack_require__(747);
+const crypto = __webpack_require__(417);
+const core = __webpack_require__(470);
+const github = __webpack_require__(469);
+const provider_1 = __webpack_require__(880);
+/**
+ * Stores cache content on the local file system.  This is useful for self-hosted runners and
+ * GitHub Enterprise Server.
+ *
+ * There are several key functional difference between local and hosted storage, namely:
+ *
+ *   1. No individual or total cache size limit.
+ *   2. No scoping of caches to individual branches.  Caches are shared across branches.
+ *   3. Eviction occurs during the save operation.
+ *   4. Concurrency is not supported.  This assumes one job is running at any given time.
+ *
+ * Local caches are structured as follows:
+ *
+ *   <root>
+ *     |- <owner1>
+ *          |- <repo1>
+ *               |- lastEviction.tstamp
+ *                   |- <key1>
+ *                        |- committed.tstamp
+ *                        |- lastAccessed.tstamp
+ *                        |- <path1>
+ *                        |- <path2>
+ *                   |- <key2>
+ *                        |- lastAccessed.tstamp
+ *                        |- <path1>
+ *
+ * Future work:
+ *   1. Can a repo name contain invalid characters on an OS?
+ *   2. Override root folder, eviction settings, with env vars
+ */
+class LocalStorageProvider extends provider_1.StorageProvider {
+    getRepo() {
+        return { owner: github.context.repo.owner, name: github.context.repo.repo };
+    }
+    getCacheRoot() {
+        return path.join(os.homedir(), '.RunnerCache');
+    }
+    getRepoFolder(repo) {
+        return path.join(this.getCacheRoot(), repo.owner, repo.name);
+    }
+    getKeyFolder(key) {
+        return path.join(this.getRepoFolder(key.repo), key.value);
+    }
+    getCachePathFolder(cachePath) {
+        // Use a hash to map the path (e.g., ~/.npm) to the folder in the local cache.
+        const pathHash = crypto.createHash('sha256').update(cachePath.path.toString()).digest('hex');
+        return path.join(this.getKeyFolder(cachePath.key), pathHash);
+    }
+    getLastAccessedPath(key) {
+        return path.join(this.getKeyFolder(key), 'lastAccessed.tstamp');
+    }
+    getLastEvictedPath(repo) {
+        return path.join(this.getRepoFolder(repo), 'lastEvicted.tstamp');
+    }
+    getCommittedPath(key) {
+        return path.join(this.getKeyFolder(key), 'committed.tstamp');
+    }
+    writeTimestamp(file, timestamp) {
+        fs.writeFileSync(file, timestamp.toUTCString(), { encoding: 'utf8' });
+    }
+    readTimestamp(file) {
+        const timestamp = fs.readFileSync(file, { encoding: 'utf8' }).toString();
+        return new Date(timestamp);
+    }
+    getLastAccessed(key) {
+        return this.readTimestamp(this.getLastAccessedPath(key));
+    }
+    updateLastAccessed(key) {
+        this.writeTimestamp(this.getLastAccessedPath(key), new Date());
+    }
+    getLastEvicted(repo) {
+        return this.readTimestamp(this.getLastEvictedPath(repo));
+    }
+    updateLastEvicted(repo) {
+        this.writeTimestamp(this.getLastEvictedPath(repo), new Date());
+    }
+    commit(key) {
+        this.writeTimestamp(this.getCommittedPath(key), new Date());
+    }
+    isCommitted(key) {
+        return fs.existsSync(this.getKeyFolder(key)) &&
+            fs.existsSync(this.getCommittedPath(key));
+    }
+    concatenateKeys(primaryKey, restoreKeys) {
+        var result = [primaryKey];
+        if (restoreKeys) {
+            result = result.concat(restoreKeys);
+        }
+        return result;
+    }
+    restoreFolder(paths, key) {
+        const start = Date.now();
+        core.debug(`Restoring cache ${key.value}`);
+        for (const path of paths) {
+            const sourcePath = this.getCachePathFolder({ key: key, path: path });
+            core.debug(`Copying ${sourcePath} to ${path}`);
+            this.copyFolder(sourcePath, path);
+        }
+        core.debug(`Updating last accessed time`);
+        this.updateLastAccessed(key);
+        core.debug(`Cache successfully restored in ${Date.now() - start} ms`);
+    }
+    saveFolder(paths, key) {
+        const start = Date.now();
+        core.debug(`Saving cache ${key.value}`);
+        for (const path of paths) {
+            const targetPath = this.getCachePathFolder({ key: key, path: path });
+            core.debug(`Copying ${path} to ${targetPath}`);
+            this.copyFolder(path, targetPath);
+        }
+        core.debug(`Committing cache ${key.value}`);
+        this.updateLastAccessed(key);
+        this.commit(key);
+        core.debug(`Cache successfully saved in ${Date.now() - start} ms`);
+    }
+    copyFolder(source, target) {
+        // TODO: It's probably faster to call native copy programs
+        fs.mkdirSync(target, { recursive: true });
+        for (const file of fs.readdirSync(source)) {
+            const sourcePath = path.join(source.toString(), file);
+            const targetPath = path.join(target.toString(), file);
+            const fstat = fs.statSync(sourcePath);
+            if (fstat.isDirectory()) {
+                this.copyFolder(sourcePath, targetPath);
+            }
+            else {
+                fs.copyFileSync(sourcePath, targetPath);
+            }
+        }
+    }
+    listKeys(repo) {
+        const path = this.getRepoFolder(repo);
+        if (fs.existsSync(path)) {
+            return fs.readdirSync(path).map(p => {
+                return { repo: repo, value: p };
+            });
+        }
+        else {
+            return [];
+        }
+    }
+    async restoreCache(paths, primaryKey, restoreKeys) {
+        const keys = this.concatenateKeys(primaryKey, restoreKeys);
+        const repo = this.getRepo();
+        for (const key of keys) {
+            core.info(`Checking ${key}`);
+            const cacheKey = { repo: repo, value: key };
+            // Exact match
+            if (this.isCommitted(cacheKey)) {
+                this.restoreFolder(paths, cacheKey);
+                return cacheKey.value;
+            }
+            // Prefix match
+            for (const testKey of this.listKeys(repo)) {
+                if (testKey.value.startsWith(key) && this.isCommitted(testKey)) {
+                    this.restoreFolder(paths, testKey);
+                    return testKey.value;
+                }
+            }
+        }
+    }
+    daysInPast(days) {
+        const date = new Date();
+        date.setDate(date.getDate() - days);
+        return date;
+    }
+    shouldRunEviction(repo) {
+        return this.getLastEvicted(repo) < this.daysInPast(1);
+    }
+    shouldEvictKey(key) {
+        return this.getLastAccessed(key) < this.daysInPast(7);
+    }
+    shouldEvictUncommittedKey(key) {
+        return fs.statSync(this.getKeyFolder(key)).ctime < this.daysInPast(1);
+    }
+    evict(repo) {
+        const start = Date.now();
+        core.debug(`Evicting stale caches from ${repo.owner}/${repo.name}`);
+        for (const key of this.listKeys(repo)) {
+            if (this.isCommitted(key)) {
+                if (this.shouldEvictKey(key)) {
+                    core.debug(`Evicting cache ${key}`);
+                    this.evictKey(key);
+                }
+            }
+            else if (this.shouldEvictUncommittedKey(key)) {
+                core.debug(`Evicting uncommitted cache ${key}`);
+                this.evictKey(key);
+            }
+        }
+        this.updateLastEvicted(repo);
+        core.debug(`Eviction successfully completed in ${Date.now() - start} ms`);
+    }
+    evictKey(key) {
+        fs.rmSync(this.getKeyFolder(key), { recursive: true, force: true });
+    }
+    async saveCache(paths, key) {
+        const repo = this.getRepo();
+        const cacheKey = { repo: repo, value: key };
+        const cacheFolder = this.getKeyFolder(cacheKey);
+        if (fs.existsSync(cacheFolder)) {
+            core.info(`Cache already exists, skip saving cache`);
+        }
+        else {
+            this.saveFolder(paths, cacheKey);
+        }
+        if (this.shouldRunEviction(repo)) {
+            this.evict(repo);
+        }
+    }
+}
+exports.LocalStorageProvider = LocalStorageProvider;
+
+
+/***/ }),
 /* 644 */,
 /* 645 */
 /***/ (function(__unusedmodule, exports, __webpack_require__) {
@@ -45198,17 +45465,20 @@ exports.fromPromise = function (fn) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.run = void 0;
 const core = __webpack_require__(470);
 const registry_1 = __webpack_require__(822);
 __webpack_require__(877);
 async function run() {
     let type = core.getInput('type', { required: true });
     let version = core.getInput('version');
+    let provider = core.getInput('provider');
     for (const handler of await registry_1.registry.getAll(type)) {
         core.info(`Saving cache with ${handler.constructor.name} handler`);
-        await handler.saveCache({ version });
+        await handler.saveCache({ version, provider });
     }
 }
+exports.run = run;
 run().catch((e) => {
     core.error(e);
     core.setFailed(e);
@@ -52699,7 +52969,19 @@ __webpack_require__(967);
 /***/ }),
 /* 878 */,
 /* 879 */,
-/* 880 */,
+/* 880 */
+/***/ (function(__unusedmodule, exports) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.StorageProvider = void 0;
+class StorageProvider {
+}
+exports.StorageProvider = StorageProvider;
+
+
+/***/ }),
 /* 881 */
 /***/ (function(module) {
 
@@ -55551,7 +55833,8 @@ exports.default = _default;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CacheHandler = exports.RestoreType = void 0;
 const core = __webpack_require__(470);
-const cache_1 = __webpack_require__(692);
+const hosted_1 = __webpack_require__(285);
+const local_1 = __webpack_require__(643);
 const state = __webpack_require__(77);
 var RestoreType;
 (function (RestoreType) {
@@ -55560,17 +55843,15 @@ var RestoreType;
     RestoreType[RestoreType["Full"] = 2] = "Full";
 })(RestoreType = exports.RestoreType || (exports.RestoreType = {}));
 class CacheHandler {
-    async getPaths() {
-        throw Error('not implemented');
-    }
     async getKey(version) {
-        throw Error('not implemented');
+        throw new Error('Not implemented');
     }
     async getKeyForRestore(version) {
         return this.getKey(version);
     }
     async getKeyForSave(version) {
         var _a;
+        core.debug(`PrimaryKey: ${state.readPrimaryKey(this)}`);
         return (_a = state.readPrimaryKey(this)) !== null && _a !== void 0 ? _a : this.getKey(version);
     }
     async getRestoreKeys(version) {
@@ -55580,34 +55861,41 @@ class CacheHandler {
         return false;
     }
     async setup() { }
+    getStorageProvider(options) {
+        // TODO: Make this extensible
+        if (!(options === null || options === void 0 ? void 0 : options.provider) || (options === null || options === void 0 ? void 0 : options.provider) === 'hosted') {
+            return new hosted_1.HostedStorageProvider();
+        }
+        else if ((options === null || options === void 0 ? void 0 : options.provider) === 'local') {
+            return new local_1.LocalStorageProvider();
+        }
+        else {
+            throw Error(`Provider not recognized: ${options === null || options === void 0 ? void 0 : options.provider}`);
+        }
+    }
     async saveCache(options) {
         const paths = await this.getPaths();
         const key = await this.getKeyForSave(options === null || options === void 0 ? void 0 : options.version);
         const restoredKey = state.readRestoredKey(this);
+        core.debug(`Paths: ${paths}`);
+        core.debug(`Key: ${key}`);
+        core.debug(`RestoredKey: ${restoredKey}`);
         if (key === restoredKey) {
             core.info(`Cache hit on primary key '${key}', skip saving cache`);
         }
         else {
-            core.info(`Calling saveCache('${paths}', '${key}')`);
-            try {
-                await cache_1.saveCache(paths, key);
-            }
-            catch (error) {
-                if (error instanceof cache_1.ReserveCacheError) {
-                    core.info(`Cache already exists, skip saving cache`);
-                }
-                else {
-                    throw error;
-                }
-            }
+            const storageProvider = this.getStorageProvider(options);
+            core.info(`Calling saveCache('${paths}', '${key}') using ${storageProvider.constructor.name}`);
+            storageProvider.saveCache(paths, key);
         }
     }
     async restoreCache(options) {
         const paths = await this.getPaths();
         const key = await this.getKeyForRestore(options === null || options === void 0 ? void 0 : options.version);
         const restoreKeys = await this.getRestoreKeys(options === null || options === void 0 ? void 0 : options.version);
-        core.info(`Calling restoreCache('${paths}', '${key}', ${restoreKeys})`);
-        const restoredKey = await cache_1.restoreCache(paths, key, restoreKeys);
+        const storageProvider = this.getStorageProvider(options);
+        core.info(`Calling restoreCache('${paths}', '${key}', ${restoreKeys}) using ${storageProvider.constructor.name}`);
+        const restoredKey = await storageProvider.restoreCache(paths, key, restoreKeys);
         state.savePrimaryKey(this, key);
         state.addHandler(this);
         if (restoredKey) {

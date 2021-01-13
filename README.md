@@ -199,6 +199,19 @@ normally require you to make a commit to change the version, but an alternative 
 
 If the cache is ever corrupted, you can "clear" the cache by quickly changing the value in the secret.
 
+## Storage Provider
+
+By default, this action uses the GitHub Actions Cache for storage.  This can be changed by setting the
+`target` input:
+
+### `hosted`
+
+Hosted is the default value and stores content using the GitHub Actions Cache.
+
+### `local`
+
+Stores caches on the local file service.  This is useful for self-hosted runners.
+
 # Contributing
 
 Want to add support for a new language or tool?  Great!  The caching logic for each language / tool is contained
