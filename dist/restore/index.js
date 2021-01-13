@@ -43545,7 +43545,12 @@ class LocalStorageProvider extends provider_1.StorageProvider {
         this.writeTimestamp(this.getLastAccessedPath(key), new Date());
     }
     getLastEvicted(repo) {
-        return this.readTimestamp(this.getLastEvictedPath(repo));
+        try {
+            return this.readTimestamp(this.getLastEvictedPath(repo));
+        }
+        catch {
+            return new Date();
+        }
     }
     updateLastEvicted(repo) {
         this.writeTimestamp(this.getLastEvictedPath(repo), new Date());
@@ -48253,7 +48258,6 @@ module.exports = uuid;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.run = void 0;
 const core = __webpack_require__(470);
 const registry_1 = __webpack_require__(822);
 const handler_1 = __webpack_require__(895);
@@ -48273,7 +48277,6 @@ async function run() {
     }
     core.setOutput('cache-hit', isFullRestore);
 }
-exports.run = run;
 run().catch((e) => {
     core.error(e);
     core.setFailed(e);

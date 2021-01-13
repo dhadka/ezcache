@@ -104,7 +104,11 @@ export class LocalStorageProvider extends StorageProvider {
   }
 
   private getLastEvicted(repo: IRepo): Date {
-    return this.readTimestamp(this.getLastEvictedPath(repo))
+    try {
+      return this.readTimestamp(this.getLastEvictedPath(repo))
+    } catch {
+      return new Date()
+    }
   }
 
   private updateLastEvicted(repo: IRepo): void {

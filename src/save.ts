@@ -3,7 +3,7 @@ import { registry } from './registry'
 
 require('./handlers/all')
 
-export async function run() {
+async function run() {
   let type = core.getInput('type', { required: true })
   let version = core.getInput('version')
   let provider = core.getInput('provider')
