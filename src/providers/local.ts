@@ -32,6 +32,7 @@ interface ICachePath {
  *   1. No individual or total cache size limit.
  *   2. No scoping of caches to individual branches.  Caches are shared across branches.
  *   3. Eviction occurs during the save operation.
+ *   4. Caches are only shareable on the local machine.
  *
  * Local caches are structured as follows:
  *

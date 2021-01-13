@@ -225,8 +225,9 @@ restrictions and size limits as GitHub Actions Cache apply.  The following alter
 
 ### `local`
 
-Stores caches on the local file system.  This is useful for self-hosted runners and GitHub Enterprise Server.
-**Do not use with hosted runners, since each job runs on a different virtual machine.**
+Stores caches on the local file system.  Caches can only be shared between jobs on the same machine.
+As a result, `local` caches can not be used when cached content needs to be shared across runners
+on different machines.  **Do not use with hosted runners.**
 
 ```
 - uses: dhadka/ezcache@master
