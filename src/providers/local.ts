@@ -8,21 +8,6 @@ import * as github from '@actions/github'
 import { StorageProvider } from '../provider'
 import { runner } from '../expressions'
 
-interface IRepo {
-  owner: string
-  name: string
-}
-
-interface IKey {
-  repo: IRepo
-  value: string
-}
-
-interface ICachePath {
-  key: IKey
-  path: fs.PathLike
-}
-
 /**
  * Stores cache content on the local file system.  This is useful for self-hosted runners and
  * GitHub Enterprise Server.
@@ -88,11 +73,11 @@ export class LocalStorageProvider extends StorageProvider {
     return path.join(this.getKeyFolder(key), 'committed.tstamp')
   }
 
-  private writeTimestamp(file: fs.PathLike, timestamp: Date): void {
+  private writeTimestamp(file: string, timestamp: Date): void {
     fs.writeFileSync(file, timestamp.toUTCString(), { encoding: 'utf8' })
   }
 
-  private readTimestamp(file: fs.PathLike): Date {
+  private readTimestamp(file: string): Date {
     const timestamp = fs.readFileSync(file, { encoding: 'utf8' }).toString()
     return new Date(timestamp)
   }
@@ -136,11 +121,21 @@ export class LocalStorageProvider extends StorageProvider {
     return result
   }
 
-  private async restoreFolder(paths: fs.PathLike[], key: IKey): Promise<void> {
+  private preprocessPaths(paths: string[]): string[] {
+    return paths.map(p => {
+      if (p.startsWith('~')) {
+        p = os.homedir() + p.substr(1)
+      }
+
+      return path.normalize(p)
+    })
+  }
+
+  private async restoreFolder(paths: string[], key: IKey): Promise<void> {
     const start = Date.now()
     core.debug(`Restoring cache ${key.value}`)
 
-    for (const path of paths) {
+    for (const path of this.preprocessPaths(paths)) {
       const sourcePath = this.getCachePathFolder({ key: key, path: path })
 
       core.debug(`Copying ${sourcePath} to ${path}`)
@@ -153,11 +148,11 @@ export class LocalStorageProvider extends StorageProvider {
     core.info(`Cache successfully restored in ${Date.now() - start} ms`)
   }
 
-  private async saveFolder(paths: fs.PathLike[], key: IKey): Promise<void> {
+  private async saveFolder(paths: string[], key: IKey): Promise<void> {
     const start = Date.now()
     core.debug(`Saving cache ${key.value}`)
 
-    for (const path of paths) {
+    for (const path of this.preprocessPaths(paths)) {
       const targetPath = this.getCachePathFolder({ key: key, path: path })
 
       core.debug(`Copying ${path} to ${targetPath}`)
@@ -171,12 +166,12 @@ export class LocalStorageProvider extends StorageProvider {
     core.info(`Cache successfully saved in ${Date.now() - start} ms`)
   }
 
-  private copyFolderInternal(source: fs.PathLike, target: fs.PathLike): void {
+  private copyFolderInternal(source: string, target: string): void {
     fs.mkdirSync(target, { recursive: true })
 
     for (const file of fs.readdirSync(source)) {
-      const sourcePath = path.join(source.toString(), file)
-      const targetPath = path.join(target.toString(), file)
+      const sourcePath = path.join(source, file)
+      const targetPath = path.join(target, file)
       const fstat = fs.statSync(sourcePath)
 
       if (fstat.isDirectory()) {
@@ -187,8 +182,8 @@ export class LocalStorageProvider extends StorageProvider {
     }
   }
 
-  private async copyFolderWindows(source: fs.PathLike, target: fs.PathLike): Promise<void> {
-    const process = execa("robocopy", [source.toString(), target.toString(), "/E", "/MT:32", "/NP", "/NS", "/NC", "/NFL", "/NDL"])
+  private async copyFolderWindows(source: string, target: string): Promise<void> {
+    const process = execa("robocopy", [source, target, "/E", "/MT:32", "/NP", "/NS", "/NC", "/NFL", "/NDL"])
     try {
       await process
     } catch (e) {
@@ -201,7 +196,7 @@ export class LocalStorageProvider extends StorageProvider {
     }
   }
 
-  private async copyFolderNative(source: fs.PathLike, target: fs.PathLike): Promise<void> {
+  private async copyFolderNative(source: string, target: string): Promise<void> {
     switch (runner.os) {
       case 'Windows':
         await this.copyFolderWindows(source, target)
@@ -211,7 +206,7 @@ export class LocalStorageProvider extends StorageProvider {
     }
   }
 
-  private async copyFolder(source: fs.PathLike, target: fs.PathLike): Promise<void> {
+  private async copyFolder(source: string, target: string): Promise<void> {
     if (process.env["CACHE_DISABLE_NATIVE"] === 'true') {
       this.copyFolderInternal(source, target)
     } else {
@@ -315,4 +310,19 @@ export class LocalStorageProvider extends StorageProvider {
       this.evict(repo)
     }
   }
+}
+
+interface IRepo {
+  owner: string
+  name: string
+}
+
+interface IKey {
+  repo: IRepo
+  value: string
+}
+
+interface ICachePath {
+  key: IKey
+  path: string
 }

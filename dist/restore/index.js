@@ -43449,6 +43449,7 @@ const expressions_1 = __webpack_require__(134);
  *   1. No individual or total cache size limit.
  *   2. No scoping of caches to individual branches.  Caches are shared across branches.
  *   3. Eviction occurs during the save operation.
+ *   4. Caches are only shareable on the local machine.
  *
  * Local caches are structured as follows:
  *
@@ -43534,10 +43535,18 @@ class LocalStorageProvider extends provider_1.StorageProvider {
         }
         return result;
     }
+    preprocessPaths(paths) {
+        return paths.map(p => {
+            if (p.startsWith('~')) {
+                p = os.homedir() + p.substr(1);
+            }
+            return path.normalize(p);
+        });
+    }
     async restoreFolder(paths, key) {
         const start = Date.now();
         core.debug(`Restoring cache ${key.value}`);
-        for (const path of paths) {
+        for (const path of this.preprocessPaths(paths)) {
             const sourcePath = this.getCachePathFolder({ key: key, path: path });
             core.debug(`Copying ${sourcePath} to ${path}`);
             await this.copyFolder(sourcePath, path);
@@ -43549,7 +43558,7 @@ class LocalStorageProvider extends provider_1.StorageProvider {
     async saveFolder(paths, key) {
         const start = Date.now();
         core.debug(`Saving cache ${key.value}`);
-        for (const path of paths) {
+        for (const path of this.preprocessPaths(paths)) {
             const targetPath = this.getCachePathFolder({ key: key, path: path });
             core.debug(`Copying ${path} to ${targetPath}`);
             await this.copyFolder(path, targetPath);
@@ -43562,8 +43571,8 @@ class LocalStorageProvider extends provider_1.StorageProvider {
     copyFolderInternal(source, target) {
         fs.mkdirSync(target, { recursive: true });
         for (const file of fs.readdirSync(source)) {
-            const sourcePath = path.join(source.toString(), file);
-            const targetPath = path.join(target.toString(), file);
+            const sourcePath = path.join(source, file);
+            const targetPath = path.join(target, file);
             const fstat = fs.statSync(sourcePath);
             if (fstat.isDirectory()) {
                 this.copyFolderInternal(sourcePath, targetPath);
@@ -43575,7 +43584,7 @@ class LocalStorageProvider extends provider_1.StorageProvider {
     }
     async copyFolderWindows(source, target) {
         var _a;
-        const process = execa("robocopy", [source.toString(), target.toString(), "/E", "/MT:32", "/NP", "/NS", "/NC", "/NFL", "/NDL"]);
+        const process = execa("robocopy", [source, target, "/E", "/MT:32", "/NP", "/NS", "/NC", "/NFL", "/NDL"]);
         try {
             await process;
         }
