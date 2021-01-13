@@ -1,4 +1,4 @@
-import { registry } from '../../registry'
+import { handlers } from '../../registry'
 import { hashFiles, exec, runner, matches } from '../../expressions'
 import { CacheHandler } from '../../handler'
 
@@ -20,4 +20,4 @@ class Composer extends CacheHandler {
   }
 }
 
-registry.add('composer', new Composer())
+handlers.add('composer', new Composer())

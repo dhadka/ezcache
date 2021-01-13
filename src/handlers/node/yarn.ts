@@ -1,4 +1,4 @@
-import { registry } from '../../registry'
+import { handlers } from '../../registry'
 import { hashFiles, exec, matches, runner } from '../../expressions'
 import { CacheHandler } from '../../handler'
 
@@ -20,4 +20,4 @@ class Yarn extends CacheHandler {
   }
 }
 
-registry.add('yarn', new Yarn())
+handlers.add('yarn', new Yarn())

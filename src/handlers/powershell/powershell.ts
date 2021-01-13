@@ -1,4 +1,4 @@
-import { registry } from '../../registry'
+import { handlers } from '../../registry'
 import { hashFiles, runner, matches } from '../../expressions'
 import { CacheHandler } from '../../handler'
 
@@ -6,7 +6,7 @@ class Powershell extends CacheHandler {
   async getPaths(): Promise<string[]> {
     switch (runner.os) {
       case 'Windows':
-        return ['~\Documents\PowerShell\Modules']
+        return ['~DocumentsPowerShellModules']
       case 'Linux':
       case 'macOS':
         return ['~/.local/share/powershell/Modules']
@@ -26,4 +26,4 @@ class Powershell extends CacheHandler {
   }
 }
 
-registry.add('powershell', new Powershell())
+handlers.add('powershell', new Powershell())

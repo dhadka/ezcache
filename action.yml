@@ -11,6 +11,9 @@ inputs:
   path:
     description: 'The cache path, only valid for types "run", "diff", "daily", "env"'
     required: false
+  provider:
+    description: 'The provider for cache storage, supports "hosted", "local"'
+    required: false
 outputs:
   cache-hit:
     description: 'When "true", indicates an exact match was found for the key'

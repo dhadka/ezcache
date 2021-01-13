@@ -1,4 +1,4 @@
-name: CI
+name: Hosted Tests
 
 on:
   push:
@@ -131,5 +131,3 @@ jobs:
       - name: Install dependencies
         run: |
           npm ci
-
-

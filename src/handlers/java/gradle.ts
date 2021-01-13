@@ -1,4 +1,4 @@
-import { registry } from '../../registry'
+import { handlers } from '../../registry'
 import { hashFiles, matches, runner } from '../../expressions'
 import { CacheHandler } from '../../handler'
 
@@ -20,4 +20,4 @@ class Gradle extends CacheHandler {
   }
 }
 
-registry.add('gradle', new Gradle())
+handlers.add('gradle', new Gradle())

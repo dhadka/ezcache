@@ -1,4 +1,4 @@
-import { registry } from '../../registry'
+import { handlers } from '../../registry'
 import { hashFiles, matches, runner } from '../../expressions'
 import { CacheHandler } from '../../handler'
 
@@ -20,4 +20,4 @@ class Mint extends CacheHandler {
   }
 }
 
-registry.add('mint', new Mint())
+handlers.add('mint', new Mint())

@@ -1,4 +1,4 @@
-import { registry } from '../../registry'
+import { handlers } from '../../registry'
 import { hashFiles, matches, runner } from '../../expressions'
 import { CacheHandler } from '../../handler'
 
@@ -16,4 +16,4 @@ class Sbt extends CacheHandler {
   }
 }
 
-registry.add('sbt', new Sbt())
+handlers.add('sbt', new Sbt())

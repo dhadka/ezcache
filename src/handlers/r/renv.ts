@@ -1,4 +1,4 @@
-import { registry } from '../../registry'
+import { handlers } from '../../registry'
 import { hashFiles, runner, matches } from '../../expressions'
 import { CacheHandler } from '../../handler'
 
@@ -27,4 +27,4 @@ class REnv extends CacheHandler {
   }
 }
 
-registry.add('renv', new REnv())
+handlers.add('renv', new REnv())

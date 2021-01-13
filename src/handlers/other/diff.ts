@@ -1,5 +1,5 @@
 import * as core from '@actions/core'
-import { registry } from '../../registry'
+import { handlers } from '../../registry'
 import { hashFiles, runner } from '../../expressions'
 import { CacheHandler } from '../../handler'
 
@@ -29,4 +29,4 @@ class DiffCache extends CacheHandler {
   }
 }
 
-registry.add('diff', new DiffCache())
+handlers.add('diff', new DiffCache())

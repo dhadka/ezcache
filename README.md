@@ -56,16 +56,7 @@ The following languages and package management tools are auto-detected by `ezcac
 
 ## Special Configurations
 
-### auto
-
-Using `auto` will auto-detect which cache type is appropriate for your repo.  Furthermore, this can match
-multiple types, thus creating multiple caches.
-
-```
-- uses: dhadka/ezcache@master
-  with:
-    type: auto
-```
+The following special cache types are also supported.  These can cache any arbitrary path.
 
 ### daily
 
@@ -217,6 +208,39 @@ normally require you to make a commit to change the version, but an alternative 
 ```
 
 If the cache is ever corrupted, you can "clear" the cache by quickly changing the value in the secret.
+
+## Storage Providers
+
+By default, `hosted` storage is used which is backed by the GitHub Actions Cache servers.  As such, the same
+restrictions and size limits as GitHub Actions Cache apply.  The following alternatives can be used:
+
+### `local`
+
+Stores caches on the local file system.  Caches can only be shared between jobs on the same machine.
+As a result, `local` caches can not be used when cached content needs to be shared across runners
+on different machines.  **Do not use with hosted runners.**
+
+```
+- uses: dhadka/ezcache@master
+  with:
+    type: npm
+    provider: local
+```
+
+### `s3`
+
+Under development.  Store caches in an AWS S3 bucket.
+
+```
+- uses: dhadka/ezcache@master
+  with:
+    type: npm
+    provider: s3
+  env:
+    AWS_ACCESS_ID: ${secrets.ACCESS_ID}
+    AWS_ACCESS_KEY: ${secrets.ACCESS_KEY}
+    AWS_BUCKET_NAME: caches
+```
 
 # Contributing
 

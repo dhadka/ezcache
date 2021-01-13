@@ -1,5 +1,5 @@
 import * as core from '@actions/core'
-import { registry } from '../../registry'
+import { handlers } from '../../registry'
 import { runner } from '../../expressions'
 import { CacheHandler } from '../../handler'
 import * as state from '../../state'
@@ -25,8 +25,7 @@ class EnvCache extends CacheHandler {
   async getKeyForSave(version?: string): Promise<string> {
     const restoredKey = state.readRestoredKey(this)
 
-    if (process.env['UPDATE_CACHE']?.toLowerCase() === 'true' ||
-        !restoredKey || restoredKey === '') {
+    if (process.env['UPDATE_CACHE']?.toLowerCase() === 'true' || !restoredKey || restoredKey === '') {
       return `${runner.os}-${version}-env-${Date.now()}`
     } else {
       return restoredKey
@@ -38,4 +37,4 @@ class EnvCache extends CacheHandler {
   }
 }
 
-registry.add('env', new EnvCache())
+handlers.add('env', new EnvCache())

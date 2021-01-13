@@ -1098,7 +1098,17 @@ Object.defineProperty(exports, "__esModule", { value: true });
 //# sourceMappingURL=HttpTextPropagator.js.map
 
 /***/ }),
-/* 34 */,
+/* 34 */
+/***/ (function(__unusedmodule, __unusedexports, __webpack_require__) {
+
+"use strict";
+
+// Explicit list of all providers so they are compiled by ncc.
+__webpack_require__(285);
+__webpack_require__(643);
+
+
+/***/ }),
 /* 35 */,
 /* 36 */,
 /* 37 */,
@@ -1137,7 +1147,7 @@ const cache = __webpack_require__(692);
 const registry_1 = __webpack_require__(822);
 const expressions_1 = __webpack_require__(134);
 const handler_1 = __webpack_require__(895);
-const state = __webpack_require__(77);
+const state = __webpack_require__(510);
 const execa = __webpack_require__(955);
 const path = __webpack_require__(622);
 const fs = __webpack_require__(747);
@@ -1153,9 +1163,9 @@ function loadManifests(path) {
     const manifests = [];
     for (const rawManifest of rawManifests) {
         const manifest = {
-            Config: rawManifest["Config"],
-            RepoTags: rawManifest["RepoTags"],
-            Layers: rawManifest["Layers"]
+            Config: rawManifest['Config'],
+            RepoTags: rawManifest['RepoTags'],
+            Layers: rawManifest['Layers'],
         };
         manifests.push(manifest);
     }
@@ -1164,16 +1174,18 @@ function loadManifests(path) {
 class ImageDetector {
     async getExistingImages() {
         const existingSet = new Set([]);
-        const ids = (await execa('docker', ['image', 'ls', '-q'])).stdout.split(`\n`).filter(id => id !== ``);
-        const repotags = (await execa('docker', ['image', 'ls', '--format', '{{.Repository}}:{{.Tag}}', '--filter', 'dangling=false'])).stdout.split(`\n`).filter(id => id !== ``);
-        core.debug(JSON.stringify({ log: "getExistingImages", ids, repotags }));
-        ([...ids, ...repotags]).forEach(image => existingSet.add(image));
+        const ids = (await execa('docker', ['image', 'ls', '-q'])).stdout.split(`\n`).filter((id) => id !== ``);
+        const repotags = (await execa('docker', ['image', 'ls', '--format', '{{.Repository}}:{{.Tag}}', '--filter', 'dangling=false'])).stdout
+            .split(`\n`)
+            .filter((id) => id !== ``);
+        core.debug(JSON.stringify({ log: 'getExistingImages', ids, repotags }));
+        [...ids, ...repotags].forEach((image) => existingSet.add(image));
         core.debug(JSON.stringify({ existingSet }));
         return Array.from(existingSet);
     }
     async getImagesShouldSave(alreadRegisteredImages) {
         const resultSet = new Set(await this.getExistingImages());
-        alreadRegisteredImages.forEach(image => resultSet.delete(image));
+        alreadRegisteredImages.forEach((image) => resultSet.delete(image));
         return Array.from(resultSet);
     }
     async checkIfImageHasAdded(restoredImages) {
@@ -1198,7 +1210,7 @@ class LayerCache {
         if (this.enabledParallel) {
             await this.separateAllLayerCaches();
         }
-        if (await this.storeRoot() === undefined) {
+        if ((await this.storeRoot()) === undefined) {
             core.info(`cache key already exists, aborting.`);
             return false;
         }
@@ -1207,7 +1219,10 @@ class LayerCache {
     }
     async saveImageAsUnpacked() {
         fs.mkdirSync(this.getSavedImageTarDir(), { recursive: true });
-        await execa(`docker save '${(await this.makeRepotagsDockerSaveArgReady(this.ids)).join(`' '`)}' | tar xf - -C .`, { shell: true, cwd: this.getSavedImageTarDir() });
+        await execa(`docker save '${(await this.makeRepotagsDockerSaveArgReady(this.ids)).join(`' '`)}' | tar xf - -C .`, {
+            shell: true,
+            cwd: this.getSavedImageTarDir(),
+        });
     }
     async makeRepotagsDockerSaveArgReady(repotags) {
         const getMiddleIdsWithRepotag = async (id) => {
@@ -1217,7 +1232,7 @@ class LayerCache {
     }
     async getAllImageIdsFrom(repotag) {
         const rawHistoryIds = (await execa('docker', ['history', '-q', repotag])).stdout;
-        const historyIds = rawHistoryIds.split(`\n`).filter(id => id !== `<missing>` && id !== ``);
+        const historyIds = rawHistoryIds.split(`\n`).filter((id) => id !== `<missing>` && id !== ``);
         return historyIds;
     }
     async getManifests() {
@@ -1225,9 +1240,7 @@ class LayerCache {
     }
     async storeRoot() {
         const rootKey = await this.generateRootSaveKey();
-        const paths = [
-            this.getUnpackedTarDir(),
-        ];
+        const paths = [this.getUnpackedTarDir()];
         core.info(`Start storing root cache, key: ${rootKey}, dir: ${paths}`);
         const cacheId = await LayerCache.dismissError(cache.saveCache(paths, rootKey), LayerCache.ERROR_CACHE_ALREAD_EXISTS_STR, -1);
         core.info(`Stored root cache, key: ${rootKey}, id: ${cacheId}`);
@@ -1241,8 +1254,8 @@ class LayerCache {
     }
     async moveLayerTarsInDir(fromDir, toDir) {
         const layerTars = (await recursiveReaddir(fromDir))
-            .filter(path => path.endsWith(`/layer.tar`))
-            .map(path => path.replace(`${fromDir}/`, ``));
+            .filter((path) => path.endsWith(`/layer.tar`))
+            .map((path) => path.replace(`${fromDir}/`, ``));
         const moveLayer = async (layer) => {
             const from = `${fromDir}/${layer}`;
             const to = `${toDir}/${layer}`;
@@ -1254,7 +1267,7 @@ class LayerCache {
     }
     async storeLayers() {
         const pool = new native_promise_pool_1.default(this.concurrency);
-        const result = Promise.all((await this.getLayerIds()).map(layerId => {
+        const result = Promise.all((await this.getLayerIds()).map((layerId) => {
             return pool.open(() => this.storeSingleLayerBy(layerId));
         }));
         return result;
@@ -1313,7 +1326,7 @@ class LayerCache {
     }
     async restoreLayers() {
         const pool = new native_promise_pool_1.default(this.concurrency);
-        const tasks = (await this.getLayerIds()).map(layerId => pool.open(() => this.restoreSingleLayerBy(layerId)));
+        const tasks = (await this.getLayerIds()).map((layerId) => pool.open(() => this.restoreSingleLayerBy(layerId)));
         try {
             await Promise.all(tasks);
         }
@@ -1321,7 +1334,7 @@ class LayerCache {
             if (typeof e.message === `string` && e.message.includes(LayerCache.ERROR_LAYER_CACHE_NOT_FOUND_STR)) {
                 core.info(e.message);
                 // Avoid UnhandledPromiseRejectionWarning
-                tasks.map(task => task.catch(core.info));
+                tasks.map((task) => task.catch(core.info));
                 return false;
             }
             throw e;
@@ -1410,6 +1423,9 @@ class LayerCache {
 LayerCache.ERROR_CACHE_ALREAD_EXISTS_STR = `Unable to reserve cache with key`;
 LayerCache.ERROR_LAYER_CACHE_NOT_FOUND_STR = `Layer cache not found`;
 class DockerLayers extends handler_1.CacheHandler {
+    async getPaths() {
+        throw Error('Not implemented');
+    }
     async getKey(version) {
         return `${expressions_1.runner.os}-${version}-docker`;
     }
@@ -1456,7 +1472,7 @@ class DockerLayers extends handler_1.CacheHandler {
         };
     }
 }
-registry_1.registry.add('layers', new DockerLayers());
+registry_1.handlers.add('layers', new DockerLayers());
 
 
 /***/ }),
@@ -1628,7 +1644,7 @@ class Cargo extends handler_1.CacheHandler {
         return await expressions_1.matches('**/Cargo.lock');
     }
 }
-registry_1.registry.add('cargo', new Cargo());
+registry_1.handlers.add('cargo', new Cargo());
 
 
 /***/ }),
@@ -1771,52 +1787,7 @@ if (typeof Symbol === undefined || !Symbol.asyncIterator) {
 /* 74 */,
 /* 75 */,
 /* 76 */,
-/* 77 */
-/***/ (function(__unusedmodule, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.readHandlers = exports.readPrimaryKey = exports.readRestoredKey = exports.addHandler = exports.savePrimaryKey = exports.saveRestoredKey = void 0;
-const core = __webpack_require__(470);
-var State;
-(function (State) {
-    State["RestoredKey"] = "RestoredKey";
-    State["PrimaryKey"] = "PrimaryKey";
-    State["CacheHandlers"] = "CacheHandlers";
-})(State || (State = {}));
-function getScopedStateKey(handler, name) {
-    return `${handler.constructor.name}-${name}`;
-}
-function saveRestoredKey(handler, value) {
-    core.saveState(getScopedStateKey(handler, State.RestoredKey), value);
-}
-exports.saveRestoredKey = saveRestoredKey;
-function savePrimaryKey(handler, value) {
-    core.saveState(getScopedStateKey(handler, State.PrimaryKey), value);
-}
-exports.savePrimaryKey = savePrimaryKey;
-function addHandler(handler) {
-    const handlers = readHandlers();
-    handlers.push(handler.constructor.name);
-    core.saveState(State.CacheHandlers, handlers.join(','));
-}
-exports.addHandler = addHandler;
-function readRestoredKey(handler) {
-    return core.getState(getScopedStateKey(handler, State.RestoredKey));
-}
-exports.readRestoredKey = readRestoredKey;
-function readPrimaryKey(handler) {
-    return core.getState(getScopedStateKey(handler, State.PrimaryKey));
-}
-exports.readPrimaryKey = readPrimaryKey;
-function readHandlers() {
-    return core.getState(State.CacheHandlers).split(',');
-}
-exports.readHandlers = readHandlers;
-
-
-/***/ }),
+/* 77 */,
 /* 78 */
 /***/ (function(__unusedmodule, exports, __webpack_require__) {
 
@@ -3622,7 +3593,7 @@ class REnv extends handler_1.CacheHandler {
         return await expressions_1.matches('**/renv.lock');
     }
 }
-registry_1.registry.add('renv', new REnv());
+registry_1.handlers.add('renv', new REnv());
 
 
 /***/ }),
@@ -4532,48 +4503,35 @@ function state(list, sortMethod)
 
 "use strict";
 
-/*
- * Copyright The OpenTelemetry Authors
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      https://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.NOOP_TRACER = exports.NoopTracer = void 0;
-var NoopSpan_1 = __webpack_require__(767);
-/**
- * No-op implementations of {@link Tracer}.
- */
-var NoopTracer = /** @class */ (function () {
-    function NoopTracer() {
+const core = __webpack_require__(470);
+const registry_1 = __webpack_require__(822);
+const expressions_1 = __webpack_require__(134);
+const handler_1 = __webpack_require__(895);
+const fs = __webpack_require__(747);
+const defaultCacheFolder = '.buildx-cache';
+class DockerBuildX extends handler_1.CacheHandler {
+    getCachePath() {
+        return core.getInput('path') || defaultCacheFolder;
     }
-    NoopTracer.prototype.getCurrentSpan = function () {
-        return NoopSpan_1.NOOP_SPAN;
-    };
-    // startSpan starts a noop span.
-    NoopTracer.prototype.startSpan = function (name, options) {
-        return NoopSpan_1.NOOP_SPAN;
-    };
-    NoopTracer.prototype.withSpan = function (span, fn) {
-        return fn();
-    };
-    NoopTracer.prototype.bind = function (target, span) {
-        return target;
-    };
-    return NoopTracer;
-}());
-exports.NoopTracer = NoopTracer;
-exports.NOOP_TRACER = new NoopTracer();
-//# sourceMappingURL=NoopTracer.js.map
+    async getPaths() {
+        return [this.getCachePath()];
+    }
+    async getKeyForRestore(version) {
+        return 'buildx-never-match-primary-key';
+    }
+    async getKeyForSave(version) {
+        return `${expressions_1.runner.os}-${version}-buildx-${await expressions_1.hashFiles(this.getCachePath())}`;
+    }
+    async getRestoreKeys(version) {
+        return [`${expressions_1.runner.os}-${version}-buildx-`];
+    }
+    async setup() {
+        fs.mkdirSync(this.getCachePath(), { recursive: true });
+    }
+}
+registry_1.handlers.add('buildx', new DockerBuildX());
+
 
 /***/ }),
 /* 152 */
@@ -4808,7 +4766,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
  */
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.NOOP_TRACER_PROVIDER = exports.NoopTracerProvider = void 0;
-var NoopTracer_1 = __webpack_require__(151);
+var NoopTracer_1 = __webpack_require__(216);
 /**
  * An implementation of the {@link TracerProvider} which returns an impotent
  * Tracer for all calls to `getTracer`.
@@ -5129,7 +5087,7 @@ class Nuget extends handler_1.CacheHandler {
         return await expressions_1.matches('**/packages.lock.json');
     }
 }
-registry_1.registry.add('nuget', new Nuget());
+registry_1.handlers.add('nuget', new Nuget());
 
 
 /***/ }),
@@ -5279,7 +5237,55 @@ module.exports = require("punycode");
 /***/ }),
 /* 214 */,
 /* 215 */,
-/* 216 */,
+/* 216 */
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+/*
+ * Copyright The OpenTelemetry Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.NOOP_TRACER = exports.NoopTracer = void 0;
+var NoopSpan_1 = __webpack_require__(767);
+/**
+ * No-op implementations of {@link Tracer}.
+ */
+var NoopTracer = /** @class */ (function () {
+    function NoopTracer() {
+    }
+    NoopTracer.prototype.getCurrentSpan = function () {
+        return NoopSpan_1.NOOP_SPAN;
+    };
+    // startSpan starts a noop span.
+    NoopTracer.prototype.startSpan = function (name, options) {
+        return NoopSpan_1.NOOP_SPAN;
+    };
+    NoopTracer.prototype.withSpan = function (span, fn) {
+        return fn();
+    };
+    NoopTracer.prototype.bind = function (target, span) {
+        return target;
+    };
+    return NoopTracer;
+}());
+exports.NoopTracer = NoopTracer;
+exports.NOOP_TRACER = new NoopTracer();
+//# sourceMappingURL=NoopTracer.js.map
+
+/***/ }),
 /* 217 */,
 /* 218 */,
 /* 219 */,
@@ -6722,7 +6728,41 @@ exports.create = create;
 /* 282 */,
 /* 283 */,
 /* 284 */,
-/* 285 */,
+/* 285 */
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const core = __webpack_require__(470);
+const cache_1 = __webpack_require__(692);
+const registry_1 = __webpack_require__(822);
+const provider_1 = __webpack_require__(880);
+/**
+ * Stores cache content using the GitHub Actions Cache.
+ */
+class HostedStorageProvider extends provider_1.StorageProvider {
+    async restoreCache(paths, primaryKey, restoreKeys) {
+        return await cache_1.restoreCache(paths, primaryKey, restoreKeys);
+    }
+    async saveCache(paths, key) {
+        try {
+            await cache_1.saveCache(paths, key);
+        }
+        catch (error) {
+            if (error instanceof cache_1.ReserveCacheError) {
+                core.info(`Cache already exists, skip saving cache`);
+            }
+            else {
+                throw error;
+            }
+        }
+    }
+}
+registry_1.providers.add('hosted', new HostedStorageProvider());
+
+
+/***/ }),
 /* 286 */,
 /* 287 */,
 /* 288 */,
@@ -7881,7 +7921,7 @@ class PerRunCache extends handler_1.CacheHandler {
         return `${expressions_1.runner.os}-${version}-run-${github.context.runId}`;
     }
 }
-registry_1.registry.add('run', new PerRunCache());
+registry_1.handlers.add('run', new PerRunCache());
 
 
 /***/ }),
@@ -8544,7 +8584,7 @@ var logger$1 = __webpack_require__(928);
 var abortController = __webpack_require__(106);
 var os = __webpack_require__(87);
 var stream = __webpack_require__(413);
-__webpack_require__(510);
+__webpack_require__(711);
 var crypto = __webpack_require__(417);
 var coreLro = __webpack_require__(889);
 var events = __webpack_require__(614);
@@ -35097,7 +35137,7 @@ class Sbt extends handler_1.CacheHandler {
         return await expressions_1.matches('**/build.sbt');
     }
 }
-registry_1.registry.add('sbt', new Sbt());
+registry_1.handlers.add('sbt', new Sbt());
 
 
 /***/ }),
@@ -36223,7 +36263,7 @@ __exportStar(__webpack_require__(165), exports);
 __exportStar(__webpack_require__(851), exports);
 __exportStar(__webpack_require__(95), exports);
 __exportStar(__webpack_require__(767), exports);
-__exportStar(__webpack_require__(151), exports);
+__exportStar(__webpack_require__(216), exports);
 __exportStar(__webpack_require__(162), exports);
 __exportStar(__webpack_require__(79), exports);
 __exportStar(__webpack_require__(340), exports);
@@ -36272,7 +36312,7 @@ const core = __webpack_require__(470);
 const registry_1 = __webpack_require__(822);
 const expressions_1 = __webpack_require__(134);
 const handler_1 = __webpack_require__(895);
-const state = __webpack_require__(77);
+const state = __webpack_require__(510);
 /**
  * Creates a new cache when an environment variable changes.  This works by
  * appending a unique value, such as the current time (yes, this is not guaranteed
@@ -36292,8 +36332,7 @@ class EnvCache extends handler_1.CacheHandler {
     async getKeyForSave(version) {
         var _a;
         const restoredKey = state.readRestoredKey(this);
-        if (((_a = process.env['UPDATE_CACHE']) === null || _a === void 0 ? void 0 : _a.toLowerCase()) === 'true' ||
-            !restoredKey || restoredKey === '') {
+        if (((_a = process.env['UPDATE_CACHE']) === null || _a === void 0 ? void 0 : _a.toLowerCase()) === 'true' || !restoredKey || restoredKey === '') {
             return `${expressions_1.runner.os}-${version}-env-${Date.now()}`;
         }
         else {
@@ -36304,7 +36343,7 @@ class EnvCache extends handler_1.CacheHandler {
         return [`${expressions_1.runner.os}-${version}-env-`];
     }
 }
-registry_1.registry.add('env', new EnvCache());
+registry_1.handlers.add('env', new EnvCache());
 
 
 /***/ }),
@@ -38633,7 +38672,7 @@ class DiffCache extends handler_1.CacheHandler {
         return [`${expressions_1.runner.os}-${version}-diff-`];
     }
 }
-registry_1.registry.add('diff', new DiffCache());
+registry_1.handlers.add('diff', new DiffCache());
 
 
 /***/ }),
@@ -39092,7 +39131,7 @@ class Yarn extends handler_1.CacheHandler {
         return await expressions_1.matches('**/yarn.lock');
     }
 }
-registry_1.registry.add('yarn', new Yarn());
+registry_1.handlers.add('yarn', new Yarn());
 
 
 /***/ }),
@@ -39554,10 +39593,44 @@ function defer(fn)
 
 "use strict";
 
-// Copyright (c) Microsoft Corporation.
-// Licensed under the MIT license.
 Object.defineProperty(exports, "__esModule", { value: true });
-__webpack_require__(71);
+exports.readHandlers = exports.readPrimaryKey = exports.readRestoredKey = exports.addHandler = exports.savePrimaryKey = exports.saveRestoredKey = void 0;
+const core = __webpack_require__(470);
+var State;
+(function (State) {
+    State["RestoredKey"] = "RestoredKey";
+    State["PrimaryKey"] = "PrimaryKey";
+    State["CacheHandlers"] = "CacheHandlers";
+})(State || (State = {}));
+function getScopedStateKey(handler, name) {
+    return `${handler.constructor.name}-${name}`;
+}
+function saveRestoredKey(handler, value) {
+    core.saveState(getScopedStateKey(handler, State.RestoredKey), value);
+}
+exports.saveRestoredKey = saveRestoredKey;
+function savePrimaryKey(handler, value) {
+    core.saveState(getScopedStateKey(handler, State.PrimaryKey), value);
+}
+exports.savePrimaryKey = savePrimaryKey;
+function addHandler(handler) {
+    const handlers = readHandlers();
+    handlers.push(handler.constructor.name);
+    core.saveState(State.CacheHandlers, handlers.join(','));
+}
+exports.addHandler = addHandler;
+function readRestoredKey(handler) {
+    return core.getState(getScopedStateKey(handler, State.RestoredKey));
+}
+exports.readRestoredKey = readRestoredKey;
+function readPrimaryKey(handler) {
+    return core.getState(getScopedStateKey(handler, State.PrimaryKey));
+}
+exports.readPrimaryKey = readPrimaryKey;
+function readHandlers() {
+    return core.getState(State.CacheHandlers).split(',');
+}
+exports.readHandlers = readHandlers;
 
 
 /***/ }),
@@ -40040,7 +40113,7 @@ class Carthage extends handler_1.CacheHandler {
         return await expressions_1.matches('**/Cartfile.resolved');
     }
 }
-registry_1.registry.add('carthage', new Carthage());
+registry_1.handlers.add('carthage', new Carthage());
 
 
 /***/ }),
@@ -40976,43 +41049,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 //# sourceMappingURL=BoundInstrument.js.map
 
 /***/ }),
-/* 552 */
-/***/ (function(__unusedmodule, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-const core = __webpack_require__(470);
-const registry_1 = __webpack_require__(822);
-const expressions_1 = __webpack_require__(134);
-const handler_1 = __webpack_require__(895);
-const fs = __webpack_require__(747);
-const defaultCacheFolder = '.buildx-cache';
-class DockerBuildX extends handler_1.CacheHandler {
-    getCachePath() {
-        var _a;
-        return (_a = core.getInput('path')) !== null && _a !== void 0 ? _a : defaultCacheFolder;
-    }
-    async getPaths() {
-        return [this.getCachePath()];
-    }
-    async getKeyForRestore(version) {
-        return 'buildx-never-match-primary-key';
-    }
-    async getKeyForSave(version) {
-        return `${expressions_1.runner.os}-${version}-buildx-${await expressions_1.hashFiles(this.getCachePath())}`;
-    }
-    async getRestoreKeys(version) {
-        return [`${expressions_1.runner.os}-${version}-buildx-`];
-    }
-    async setup() {
-        fs.mkdirSync(this.getCachePath(), { recursive: true });
-    }
-}
-registry_1.registry.add('buildx', new DockerBuildX());
-
-
-/***/ }),
+/* 552 */,
 /* 553 */,
 /* 554 */,
 /* 555 */,
@@ -42941,7 +42978,285 @@ module.exports = {"application/1d-interleaved-parityfec":{"source":"iana"},"appl
 /* 640 */,
 /* 641 */,
 /* 642 */,
-/* 643 */,
+/* 643 */
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.LocalStorageProvider = void 0;
+const os = __webpack_require__(87);
+const path = __webpack_require__(622);
+const fs = __webpack_require__(747);
+const crypto = __webpack_require__(417);
+const execa = __webpack_require__(955);
+const core = __webpack_require__(470);
+const github = __webpack_require__(469);
+const registry_1 = __webpack_require__(822);
+const provider_1 = __webpack_require__(880);
+const expressions_1 = __webpack_require__(134);
+/**
+ * Stores cache content on the local file system.  This is useful for self-hosted runners and
+ * GitHub Enterprise Server.
+ *
+ * There are several key functional differences between local and hosted storage, namely:
+ *
+ *   1. No individual or total cache size limit.
+ *   2. No scoping of caches to individual branches.  Caches are shared across branches.
+ *   3. Eviction occurs during the save operation.
+ *   4. Caches are only shareable on the local machine.
+ *
+ * Local caches are structured as follows:
+ *
+ *   <root>
+ *     |- <owner1>
+ *          |- <repo1>
+ *               |- lastEviction.tstamp
+ *                   |- <key1>
+ *                        |- committed.tstamp
+ *                        |- lastAccessed.tstamp
+ *                        |- <path1>
+ *                        |- <path2>
+ *                   |- <key2>
+ *                        |- lastAccessed.tstamp
+ *                        |- <path1>
+ *
+ * Future work:
+ *   1. Can a repo owner or name contain invalid characters on an OS?
+ *   2. Override root folder, eviction settings, with env vars
+ */
+class LocalStorageProvider extends provider_1.StorageProvider {
+    getRepo() {
+        return { owner: github.context.repo.owner, name: github.context.repo.repo };
+    }
+    getCacheRoot() {
+        return path.join(os.homedir(), '.RunnerCache');
+    }
+    getRepoFolder(repo) {
+        return path.join(this.getCacheRoot(), repo.owner, repo.name);
+    }
+    getKeyFolder(key) {
+        return path.join(this.getRepoFolder(key.repo), key.value);
+    }
+    getCachePathFolder(cachePath) {
+        // Use a hash to map the path (e.g., ~/.npm) to the folder in the local cache.
+        const pathHash = crypto.createHash('sha256').update(cachePath.path.toString()).digest('hex');
+        return path.join(this.getKeyFolder(cachePath.key), pathHash);
+    }
+    getLastAccessedPath(key) {
+        return path.join(this.getKeyFolder(key), 'lastAccessed.tstamp');
+    }
+    getLastEvictedPath(repo) {
+        return path.join(this.getRepoFolder(repo), 'lastEvicted.tstamp');
+    }
+    getCommittedPath(key) {
+        return path.join(this.getKeyFolder(key), 'committed.tstamp');
+    }
+    writeTimestamp(file, timestamp) {
+        fs.writeFileSync(file, timestamp.toUTCString(), { encoding: 'utf8' });
+    }
+    readTimestamp(file) {
+        const timestamp = fs.readFileSync(file, { encoding: 'utf8' }).toString();
+        return new Date(timestamp);
+    }
+    getLastAccessed(key) {
+        return this.readTimestamp(this.getLastAccessedPath(key));
+    }
+    updateLastAccessed(key) {
+        this.writeTimestamp(this.getLastAccessedPath(key), new Date());
+    }
+    getLastEvicted(repo) {
+        try {
+            return this.readTimestamp(this.getLastEvictedPath(repo));
+        }
+        catch {
+            return new Date();
+        }
+    }
+    updateLastEvicted(repo) {
+        this.writeTimestamp(this.getLastEvictedPath(repo), new Date());
+    }
+    commit(key) {
+        this.writeTimestamp(this.getCommittedPath(key), new Date());
+    }
+    isCommitted(key) {
+        return fs.existsSync(this.getKeyFolder(key)) &&
+            fs.existsSync(this.getCommittedPath(key));
+    }
+    concatenateKeys(primaryKey, restoreKeys) {
+        var result = [primaryKey];
+        if (restoreKeys) {
+            result = result.concat(restoreKeys);
+        }
+        return result;
+    }
+    preprocessPaths(paths) {
+        return paths.map(p => {
+            if (p.startsWith('~')) {
+                p = os.homedir() + p.substr(1);
+            }
+            return path.normalize(p);
+        });
+    }
+    async restoreFolder(paths, key) {
+        const start = Date.now();
+        core.debug(`Restoring cache ${key.value}`);
+        for (const path of this.preprocessPaths(paths)) {
+            const sourcePath = this.getCachePathFolder({ key: key, path: path });
+            core.debug(`Copying ${sourcePath} to ${path}`);
+            await this.copyFolder(sourcePath, path);
+        }
+        core.debug(`Updating last accessed time`);
+        this.updateLastAccessed(key);
+        core.info(`Cache successfully restored in ${Date.now() - start} ms`);
+    }
+    async saveFolder(paths, key) {
+        const start = Date.now();
+        core.debug(`Saving cache ${key.value}`);
+        for (const path of this.preprocessPaths(paths)) {
+            const targetPath = this.getCachePathFolder({ key: key, path: path });
+            core.debug(`Copying ${path} to ${targetPath}`);
+            await this.copyFolder(path, targetPath);
+        }
+        core.debug(`Committing cache ${key.value}`);
+        this.updateLastAccessed(key);
+        this.commit(key);
+        core.info(`Cache successfully saved in ${Date.now() - start} ms`);
+    }
+    copyFolderInternal(source, target) {
+        fs.mkdirSync(target, { recursive: true });
+        for (const file of fs.readdirSync(source)) {
+            const sourcePath = path.join(source, file);
+            const targetPath = path.join(target, file);
+            const fstat = fs.statSync(sourcePath);
+            if (fstat.isDirectory()) {
+                this.copyFolderInternal(sourcePath, targetPath);
+            }
+            else {
+                fs.copyFileSync(sourcePath, targetPath);
+            }
+        }
+    }
+    async copyFolderWindows(source, target) {
+        var _a;
+        const process = execa("robocopy", [source, target, "/E", "/MT:32", "/NP", "/NS", "/NC", "/NFL", "/NDL"]);
+        try {
+            await process;
+        }
+        catch (e) {
+            // Robocopy has non-standard exit codes.
+            const exitCode = (_a = process.exitCode) !== null && _a !== void 0 ? _a : 0;
+            if (exitCode & 0x8 || exitCode & 0x10) {
+                throw e;
+            }
+        }
+    }
+    async copyFolderNative(source, target) {
+        switch (expressions_1.runner.os) {
+            case 'Windows':
+                await this.copyFolderWindows(source, target);
+            case 'Linux':
+            case 'macOS':
+                this.copyFolderInternal(source, target);
+        }
+    }
+    async copyFolder(source, target) {
+        if (process.env["CACHE_DISABLE_NATIVE"] === 'true') {
+            this.copyFolderInternal(source, target);
+        }
+        else {
+            await this.copyFolderNative(source, target);
+        }
+    }
+    listKeys(repo) {
+        const path = this.getRepoFolder(repo);
+        if (fs.existsSync(path)) {
+            return fs.readdirSync(path).map(p => {
+                return { repo: repo, value: p };
+            });
+        }
+        else {
+            return [];
+        }
+    }
+    async restoreCache(paths, primaryKey, restoreKeys) {
+        const keys = this.concatenateKeys(primaryKey, restoreKeys);
+        const repo = this.getRepo();
+        for (const key of keys) {
+            const cacheKey = { repo: repo, value: key };
+            // Exact match
+            if (this.isCommitted(cacheKey)) {
+                await this.restoreFolder(paths, cacheKey);
+                return cacheKey.value;
+            }
+            // Prefix match
+            for (const testKey of this.listKeys(repo)) {
+                if (testKey.value.startsWith(key) && this.isCommitted(testKey)) {
+                    await this.restoreFolder(paths, testKey);
+                    return testKey.value;
+                }
+            }
+        }
+    }
+    daysInPast(days) {
+        const date = new Date();
+        date.setDate(date.getDate() - days);
+        return date;
+    }
+    shouldRunEviction(repo) {
+        return this.getLastEvicted(repo) < this.daysInPast(1);
+    }
+    shouldEvictKey(key) {
+        return this.getLastAccessed(key) < this.daysInPast(7);
+    }
+    shouldEvictUncommittedKey(key) {
+        return fs.statSync(this.getKeyFolder(key)).ctime < this.daysInPast(1);
+    }
+    evict(repo) {
+        const start = Date.now();
+        core.debug(`Evicting stale caches from ${repo.owner}/${repo.name}`);
+        for (const key of this.listKeys(repo)) {
+            if (this.isCommitted(key)) {
+                if (this.shouldEvictKey(key)) {
+                    core.debug(`Evicting cache ${key}`);
+                    this.evictKey(key);
+                }
+            }
+            else if (this.shouldEvictUncommittedKey(key)) {
+                core.debug(`Evicting uncommitted cache ${key}`);
+                this.evictKey(key);
+            }
+        }
+        this.updateLastEvicted(repo);
+        core.debug(`Eviction successfully completed in ${Date.now() - start} ms`);
+    }
+    evictKey(key) {
+        // It's technically possible for a machine to have multiple runners where a job
+        // tries to restore a cache that is being evicted.  However, given that we only
+        // evict after a cache has been unused for 7 days, this is very unlikely.
+        fs.rmSync(this.getCommittedPath(key), { force: true });
+        fs.rmSync(this.getKeyFolder(key), { recursive: true, force: true });
+    }
+    async saveCache(paths, key) {
+        const repo = this.getRepo();
+        const cacheKey = { repo: repo, value: key };
+        const cacheFolder = this.getKeyFolder(cacheKey);
+        if (fs.existsSync(cacheFolder)) {
+            core.info(`Cache already exists, skip saving cache`);
+        }
+        else {
+            await this.saveFolder(paths, cacheKey);
+        }
+        if (this.shouldRunEviction(repo)) {
+            this.evict(repo);
+        }
+    }
+}
+exports.LocalStorageProvider = LocalStorageProvider;
+registry_1.providers.add('local', new LocalStorageProvider());
+
+
+/***/ }),
 /* 644 */,
 /* 645 */
 /***/ (function(__unusedmodule, exports, __webpack_require__) {
@@ -44539,7 +44854,7 @@ class NPM extends handler_1.CacheHandler {
         return await expressions_1.matches('**/package-lock.json');
     }
 }
-registry_1.registry.add('npm', new NPM());
+registry_1.handlers.add('npm', new NPM());
 
 
 /***/ }),
@@ -44885,7 +45200,7 @@ class Maven extends handler_1.CacheHandler {
         return await expressions_1.matches('**/pom.xml');
     }
 }
-registry_1.registry.add('maven', new Maven());
+registry_1.handlers.add('maven', new Maven());
 
 
 /***/ }),
@@ -45201,12 +45516,14 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const core = __webpack_require__(470);
 const registry_1 = __webpack_require__(822);
 __webpack_require__(877);
+__webpack_require__(34);
 async function run() {
     let type = core.getInput('type');
     let version = core.getInput('version');
-    for (const handler of await registry_1.registry.getAll(type)) {
+    let provider = core.getInput('provider');
+    for (const handler of await registry_1.handlers.getAll(type)) {
         core.info(`Saving cache with ${handler.constructor.name} handler`);
-        await handler.saveCache({ version });
+        await handler.saveCache({ version, provider });
     }
 }
 run().catch((e) => {
@@ -46091,7 +46408,7 @@ class Bundler extends handler_1.CacheHandler {
         await expressions_1.exec('bundle', 'config', 'path', 'vendor/bundle');
     }
 }
-registry_1.registry.add('bundler', new Bundler());
+registry_1.handlers.add('bundler', new Bundler());
 
 
 /***/ }),
@@ -46249,7 +46566,18 @@ Object.defineProperty(exports, "__esModule", { value: true });
 /***/ }),
 /* 709 */,
 /* 710 */,
-/* 711 */,
+/* 711 */
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT license.
+Object.defineProperty(exports, "__esModule", { value: true });
+__webpack_require__(71);
+
+
+/***/ }),
 /* 712 */,
 /* 713 */,
 /* 714 */,
@@ -47851,7 +48179,7 @@ class Composer extends handler_1.CacheHandler {
         return await expressions_1.matches('**/composer.lock');
     }
 }
-registry_1.registry.add('composer', new Composer());
+registry_1.handlers.add('composer', new Composer());
 
 
 /***/ }),
@@ -47884,7 +48212,7 @@ class Cocoapods extends handler_1.CacheHandler {
         return await expressions_1.matches('**/Podfile.lock');
     }
 }
-registry_1.registry.add('cocoapods', new Cocoapods());
+registry_1.handlers.add('cocoapods', new Cocoapods());
 
 
 /***/ }),
@@ -48168,7 +48496,7 @@ class Go extends handler_1.CacheHandler {
         return await expressions_1.matches('**/go.sum');
     }
 }
-registry_1.registry.add('go', new Go());
+registry_1.handlers.add('go', new Go());
 
 
 /***/ }),
@@ -49775,30 +50103,32 @@ function sync (path, options) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.registry = void 0;
+exports.providers = exports.handlers = void 0;
 const core = __webpack_require__(470);
 class Registry {
     constructor() {
-        this.handlers = new Map();
+        this.mapping = new Map();
     }
     toCanonicalName(name) {
         return name.toLowerCase();
     }
-    add(name, handler) {
-        core.debug(`Registering ${name} handler`);
-        this.handlers.set(this.toCanonicalName(name), handler);
+    add(name, value) {
+        core.debug(`Registering ${name} with ${this.constructor.name}`);
+        this.mapping.set(this.toCanonicalName(name), value);
     }
     getFirst(name) {
-        return this.handlers.get(this.toCanonicalName(name));
+        return this.mapping.get(this.toCanonicalName(name));
     }
     contains(name) {
-        return this.handlers.has(this.toCanonicalName(name));
+        return this.mapping.has(this.toCanonicalName(name));
     }
+}
+class CacheHandlerRegistry extends Registry {
     async getAll(name) {
         name = this.toCanonicalName(name);
         const result = [];
         if (!name || name === 'auto') {
-            for (const handler of this.handlers.values()) {
+            for (const handler of this.mapping.values()) {
                 if (await handler.shouldCache()) {
                     result.push(handler);
                 }
@@ -49813,7 +50143,10 @@ class Registry {
         return result;
     }
 }
-exports.registry = new Registry();
+class StorageProviderRegistry extends Registry {
+}
+exports.handlers = new CacheHandlerRegistry();
+exports.providers = new StorageProviderRegistry();
 
 
 /***/ }),
@@ -51314,7 +51647,7 @@ class DailyCache extends handler_1.CacheHandler {
         ];
     }
 }
-registry_1.registry.add('daily', new DailyCache());
+registry_1.handlers.add('daily', new DailyCache());
 
 
 /***/ }),
@@ -52148,7 +52481,7 @@ class Pip extends handler_1.CacheHandler {
         return await expressions_1.matches('**/requirements.txt');
     }
 }
-registry_1.registry.add('pip', new Pip());
+registry_1.handlers.add('pip', new Pip());
 
 
 /***/ }),
@@ -52175,7 +52508,7 @@ class Mint extends handler_1.CacheHandler {
         return await expressions_1.matches('**/Mintfile');
     }
 }
-registry_1.registry.add('mint', new Mint());
+registry_1.handlers.add('mint', new Mint());
 
 
 /***/ }),
@@ -52670,7 +53003,7 @@ exports.TraceAPI = TraceAPI;
 // Explicit list of all handlers so they are compiled by ncc.
 __webpack_require__(200);
 __webpack_require__(981);
-__webpack_require__(552);
+__webpack_require__(151);
 __webpack_require__(38);
 __webpack_require__(948);
 __webpack_require__(780);
@@ -52699,7 +53032,19 @@ __webpack_require__(967);
 /***/ }),
 /* 878 */,
 /* 879 */,
-/* 880 */,
+/* 880 */
+/***/ (function(__unusedmodule, exports) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.StorageProvider = void 0;
+class StorageProvider {
+}
+exports.StorageProvider = StorageProvider;
+
+
+/***/ }),
 /* 881 */
 /***/ (function(module) {
 
@@ -55551,8 +55896,8 @@ exports.default = _default;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CacheHandler = exports.RestoreType = void 0;
 const core = __webpack_require__(470);
-const cache_1 = __webpack_require__(692);
-const state = __webpack_require__(77);
+const registry_1 = __webpack_require__(822);
+const state = __webpack_require__(510);
 var RestoreType;
 (function (RestoreType) {
     RestoreType[RestoreType["Miss"] = 0] = "Miss";
@@ -55560,18 +55905,15 @@ var RestoreType;
     RestoreType[RestoreType["Full"] = 2] = "Full";
 })(RestoreType = exports.RestoreType || (exports.RestoreType = {}));
 class CacheHandler {
-    async getPaths() {
-        throw Error('not implemented');
-    }
     async getKey(version) {
-        throw Error('not implemented');
+        throw new Error('Not implemented');
     }
     async getKeyForRestore(version) {
         return this.getKey(version);
     }
     async getKeyForSave(version) {
-        var _a;
-        return (_a = state.readPrimaryKey(this)) !== null && _a !== void 0 ? _a : this.getKey(version);
+        core.debug(`PrimaryKey: ${state.readPrimaryKey(this)}`);
+        return state.readPrimaryKey(this) || this.getKey(version);
     }
     async getRestoreKeys(version) {
         return [];
@@ -55580,34 +55922,38 @@ class CacheHandler {
         return false;
     }
     async setup() { }
+    getStorageProvider(options) {
+        const name = (options === null || options === void 0 ? void 0 : options.provider) || 'hosted';
+        const provider = registry_1.providers.getFirst(name);
+        if (!provider) {
+            throw Error(`No provider found for ${name}`);
+        }
+        core.info(`Saving cache with ${provider.constructor.name}`);
+        return provider;
+    }
     async saveCache(options) {
         const paths = await this.getPaths();
         const key = await this.getKeyForSave(options === null || options === void 0 ? void 0 : options.version);
         const restoredKey = state.readRestoredKey(this);
+        core.debug(`Paths: ${paths}`);
+        core.debug(`Key: ${key}`);
+        core.debug(`RestoredKey: ${restoredKey}`);
         if (key === restoredKey) {
             core.info(`Cache hit on primary key '${key}', skip saving cache`);
         }
         else {
+            const storageProvider = this.getStorageProvider(options);
             core.info(`Calling saveCache('${paths}', '${key}')`);
-            try {
-                await cache_1.saveCache(paths, key);
-            }
-            catch (error) {
-                if (error instanceof cache_1.ReserveCacheError) {
-                    core.info(`Cache already exists, skip saving cache`);
-                }
-                else {
-                    throw error;
-                }
-            }
+            await storageProvider.saveCache(paths, key);
         }
     }
     async restoreCache(options) {
         const paths = await this.getPaths();
         const key = await this.getKeyForRestore(options === null || options === void 0 ? void 0 : options.version);
         const restoreKeys = await this.getRestoreKeys(options === null || options === void 0 ? void 0 : options.version);
-        core.info(`Calling restoreCache('${paths}', '${key}', ${restoreKeys})`);
-        const restoredKey = await cache_1.restoreCache(paths, key, restoreKeys);
+        const storageProvider = this.getStorageProvider(options);
+        core.info(`Calling restoreCache('${paths}', '${key}', [${restoreKeys.map(s => `'${s}'`).join(', ')}])`);
+        const restoredKey = await storageProvider.restoreCache(paths, key, restoreKeys);
         state.savePrimaryKey(this, key);
         state.addHandler(this);
         if (restoredKey) {
@@ -55732,8 +56078,7 @@ const expressions_1 = __webpack_require__(134);
 const handler_1 = __webpack_require__(895);
 class PipEnv extends handler_1.CacheHandler {
     getPythonVersion() {
-        var _a;
-        return (_a = process.env['PYTHON_VERSION']) !== null && _a !== void 0 ? _a : 'undef';
+        return process.env['PYTHON_VERSION'] || 'undef';
     }
     async getPaths() {
         return ['~/.local/share/virtualenvs'];
@@ -55748,7 +56093,7 @@ class PipEnv extends handler_1.CacheHandler {
         return await expressions_1.matches('Pipfile.lock');
     }
 }
-registry_1.registry.add('pipenv', new PipEnv());
+registry_1.handlers.add('pipenv', new PipEnv());
 
 
 /***/ }),
@@ -55780,7 +56125,7 @@ class Gradle extends handler_1.CacheHandler {
         return await expressions_1.matches('**/*.gradle');
     }
 }
-registry_1.registry.add('gradle', new Gradle());
+registry_1.handlers.add('gradle', new Gradle());
 
 
 /***/ }),
@@ -56702,7 +57047,7 @@ class Poetry extends handler_1.CacheHandler {
         return await expressions_1.matches('**/poetry.lock');
     }
 }
-registry_1.registry.add('poetry', new Poetry());
+registry_1.handlers.add('poetry', new Poetry());
 
 
 /***/ }),
@@ -56735,7 +57080,7 @@ class Mix extends handler_1.CacheHandler {
         return await expressions_1.matches('mix.lock');
     }
 }
-registry_1.registry.add('mix', new Mix());
+registry_1.handlers.add('mix', new Mix());
 
 
 /***/ }),
@@ -57199,7 +57544,7 @@ class SPM extends handler_1.CacheHandler {
         return await expressions_1.matches('**/Package.resolved');
     }
 }
-registry_1.registry.add('spm', new SPM());
+registry_1.handlers.add('spm', new SPM());
 
 
 /***/ }),
@@ -57532,7 +57877,7 @@ class Dub extends handler_1.CacheHandler {
         return await expressions_1.matches('**/dub.json');
     }
 }
-registry_1.registry.add('dub', new Dub());
+registry_1.handlers.add('dub', new Dub());
 
 
 /***/ }),
