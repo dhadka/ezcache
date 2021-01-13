@@ -189,7 +189,7 @@ export class LocalStorageProvider extends StorageProvider {
   private async copyFolderNative(source: fs.PathLike, target: fs.PathLike): Promise<void> {
     switch (runner.os) {
       case 'Windows':
-        await exec("robocopy", source.toString(), target.toString(), "/E", "/MT:32", "/NP")
+        await exec("robocopy", source.toString(), target.toString(), "/E", "/MT:32", "/NP", "/NS", "/NC", "/NFL", "/NDL")
       case 'Linux':
       case 'macOS':
         this.copyFolderInternal(source, target)

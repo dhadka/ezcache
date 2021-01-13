@@ -43612,7 +43612,7 @@ class LocalStorageProvider extends provider_1.StorageProvider {
     async copyFolderNative(source, target) {
         switch (expressions_1.runner.os) {
             case 'Windows':
-                await expressions_1.exec("robocopy", source.toString(), target.toString(), "/E", "/MT:32", "/NP");
+                await expressions_1.exec("robocopy", source.toString(), target.toString(), "/E", "/MT:32", "/NP", "/NS", "/NC", "/NFL", "/NDL");
             case 'Linux':
             case 'macOS':
                 this.copyFolderInternal(source, target);
