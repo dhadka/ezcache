@@ -3,7 +3,8 @@ description: ''
 inputs:
   type:
     description: 'The type of cache to create'
-    required: true
+    required: false
+    default: 'auto'
   version:
     description: 'The version number of the cache'
     required: false

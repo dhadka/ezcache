@@ -26,7 +26,7 @@ class Registry {
 
     const result: CacheHandler[] = []
 
-    if (name === 'auto') {
+    if (!name || name === 'auto') {
       for (const handler of this.handlers.values()) {
         if (await handler.shouldCache()) {
           result.push(handler)
