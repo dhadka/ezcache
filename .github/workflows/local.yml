@@ -8,7 +8,7 @@ on:
 
 jobs:
 
-  test-local-provider:
+  test-local-native:
     runs-on: self-hosted
     steps:
       - uses: actions/checkout@v2
@@ -21,4 +21,18 @@ jobs:
         run: |
           npm ci
 
+  test-local-no-native:
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v2
+      - name: Local cache
+        uses: ./
+        with:
+          type: npm
+          provider: local
+        env:
+          CACHE_DISABLE_NATIVE: 'true'
+      - name: Install dependencies
+        run: |
+          npm ci
 

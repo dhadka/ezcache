@@ -43474,6 +43474,7 @@ const crypto = __webpack_require__(417);
 const core = __webpack_require__(470);
 const github = __webpack_require__(469);
 const provider_1 = __webpack_require__(816);
+const expressions_1 = __webpack_require__(134);
 /**
  * Stores cache content on the local file system.  This is useful for self-hosted runners and
  * GitHub Enterprise Server.
@@ -43594,8 +43595,7 @@ class LocalStorageProvider extends provider_1.StorageProvider {
         this.commit(key);
         core.debug(`Cache successfully saved in ${Date.now() - start} ms`);
     }
-    copyFolder(source, target) {
-        // TODO: It's probably faster to call native copy programs
+    copyFolderInternal(source, target) {
         fs.mkdirSync(target, { recursive: true });
         for (const file of fs.readdirSync(source)) {
             const sourcePath = path.join(source.toString(), file);
@@ -43607,6 +43607,23 @@ class LocalStorageProvider extends provider_1.StorageProvider {
             else {
                 fs.copyFileSync(sourcePath, targetPath);
             }
+        }
+    }
+    async copyFolderNative(source, target) {
+        switch (expressions_1.runner.os) {
+            case 'Windows':
+                await expressions_1.exec("robocopy", source.toString(), target.toString(), "/E", "/MT:32", "/NP");
+            case 'Linux':
+            case 'macOS':
+                this.copyFolderInternal(source, target);
+        }
+    }
+    async copyFolder(source, target) {
+        if (process.env["CACHE_DISABLE_NATIVE"] === 'true') {
+            this.copyFolderInternal(source, target);
+        }
+        else {
+            await this.copyFolderNative(source, target);
         }
     }
     listKeys(repo) {
@@ -43624,7 +43641,6 @@ class LocalStorageProvider extends provider_1.StorageProvider {
         const keys = this.concatenateKeys(primaryKey, restoreKeys);
         const repo = this.getRepo();
         for (const key of keys) {
-            core.info(`Checking ${key}`);
             const cacheKey = { repo: repo, value: key };
             // Exact match
             if (this.isCommitted(cacheKey)) {

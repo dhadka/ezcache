@@ -5,6 +5,7 @@ import * as crypto from 'crypto'
 import * as core from '@actions/core'
 import * as github from '@actions/github'
 import { StorageProvider } from '../provider'
+import { exec, runner } from '../expressions'
 
 interface IRepo {
   owner: string
@@ -169,8 +170,7 @@ export class LocalStorageProvider extends StorageProvider {
     core.debug(`Cache successfully saved in ${Date.now() - start} ms`)
   }
 
-  private copyFolder(source: fs.PathLike, target: fs.PathLike): void {
-    // TODO: It's probably faster to call native copy programs
+  private copyFolderInternal(source: fs.PathLike, target: fs.PathLike): void {
     fs.mkdirSync(target, { recursive: true })
 
     for (const file of fs.readdirSync(source)) {
@@ -183,6 +183,24 @@ export class LocalStorageProvider extends StorageProvider {
       } else {
         fs.copyFileSync(sourcePath, targetPath)
       }
+    }
+  }
+
+  private async copyFolderNative(source: fs.PathLike, target: fs.PathLike): Promise<void> {
+    switch (runner.os) {
+      case 'Windows':
+        await exec("robocopy", source.toString(), target.toString(), "/E", "/MT:32", "/NP")
+      case 'Linux':
+      case 'macOS':
+        this.copyFolderInternal(source, target)
+    }
+  }
+
+  private async copyFolder(source: fs.PathLike, target: fs.PathLike): Promise<void> {
+    if (process.env["CACHE_DISABLE_NATIVE"] === 'true') {
+      this.copyFolderInternal(source, target)
+    } else {
+      await this.copyFolderNative(source, target)
     }
   }
 
@@ -203,7 +221,6 @@ export class LocalStorageProvider extends StorageProvider {
     const repo = this.getRepo()
 
     for (const key of keys) {
-      core.info(`Checking ${key}`)
       const cacheKey: IKey = { repo: repo, value: key }
 
       // Exact match
