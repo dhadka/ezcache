@@ -42,6 +42,7 @@ The following languages and package management tools are auto-detected by `ezcac
 | Node     | NPM                | `npm`       |
 | Node     | Yarn               | `yarn`      |
 | PHP      | Composer           | `composer`  |
+| Powershell |                  | `powershell` |
 | Python   | Pip                | `pip`       |
 | Python   | Virtual Env w/ Pip | `pipenv`    |
 | Python   | Poetry             | `poetry`    |
