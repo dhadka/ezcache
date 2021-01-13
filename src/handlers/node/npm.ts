@@ -1,4 +1,4 @@
-import { registry } from '../../registry'
+import { handlers } from '../../registry'
 import { hashFiles, exec, runner, matches } from '../../expressions'
 import { CacheHandler } from '../../handler'
 
@@ -20,4 +20,4 @@ class NPM extends CacheHandler {
   }
 }
 
-registry.add('npm', new NPM())
+handlers.add('npm', new NPM())

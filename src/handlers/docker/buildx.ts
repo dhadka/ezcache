@@ -1,5 +1,5 @@
 import * as core from '@actions/core'
-import { registry } from '../../registry'
+import { handlers } from '../../registry'
 import { hashFiles, runner } from '../../expressions'
 import { CacheHandler } from '../../handler'
 import * as fs from 'fs'
@@ -8,7 +8,7 @@ const defaultCacheFolder = '.buildx-cache'
 
 class DockerBuildX extends CacheHandler {
   getCachePath(): string {
-    return core.getInput('path') ?? defaultCacheFolder
+    return core.getInput('path') || defaultCacheFolder
   }
 
   async getPaths(): Promise<string[]> {
@@ -32,4 +32,4 @@ class DockerBuildX extends CacheHandler {
   }
 }
 
-registry.add('buildx', new DockerBuildX())
+handlers.add('buildx', new DockerBuildX())

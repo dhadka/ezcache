@@ -1,6 +1,6 @@
 import * as core from '@actions/core'
 import * as github from '@actions/github'
-import { registry } from '../../registry'
+import { handlers } from '../../registry'
 import { runner } from '../../expressions'
 import { CacheHandler } from '../../handler'
 
@@ -17,4 +17,4 @@ class PerRunCache extends CacheHandler {
   }
 }
 
-registry.add('run', new PerRunCache())
+handlers.add('run', new PerRunCache())

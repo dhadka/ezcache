@@ -1,5 +1,5 @@
 import * as core from '@actions/core'
-import { registry } from '../../registry'
+import { handlers } from '../../registry'
 import { runner } from '../../expressions'
 import { CacheHandler } from '../../handler'
 
@@ -34,4 +34,4 @@ class DailyCache extends CacheHandler {
   }
 }
 
-registry.add('daily', new DailyCache())
+handlers.add('daily', new DailyCache())

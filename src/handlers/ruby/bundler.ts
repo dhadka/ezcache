@@ -1,4 +1,4 @@
-import { registry } from '../../registry'
+import { handlers } from '../../registry'
 import { hashFiles, exec, matches, runner } from '../../expressions'
 import { CacheHandler } from '../../handler'
 
@@ -24,4 +24,4 @@ class Bundler extends CacheHandler {
   }
 }
 
-registry.add('bundler', new Bundler())
+handlers.add('bundler', new Bundler())

@@ -5,6 +5,7 @@ import * as crypto from 'crypto'
 import * as execa from 'execa'
 import * as core from '@actions/core'
 import * as github from '@actions/github'
+import { providers } from '../registry'
 import { StorageProvider } from '../provider'
 import { runner } from '../expressions'
 
@@ -12,7 +13,7 @@ import { runner } from '../expressions'
  * Stores cache content on the local file system.  This is useful for self-hosted runners and
  * GitHub Enterprise Server.
  *
- * There are several key functional difference between local and hosted storage, namely:
+ * There are several key functional differences between local and hosted storage, namely:
  *
  *   1. No individual or total cache size limit.
  *   2. No scoping of caches to individual branches.  Caches are shared across branches.
@@ -326,3 +327,5 @@ interface ICachePath {
   key: IKey
   path: string
 }
+
+providers.add('local', new LocalStorageProvider())

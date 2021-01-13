@@ -1,4 +1,5 @@
-import { registry } from '../../registry'
+import { handlers } from '../../registry'
+
 import { hashFiles, matches, runner } from '../../expressions'
 import { CacheHandler } from '../../handler'
 
@@ -20,4 +21,4 @@ class Cocoapods extends CacheHandler {
   }
 }
 
-registry.add('cocoapods', new Cocoapods())
+handlers.add('cocoapods', new Cocoapods())

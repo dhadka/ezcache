@@ -1,4 +1,4 @@
-import { registry } from '../../registry'
+import { handlers } from '../../registry'
 import { hashFiles, matches, runner } from '../../expressions'
 import { CacheHandler } from '../../handler'
 
@@ -20,4 +20,4 @@ class Nuget extends CacheHandler {
   }
 }
 
-registry.add('nuget', new Nuget())
+handlers.add('nuget', new Nuget())

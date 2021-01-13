@@ -1,4 +1,4 @@
-import { registry } from '../../registry'
+import { handlers } from '../../registry'
 import { hashFiles, runner, matches } from '../../expressions'
 import { CacheHandler } from '../../handler'
 
@@ -27,4 +27,4 @@ class Dub extends CacheHandler {
   }
 }
 
-registry.add('dub', new Dub())
+handlers.add('dub', new Dub())

@@ -1,4 +1,4 @@
-import { registry } from '../../registry'
+import { handlers } from '../../registry'
 import { hashFiles, runner, matches } from '../../expressions'
 import { CacheHandler } from '../../handler'
 
@@ -20,4 +20,4 @@ class Poetry extends CacheHandler {
   }
 }
 
-registry.add('poetry', new Poetry())
+handlers.add('poetry', new Poetry())

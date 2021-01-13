@@ -1,4 +1,4 @@
-import { registry } from '../../registry'
+import { handlers } from '../../registry'
 import { hashFiles, matches, runner } from '../../expressions'
 import { CacheHandler } from '../../handler'
 
@@ -20,4 +20,4 @@ class Carthage extends CacheHandler {
   }
 }
 
-registry.add('carthage', new Carthage())
+handlers.add('carthage', new Carthage())

@@ -1,4 +1,4 @@
-import { registry } from '../../registry'
+import { handlers } from '../../registry'
 import { hashFiles, runner, matches } from '../../expressions'
 import { CacheHandler } from '../../handler'
 
@@ -26,4 +26,4 @@ class Powershell extends CacheHandler {
   }
 }
 
-registry.add('powershell', new Powershell())
+handlers.add('powershell', new Powershell())

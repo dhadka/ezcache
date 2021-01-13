@@ -1,5 +1,5 @@
 import * as core from '@actions/core'
-import { registry } from '../../registry'
+import { handlers } from '../../registry'
 import { runner } from '../../expressions'
 import { CacheHandler } from '../../handler'
 import * as state from '../../state'
@@ -37,4 +37,4 @@ class EnvCache extends CacheHandler {
   }
 }
 
-registry.add('env', new EnvCache())
+handlers.add('env', new EnvCache())

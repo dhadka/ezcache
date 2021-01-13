@@ -1,7 +1,6 @@
 import * as core from '@actions/core'
+import { providers } from './registry'
 import { StorageProvider } from './provider'
-import { HostedStorageProvider } from './providers/hosted'
-import { LocalStorageProvider } from './providers/local'
 import * as state from './state'
 
 export interface ICacheOptions {
@@ -33,7 +32,7 @@ export abstract class CacheHandler {
 
   async getKeyForSave(version?: string): Promise<string> {
     core.debug(`PrimaryKey: ${state.readPrimaryKey(this)}`)
-    return state.readPrimaryKey(this) ?? this.getKey(version)
+    return state.readPrimaryKey(this) || this.getKey(version)
   }
 
   async getRestoreKeys(version?: string): Promise<string[]> {
@@ -47,14 +46,13 @@ export abstract class CacheHandler {
   async setup(): Promise<void> {}
 
   getStorageProvider(options?: ICacheOptions): StorageProvider {
-    // TODO: Make this extensible
-    if (!options?.provider || options?.provider === 'hosted') {
-      return new HostedStorageProvider()
-    } else if (options?.provider === 'local') {
-      return new LocalStorageProvider()
-    } else {
-      throw Error(`Provider not recognized: ${options?.provider}`)
+    const provider = providers.getFirst(options?.provider || 'hosted')
+
+    if (!provider) {
+      throw Error(`No provider found for ${options?.provider}`)
     }
+
+    return provider
   }
 
   async saveCache(options?: ICacheOptions): Promise<void> {

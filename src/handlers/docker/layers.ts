@@ -24,7 +24,7 @@
 
 import * as core from '@actions/core'
 import * as cache from '@actions/cache'
-import { registry } from '../../registry'
+import { handlers } from '../../registry'
 import { runner } from '../../expressions'
 import { CacheHandler, ICacheOptions, IRestoreResult, RestoreType } from '../../handler'
 import * as state from '../../state'
@@ -450,4 +450,4 @@ class DockerLayers extends CacheHandler {
   }
 }
 
-registry.add('layers', new DockerLayers())
+handlers.add('layers', new DockerLayers())

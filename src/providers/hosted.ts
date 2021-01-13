@@ -1,11 +1,12 @@
 import * as core from '@actions/core'
 import { saveCache, restoreCache, ReserveCacheError } from '@actions/cache'
+import { providers } from '../registry'
 import { StorageProvider } from '../provider'
 
 /**
  * Stores cache content using the GitHub Actions Cache.
  */
-export class HostedStorageProvider extends StorageProvider {
+class HostedStorageProvider extends StorageProvider {
   async restoreCache(paths: string[], primaryKey: string, restoreKeys?: string[]): Promise<string | undefined> {
     return await restoreCache(paths, primaryKey, restoreKeys)
   }
@@ -22,3 +23,5 @@ export class HostedStorageProvider extends StorageProvider {
     }
   }
 }
+
+providers.add('hosted', new HostedStorageProvider())

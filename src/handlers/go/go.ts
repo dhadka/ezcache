@@ -1,4 +1,4 @@
-import { registry } from '../../registry'
+import { handlers } from '../../registry'
 import { hashFiles, matches, runner } from '../../expressions'
 import { CacheHandler } from '../../handler'
 
@@ -20,4 +20,4 @@ class Go extends CacheHandler {
   }
 }
 
-registry.add('go', new Go())
+handlers.add('go', new Go())
