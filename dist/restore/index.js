@@ -43580,7 +43580,7 @@ class LocalStorageProvider extends provider_1.StorageProvider {
         }
         core.debug(`Updating last accessed time`);
         this.updateLastAccessed(key);
-        core.debug(`Cache successfully restored in ${Date.now() - start} ms`);
+        core.info(`Cache successfully restored in ${Date.now() - start} ms`);
     }
     saveFolder(paths, key) {
         const start = Date.now();
@@ -43593,7 +43593,7 @@ class LocalStorageProvider extends provider_1.StorageProvider {
         core.debug(`Committing cache ${key.value}`);
         this.updateLastAccessed(key);
         this.commit(key);
-        core.debug(`Cache successfully saved in ${Date.now() - start} ms`);
+        core.info(`Cache successfully saved in ${Date.now() - start} ms`);
     }
     copyFolderInternal(source, target) {
         fs.mkdirSync(target, { recursive: true });

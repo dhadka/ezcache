@@ -149,7 +149,7 @@ export class LocalStorageProvider extends StorageProvider {
     core.debug(`Updating last accessed time`)
     this.updateLastAccessed(key)
 
-    core.debug(`Cache successfully restored in ${Date.now() - start} ms`)
+    core.info(`Cache successfully restored in ${Date.now() - start} ms`)
   }
 
   private saveFolder(paths: fs.PathLike[], key: IKey): void {
@@ -167,7 +167,7 @@ export class LocalStorageProvider extends StorageProvider {
     this.updateLastAccessed(key)
     this.commit(key)
 
-    core.debug(`Cache successfully saved in ${Date.now() - start} ms`)
+    core.info(`Cache successfully saved in ${Date.now() - start} ms`)
   }
 
   private copyFolderInternal(source: fs.PathLike, target: fs.PathLike): void {
