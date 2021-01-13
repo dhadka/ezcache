@@ -53,7 +53,7 @@ export abstract class CacheHandler {
       throw Error(`No provider found for ${name}`)
     }
 
-    core.info(`Saving cache with ${provider.constructor.name}`)
+    core.info(`Using ${provider.constructor.name}`)
     return provider
   }
 

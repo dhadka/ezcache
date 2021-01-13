@@ -38,6 +38,9 @@ class AwsStorageProvider extends StorageProvider {
       Key: this.getStorageKey(primaryKey),
     }
 
+    core.info(`Bucket: ${downloadParams.Bucket}`)
+    core.info(`Key: ${downloadParams.Key}`)
+
     const compressionMethod = await utils.getCompressionMethod()
     const archiveFolder = await utils.createTempDirectory()
     const archivePath = path.join(archiveFolder, utils.getCacheFileName(compressionMethod))
