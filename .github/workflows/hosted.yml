@@ -1,4 +1,4 @@
-name: CI
+name: Hosted Tests
 
 on:
   push:
@@ -131,18 +131,3 @@ jobs:
       - name: Install dependencies
         run: |
           npm ci
-
-  test-local-provider:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Local cache
-        uses: ./
-        with:
-          type: npm
-          provider: local
-      - name: Install dependencies
-        run: |
-          npm ci
-
-
