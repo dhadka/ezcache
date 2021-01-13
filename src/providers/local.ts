@@ -31,7 +31,6 @@ interface ICachePath {
  *   1. No individual or total cache size limit.
  *   2. No scoping of caches to individual branches.  Caches are shared across branches.
  *   3. Eviction occurs during the save operation.
- *   4. Concurrency is not supported.  This assumes one job is running at any given time.
  *
  * Local caches are structured as follows:
  *
@@ -49,7 +48,7 @@ interface ICachePath {
  *                        |- <path1>
  * 
  * Future work:
- *   1. Can a repo name contain invalid characters on an OS?
+ *   1. Can a repo owner or name contain invalid characters on an OS?
  *   2. Override root folder, eviction settings, with env vars
  */
 export class LocalStorageProvider extends StorageProvider {
@@ -278,6 +277,10 @@ export class LocalStorageProvider extends StorageProvider {
   }
 
   private evictKey(key: IKey): void {
+    // It's technically possible for a machine to have multiple runners where a job
+    // tries to restore a cache that is being evicted.  However, given that we only
+    // evict after a cache has been unused for 7 days, this is very unlikely.
+    fs.rmSync(this.getCommittedPath(key), {force: true})
     fs.rmSync(this.getKeyFolder(key), {recursive: true, force: true})
   }
 
