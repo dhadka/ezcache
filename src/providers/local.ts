@@ -2,10 +2,11 @@ import * as os from 'os'
 import * as path from 'path'
 import * as fs from 'fs'
 import * as crypto from 'crypto'
+import * as execa from 'execa'
 import * as core from '@actions/core'
 import * as github from '@actions/github'
 import { StorageProvider } from '../provider'
-import { exec, execNoFail, runner } from '../expressions'
+import { runner } from '../expressions'
 
 interface IRepo {
   owner: string
@@ -188,7 +189,17 @@ export class LocalStorageProvider extends StorageProvider {
   private async copyFolderNative(source: fs.PathLike, target: fs.PathLike): Promise<void> {
     switch (runner.os) {
       case 'Windows':
-        await execNoFail("robocopy", source.toString(), target.toString(), "/E", "/MT:32", "/NP", "/NS", "/NC", "/NFL", "/NDL")
+        const process = execa("robocopy", [source.toString(), target.toString(), "/E", "/MT:32", "/NP", "/NS", "/NC", "/NFL", "/NDL"])
+        try {
+          await process
+        } catch (e) {
+          // Robocopy returns non-zero exit codes on success, so we need to filter these out
+          const exitCode = process.exitCode ?? 0xF
+
+          if (exitCode ^ 0x8 || exitCode ^ 0xF) {
+            throw e
+          }
+        }
       case 'Linux':
       case 'macOS':
         this.copyFolderInternal(source, target)

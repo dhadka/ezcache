@@ -72,7 +72,7 @@ export abstract class CacheHandler {
       const storageProvider = this.getStorageProvider(options)
       core.info(`Calling saveCache('${paths}', '${key}') using ${storageProvider.constructor.name}`)
 
-      storageProvider.saveCache(paths, key)
+      await storageProvider.saveCache(paths, key)
     }
   }
 

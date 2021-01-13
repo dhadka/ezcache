@@ -4,7 +4,7 @@
     "description": "",
     "main": "lib/index.js",
     "scripts": {
-        "run": "npm run build && node lib/restore.js",
+        "run": "tsc && node lib/restore.js",
         "test": "jest --config jestconfig.json",
         "build": "tsc && ncc build -o dist/restore src/restore.ts && ncc build -o dist/save src/save.ts",
         "format": "prettier --write \"src/**/*.ts\"",

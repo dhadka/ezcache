@@ -3698,7 +3698,7 @@ module.exports = require("child_process");
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.hashFiles = exports.matches = exports.execNoFail = exports.exec = exports.runner = void 0;
+exports.hashFiles = exports.matches = exports.exec = exports.runner = void 0;
 const core = __webpack_require__(470);
 const glob = __webpack_require__(281);
 const crypto = __webpack_require__(417);
@@ -3726,10 +3726,6 @@ async function exec(cmd, ...args) {
     return (await execa(cmd, args, {})).stdout;
 }
 exports.exec = exec;
-async function execNoFail(cmd, ...args) {
-    return (await execa(cmd, args, {})).exitCode;
-}
-exports.execNoFail = execNoFail;
 async function matches(matchPatterns, followSymbolicLinks = false) {
     if (Array.isArray(matchPatterns)) {
         matchPatterns = matchPatterns.join('\n');
@@ -42995,6 +42991,7 @@ const os = __webpack_require__(87);
 const path = __webpack_require__(622);
 const fs = __webpack_require__(747);
 const crypto = __webpack_require__(417);
+const execa = __webpack_require__(955);
 const core = __webpack_require__(470);
 const github = __webpack_require__(469);
 const provider_1 = __webpack_require__(880);
@@ -43133,9 +43130,20 @@ class LocalStorageProvider extends provider_1.StorageProvider {
         }
     }
     async copyFolderNative(source, target) {
+        var _a;
         switch (expressions_1.runner.os) {
             case 'Windows':
-                await expressions_1.execNoFail("robocopy", source.toString(), target.toString(), "/E", "/MT:32", "/NP", "/NS", "/NC", "/NFL", "/NDL");
+                const process = execa("robocopy", [source.toString(), target.toString(), "/E", "/MT:32", "/NP", "/NS", "/NC", "/NFL", "/NDL"]);
+                try {
+                    await process;
+                }
+                catch (e) {
+                    // Robocopy returns non-zero exit codes on success, so we need to filter these out
+                    const exitCode = (_a = process.exitCode) !== null && _a !== void 0 ? _a : 0xF;
+                    if (exitCode ^ 0x8 || exitCode ^ 0xF) {
+                        throw e;
+                    }
+                }
             case 'Linux':
             case 'macOS':
                 this.copyFolderInternal(source, target);

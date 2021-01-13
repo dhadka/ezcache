@@ -220,16 +220,35 @@ If the cache is ever corrupted, you can "clear" the cache by quickly changing th
 
 ## Storage Provider
 
-By default, this action uses the GitHub Actions Cache for storage.  This can be changed by setting the
-`target` input:
-
-### `hosted`
-
-Hosted is the default value and stores content using the GitHub Actions Cache.
+By default, `hosted` storage is used which is backed by the GitHub Actions Cache servers.  As such, the same
+restrictions and size limits as GitHub Actions Cache apply.  The following alternatives can be used:
 
 ### `local`
 
-Stores caches on the local file service.  This is useful for self-hosted runners.
+Stores caches on the local file system.  This is useful for self-hosted runners and GitHub Enterprise Server.
+**Do not use with hosted runners, since each job runs on a different virtual machine.**
+
+```
+- uses: dhadka/ezcache@master
+  with:
+    type: npm
+    provider: local
+```
+
+### `s3`
+
+Under development.  Store caches in an AWS S3 bucket.
+
+```
+- uses: dhadka/ezcache@master
+  with:
+    type: npm
+    provider: s3
+  env:
+    AWS_ACCESS_ID: ${secrets.ACCESS_ID}
+    AWS_ACCESS_KEY: ${secrets.ACCESS_KEY}
+    AWS_BUCKET_NAME: caches
+```
 
 # Contributing
 
