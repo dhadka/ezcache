@@ -82,7 +82,7 @@ export abstract class CacheHandler {
     const restoreKeys = await this.getRestoreKeys(options?.version)
     const storageProvider = this.getStorageProvider(options)
 
-    core.info(`Calling restoreCache('${paths}', '${key}', [${restoreKeys.map(s => `'${s}'`).join(', ')}])`)
+    core.info(`Calling restoreCache('${paths}', '${key}', [${restoreKeys.map((s) => `'${s}'`).join(', ')}])`)
     const restoredKey = await storageProvider.restoreCache(paths, key, restoreKeys)
 
     state.savePrimaryKey(this, key)

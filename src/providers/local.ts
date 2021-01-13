@@ -34,7 +34,7 @@ import { runner } from '../expressions'
  *                   |- <key2>
  *                        |- lastAccessed.tstamp
  *                        |- <path1>
- * 
+ *
  * Future work:
  *   1. Can a repo owner or name contain invalid characters on an OS?
  *   2. Override root folder, eviction settings, with env vars
@@ -108,8 +108,7 @@ export class LocalStorageProvider extends StorageProvider {
   }
 
   private isCommitted(key: IKey): boolean {
-    return fs.existsSync(this.getKeyFolder(key)) && 
-      fs.existsSync(this.getCommittedPath(key))
+    return fs.existsSync(this.getKeyFolder(key)) && fs.existsSync(this.getCommittedPath(key))
   }
 
   private concatenateKeys(primaryKey: string, restoreKeys?: string[]): string[] {
@@ -123,7 +122,7 @@ export class LocalStorageProvider extends StorageProvider {
   }
 
   private preprocessPaths(paths: string[]): string[] {
-    return paths.map(p => {
+    return paths.map((p) => {
       if (p.startsWith('~')) {
         p = os.homedir() + p.substr(1)
       }
@@ -184,7 +183,7 @@ export class LocalStorageProvider extends StorageProvider {
   }
 
   private async copyFolderWindows(source: string, target: string): Promise<void> {
-    const process = execa("robocopy", [source, target, "/E", "/MT:32", "/NP", "/NS", "/NC", "/NFL", "/NDL"])
+    const process = execa('robocopy', [source, target, '/E', '/MT:32', '/NP', '/NS', '/NC', '/NFL', '/NDL'])
     try {
       await process
     } catch (e) {
@@ -208,7 +207,7 @@ export class LocalStorageProvider extends StorageProvider {
   }
 
   private async copyFolder(source: string, target: string): Promise<void> {
-    if (process.env["CACHE_DISABLE_NATIVE"] === 'true') {
+    if (process.env['CACHE_DISABLE_NATIVE'] === 'true') {
       this.copyFolderInternal(source, target)
     } else {
       await this.copyFolderNative(source, target)
@@ -217,9 +216,9 @@ export class LocalStorageProvider extends StorageProvider {
 
   private listKeys(repo: IRepo): IKey[] {
     const path = this.getRepoFolder(repo)
-    
+
     if (fs.existsSync(path)) {
-      return fs.readdirSync(path).map<IKey>(p => {
+      return fs.readdirSync(path).map<IKey>((p) => {
         return { repo: repo, value: p }
       })
     } else {
@@ -292,13 +291,13 @@ export class LocalStorageProvider extends StorageProvider {
     // It's technically possible for a machine to have multiple runners where a job
     // tries to restore a cache that is being evicted.  However, given that we only
     // evict after a cache has been unused for 7 days, this is very unlikely.
-    fs.rmSync(this.getCommittedPath(key), {force: true})
-    fs.rmSync(this.getKeyFolder(key), {recursive: true, force: true})
+    fs.rmSync(this.getCommittedPath(key), { force: true })
+    fs.rmSync(this.getKeyFolder(key), { recursive: true, force: true })
   }
 
   async saveCache(paths: string[], key: string): Promise<void> {
     const repo = this.getRepo()
-    const cacheKey: IKey = {repo: repo, value: key}
+    const cacheKey: IKey = { repo: repo, value: key }
     const cacheFolder = this.getKeyFolder(cacheKey)
 
     if (fs.existsSync(cacheFolder)) {
