@@ -34,7 +34,11 @@ import { runner } from '../expressions'
  *                   |- <key2>
  *                        |- lastAccessed.tstamp
  *                        |- <path1>
+<<<<<<< HEAD
  *
+=======
+ * 
+>>>>>>> f486f63cc30abc82dbd6a883a9a4b40e129fa99b
  * Future work:
  *   1. Can a repo owner or name contain invalid characters on an OS?
  *   2. Override root folder, eviction settings, with env vars
