@@ -4,7 +4,7 @@ import { registry } from './registry'
 require('./handlers/all')
 
 async function run() {
-  let type = core.getInput('type', { required: true })
+  let type = core.getInput('type')
   let version = core.getInput('version')
 
   for (const handler of await registry.getAll(type)) {

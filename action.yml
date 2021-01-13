@@ -3,12 +3,13 @@ description: ''
 inputs:
   type:
     description: 'The type of cache to create'
-    required: true
+    required: false
+    default: 'auto'
   version:
     description: 'The version number of the cache'
     required: false
   path:
-    description: 'The cache path, only valid for types "run", "diff"'
+    description: 'The cache path, only valid for types "run", "diff", "daily", "env"'
     required: false
 outputs:
   cache-hit:

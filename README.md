@@ -1,16 +1,35 @@
 # ezcache
 
-Caching made easy.  Based on the GitHub Actions Cache, this action simplifies the process of
-setting up the cache by providing predefined configurations for different languages and package
-management tools.  For example, caching NPM is as easy as adding the step:
+Caching made easy.  Based on the [GitHub Actions Cache](http://github.com/actions/cache), this action simplifies
+the process of setting up the cache by providing predefined configurations for different languages and package
+management tools.  Here's a few simple examples:
 
-```
-- uses: dhadka/ezcache@master
-  with:
-    type: npm
-```
+1. Auto-detect and create the appropriate cache(s) for your repo:
+
+   ```
+   - uses: dhadka/ezcache@master
+   ```
+   
+2. Explicitly configure the cache type:
+
+   ```
+   - uses: dhadka/ezcache@master
+     with:
+       type: npm
+   ```
+   
+3. Use a different backend storage provider.  Local storage works great on self-hosted runners and GitHub Enterprise Server!
+
+   ```
+   - uses: dhadka/ezcache@master
+     with:
+       type: npm
+       provider: local
+   ```
 
 ## Supported Languages
+
+The following languages and package management tools are auto-detected by `ezcache`:
 
 | Language | Package Manager    | Type        |
 | -------- | ------------------ | ----------- |
@@ -34,47 +53,6 @@ management tools.  For example, caching NPM is as easy as adding the step:
 | Swift / Obj-C | Cocoapods     | `cocoapods` |
 | Swfit    | Mint               | `mint`      |
 | Swift    | SPM                | `spm`       |
-
-## Docker Configurations
-
-### Build Layers
-
-Using `layers` will cache all Docker layers found on the runner, ignoring any images that existed previously on the runner.
-This was originally developed by [satackey/action-docker-layer-caching](https://github.com/satackey/action-docker-layer-caching).
-
-```
-- name: Cache docker layers
-  uses: dhadka/ezcache@master
-  with:
-    type: layers
-```
-
-### BuildX
-
-The following example demonstrates how to cache the build artifacts from Docker's buildx by specifying the `--cache-from` and `--cache-to` options:
-
-```
-- name: Set up Docker Buildx
-  uses: docker/setup-buildx-action@v1
-  with:
-    version: latest
-
-- name: Cache Buildx
-  uses: dhadka/ezcache@master
-  with:
-    type: buildx
-    path: /tmp/.buildx-cache
-
-- name: Docker Buildx (build)
-  run: |
-    docker buildx build \
-      --cache-from "type=local,src=/tmp/.buildx-cache" \
-      --cache-to "type=local,dest=/tmp/.buildx-cache" \
-      --platform linux/386 \
-      --output "type=image,push=false" \
-      --tag myimage:latest \
-      --file ./Dockerfile ./
-```
 
 ## Special Configurations
 
@@ -150,6 +128,47 @@ field to ensure jobs that read the cache run after the job that create the cache
   with:
     type: run
     path: ~/path/to/cache
+```
+
+## Docker Configurations
+
+### Build Layers
+
+Using `layers` will cache all Docker layers found on the runner, ignoring any images that existed previously on the runner.
+This was originally developed by [satackey/action-docker-layer-caching](https://github.com/satackey/action-docker-layer-caching).
+
+```
+- name: Cache docker layers
+  uses: dhadka/ezcache@master
+  with:
+    type: layers
+```
+
+### BuildX
+
+The following example demonstrates how to cache the build artifacts from Docker's buildx by specifying the `--cache-from` and `--cache-to` options:
+
+```
+- name: Set up Docker Buildx
+  uses: docker/setup-buildx-action@v1
+  with:
+    version: latest
+
+- name: Cache Buildx
+  uses: dhadka/ezcache@master
+  with:
+    type: buildx
+    path: /tmp/.buildx-cache
+
+- name: Docker Buildx (build)
+  run: |
+    docker buildx build \
+      --cache-from "type=local,src=/tmp/.buildx-cache" \
+      --cache-to "type=local,dest=/tmp/.buildx-cache" \
+      --platform linux/386 \
+      --output "type=image,push=false" \
+      --tag myimage:latest \
+      --file ./Dockerfile ./
 ```
 
 ## Handling Cache Misses

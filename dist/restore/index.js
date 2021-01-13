@@ -47969,7 +47969,7 @@ const registry_1 = __webpack_require__(822);
 const handler_1 = __webpack_require__(895);
 __webpack_require__(877);
 async function run() {
-    let type = core.getInput('type', { required: true });
+    let type = core.getInput('type');
     let version = core.getInput('version');
     let isFullRestore = true;
     for (const handler of await registry_1.registry.getAll(type)) {
@@ -49823,7 +49823,7 @@ class Registry {
     async getAll(name) {
         name = this.toCanonicalName(name);
         const result = [];
-        if (name === 'auto') {
+        if (!name || name === 'auto') {
             for (const handler of this.handlers.values()) {
                 if (await handler.shouldCache()) {
                     result.push(handler);

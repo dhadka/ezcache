@@ -5,7 +5,7 @@ import { RestoreType } from './handler'
 require('./handlers/all')
 
 async function run() {
-  let type = core.getInput('type', { required: true })
+  let type = core.getInput('type')
   let version = core.getInput('version')
   let isFullRestore = true
 
