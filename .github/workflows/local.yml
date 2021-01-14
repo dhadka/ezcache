@@ -9,7 +9,7 @@ on:
 jobs:
 
   save-local-cache:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - name: Cache npm
@@ -23,7 +23,7 @@ jobs:
           npm ci
           
   restore-local-cache:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     needs: save-local-cache
     steps:
       - uses: actions/checkout@v2
