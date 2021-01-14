@@ -135,6 +135,7 @@ jobs:
         uses: ./
         with:
           type: maven
+          version: ${{ github.run_id }}
       - name: Compile
         run: |
           cd maven-examples/java-project
@@ -154,6 +155,7 @@ jobs:
         uses: ./
         with:
           type: maven
+          version: ${{ github.run_id }}
       - name: Verify restore
         if: steps.cache.outputs.cache-hit != 'true'
         run: |
@@ -180,6 +182,7 @@ jobs:
         uses: ./
         with:
           type: gradle
+          version: ${{ github.run_id }}
       - name: Compile
         run: |
           cd gradle-examples/dependency-management
@@ -199,6 +202,7 @@ jobs:
         uses: ./
         with:
           type: gradle
+          version: ${{ github.run_id }}
       - name: Verify restore
         if: steps.cache.outputs.cache-hit != 'true'
         run: |
