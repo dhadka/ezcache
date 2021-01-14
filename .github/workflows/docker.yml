@@ -7,6 +7,8 @@ on:
     branches: [ master ]
 
 jobs:
+  
+  # Note: These are testing against @master, so this will not verify PR correctness.
 
   test-layers:
     runs-on: ubuntu-latest
