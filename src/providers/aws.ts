@@ -49,24 +49,19 @@ class AwsStorageProvider extends StorageProvider {
 
       const responseStream = this.client.getObject(downloadParams).createReadStream()
         .on('error', (e) => {
-          console.error(e);
-          throw e
-          // if (e.code === 'NoSuchKey') {
-          //   core.info('Key not found')
-          //   return undefined
-          // } else {
-          //   throw e
-          // }
+          return undefined
         })
 
-        responseStream.pipe(fileStream).on('error', function(err) {
-          // capture any errors that occur when writing data to the file
-          console.error('File Stream:', err);
-      }).on('close', function() {
+      responseStream
+        .pipe(fileStream)
+        .on('error', function(err) {
+          return undefined
+        }).on('close', function() {
           console.log('Done.');
-      })
+        })
       
       await tar.extractTar(archivePath, compressionMethod)
+      return primaryKey
     } finally {
       try {
         fs.unlinkSync(archivePath)
@@ -74,8 +69,6 @@ class AwsStorageProvider extends StorageProvider {
         core.info(`Failed to unlink file: ${e}`)
       }
     }
-
-    return primaryKey
   }
 
   async saveCache(paths: string[], key: string): Promise<void> {
