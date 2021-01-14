@@ -52956,7 +52956,7 @@ class AwsStorageProvider extends provider_1.StorageProvider {
         const compressionMethod = await utils.getCompressionMethod();
         const archiveFolder = await utils.createTempDirectory();
         const archivePath = path.join(archiveFolder, utils.getCacheFileName(compressionMethod));
-        expressions_1.exec('aws', 's3', 'sync', `s3://${this.bucketName}/${this.getStorageKey(primaryKey)}`, archivePath);
+        await expressions_1.exec('aws', 's3', 'sync', `s3://${this.bucketName}/${this.getStorageKey(primaryKey)}`, archivePath);
         await tar.extractTar(archivePath, compressionMethod);
         return primaryKey;
     }
