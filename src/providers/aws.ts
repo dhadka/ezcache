@@ -29,10 +29,12 @@ class AwsStorageProvider extends StorageProvider {
     const archiveFolder = await utils.createTempDirectory()
     const archivePath = path.join(archiveFolder, utils.getCacheFileName(compressionMethod))
 
-    await execa('aws', ['s3', 'sync', `s3://${this.bucketName}/${this.getStorageKey(primaryKey)}`, archivePath], {
-      stdout: 'inherit',
-      stderr: 'inherit'
-    })
+    const process = execa('aws', ['s3', 'cp', `s3://${this.bucketName}/${this.getStorageKey(primaryKey)}`, archivePath])
+    try {
+      await process
+    } catch (e) {
+      core.info(`Process exited with status ${process.exitCode}`)
+    }
 
     await tar.extractTar(archivePath, compressionMethod)
 
