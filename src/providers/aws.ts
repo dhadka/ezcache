@@ -24,10 +24,24 @@ class AwsStorageProvider extends StorageProvider {
     return `${github.context.repo.owner}/${github.context.repo.repo}/${key}`
   }
 
+  private async list(): Promise<string[]> {
+    const result = await execa('aws', ['s3', 'ls', `s3://${this.bucketName}/${github.context.repo.owner}/${github.context.repo.repo}/`])
+
+    const keys = result.stdout.split('\n').map(s => s.split(/(\s+)/, 4)[3].trim())
+
+    for (const key of keys) {
+      core.info(key)
+    }
+
+    return keys
+  }
+
   async restoreCache(paths: string[], primaryKey: string, restoreKeys?: string[]): Promise<string | undefined> {
     const compressionMethod = await utils.getCompressionMethod()
     const archiveFolder = await utils.createTempDirectory()
     const archivePath = path.join(archiveFolder, utils.getCacheFileName(compressionMethod))
+
+    await this.list()
 
     const subprocess = execa('aws', ['s3', 'cp', `s3://${this.bucketName}/${this.getStorageKey(primaryKey)}`, archivePath], {
       stdout: 'inherit',
