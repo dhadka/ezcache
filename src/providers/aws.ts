@@ -8,21 +8,24 @@ import * as execa from 'execa'
 import { providers } from '../registry'
 import { StorageProvider } from '../provider'
 
-interface IKeyEntry {
-  key: string,
-  created: Date
-}
+// TODO: Save last accessed time in metadata, add eviction logic.
 
 /**
- * Stores cache content to an AWS S3 bucket.
+ * Stores cache content to an AWS S3 bucket.  The bucket is specified using the
+ * AWS_BUCKET_NAME env var.  Each cache entry is accessed through a URL in the
+ * format:
+ *
+ *   s3://<bucket_name>/<owner>/<repo>/<key>
  */
 class AwsStorageProvider extends StorageProvider {
-  bucketName: string
+  bucketName: string | undefined
+  endpoint: string | undefined
 
   constructor() {
     super()
 
-    this.bucketName = process.env['AWS_BUCKET_NAME'] || 'cache'
+    this.bucketName = process.env['AWS_BUCKET_NAME']
+    this.endpoint = process.env['AWS_ENDPOINT']
   }
 
   private getStoragePrefix(): string {
@@ -33,28 +36,52 @@ class AwsStorageProvider extends StorageProvider {
     return `${this.getStoragePrefix()}/${key}`
   }
 
-  private async list(): Promise<IKeyEntry[]> {
+  private async list(): Promise<IEntry[]> {
     core.info(`Listing keys for ${this.getStoragePrefix()}`)
-    const output = await execa('aws', ['s3', 'ls', `s3://${this.bucketName}/${this.getStoragePrefix()}/`])
+    const args = ['s3', 'ls', `s3://${this.bucketName}/${this.getStoragePrefix()}/`]
 
+    if (this.endpoint) {
+      args.unshift('--endpoint-url', this.endpoint)
+    }
+
+    const output = await execa('aws', args)
+
+    // Each line in output contains four columns:
+    //   <date> <time> <size> <object_name>
+    // Prefixes will only contain two columns
+    //   PRE <prefix>
     return output.stdout
-      .split('\n')                  // Split output into lines
-      .map(s => s.split(/\s+/, 4))  // Split each line into four columns
-      .filter(a => a.length == 4)   // Exclude lines that do not contain all four columns, such are prefixes
-      .map<IKeyEntry>(a => {
-        return { key: a[3], created: new Date(a[0]) }
+      .split('\n')
+      .map((s) => s.split(/\s+/, 4))
+      .filter((a) => a.length == 4)
+      .map<IEntry>((a) => {
+        return { key: a[3], created: new Date(`${a[0]} ${a[1]}`) }
       })
   }
 
+  private validateBucketName() {
+    if (!this.bucketName) {
+      throw Error('Missing bucket name, must set environment variable AWS_BUCKET_NAME')
+    }
+  }
+
   private async restore(key: string): Promise<boolean> {
+    this.validateBucketName()
+
     const compressionMethod = await utils.getCompressionMethod()
     const archiveFolder = await utils.createTempDirectory()
     const archivePath = path.join(archiveFolder, utils.getCacheFileName(compressionMethod))
 
     core.info(`Restoring cache from ${this.getStorageKey(key)}`)
-    const subprocess = execa('aws', ['s3', 'cp', `s3://${this.bucketName}/${this.getStorageKey(key)}`, archivePath], {
+    const args = ['s3', 'cp', `s3://${this.bucketName}/${this.getStorageKey(key)}`, archivePath]
+
+    if (this.endpoint) {
+      args.unshift('--endpoint-url', this.endpoint)
+    }
+
+    const subprocess = execa('aws', args, {
       stdout: 'inherit',
-      stderr: 'inherit'
+      stderr: 'inherit',
     })
 
     try {
@@ -83,17 +110,17 @@ class AwsStorageProvider extends StorageProvider {
     const searchKeys = this.concatenateKeys(primaryKey, restoreKeys)
 
     for (const searchKey of searchKeys) {
-      const matches = content.filter(c => c.key.startsWith(searchKey))
+      const matches = content.filter((c) => c.key.startsWith(searchKey))
 
       if (matches) {
         // Exact match
-        if (matches.some(m => m.key === searchKey)) {
+        if (matches.some((m) => m.key === searchKey)) {
           if (this.restore(searchKey)) {
             return searchKey
           }
         }
 
-        // Prefix match - select most recently created key
+        // Prefix match - select most recently created entry
         matches.sort((a, b) => b.created.getTime() - a.created.getTime())
 
         if (this.restore(matches[0].key)) {
@@ -113,14 +140,25 @@ class AwsStorageProvider extends StorageProvider {
 
     try {
       core.info(`Saving cache to ${this.getStorageKey(key)}`)
-      await execa('aws', ['s3', 'cp', archivePath, `s3://${this.bucketName}/${this.getStorageKey(key)}`], {
+      const args = ['s3', 'cp', archivePath, `s3://${this.bucketName}/${this.getStorageKey(key)}`]
+
+      if (this.endpoint) {
+        args.unshift('--endpoint-url', this.endpoint)
+      }
+
+      await execa('aws', args, {
         stdout: 'inherit',
-        stderr: 'inherit'
+        stderr: 'inherit',
       })
     } catch (e) {
       core.error(e)
     }
   }
+}
+
+interface IEntry {
+  key: string
+  created: Date
 }
 
 providers.add('aws', new AwsStorageProvider())

@@ -239,12 +239,14 @@ export class LocalStorageProvider extends StorageProvider {
         return cacheKey.value
       }
 
-      // Prefix match
-      for (const testKey of this.listKeys(repo)) {
-        if (testKey.value.startsWith(key) && this.isCommitted(testKey)) {
-          await this.restoreFolder(paths, testKey)
-          return testKey.value
-        }
+      // Prefix match - select most recently created entry
+      const matches = this.listKeys(repo).filter((k) => k.value.startsWith(key) && this.isCommitted(k))
+
+      if (matches) {
+        matches.sort((a, b) => fs.statSync(this.getKeyFolder(b)).ctimeMs - fs.statSync(this.getKeyFolder(a)).ctimeMs)
+
+        await this.restoreFolder(paths, matches[0])
+        return matches[0].value
       }
     }
   }

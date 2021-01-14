@@ -230,23 +230,22 @@ on different machines.  **Do not use with hosted runners.**
 
 ### `s3`
 
-**Under development.** This uses the AWS CLI that is installed on hosted runners (or needs to be installed
+This uses the AWS CLI that is installed on hosted runners (or needs to be installed
 on self-hosted runners) to save and restore cache content to an S3 bucket or compatible provider (Minio).
-Use the `configure-aws-credentials` action to configure your AWS credentials from secrets.
 
 ```
-- name: Configure AWS credentials
-  uses: aws-actions/configure-aws-credentials@v1
-  with:
-    aws-access-key-id: ${{ secrets.ACCESS_KEY_ID }}
-    aws-secret-access-key: ${{ secrets.SECRET_ACCESS_KEY }}
-    aws-region: us-east-1
-
 - uses: dhadka/ezcache@master
   with:
     type: npm
     provider: s3
+  env:
+    AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+    AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+    AWS_BUCKET_NAME: ${{ secrets.AWS_BUCKET_NAME }}
+    AWS_REGION: us-east-1
 ```
+
+To use a different endpoint URL, such as with Minio, set the AWS_ENDPOINT to the appropriate server.
 
 # Contributing
 
