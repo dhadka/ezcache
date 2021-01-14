@@ -1,0 +1,29 @@
+name: AWS Tests
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+
+  test-aws:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: AWS cache
+        uses: ./
+        with:
+          type: npm
+          provider: aws
+        env: 
+          AWS_ACCESS_KEY_ID: ${{ secrets.ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.SECRET_ACCESS_KEY }}
+          AWS_BUCKET_NAME: ${{ secrets.BUCKET_NAME }}
+          AWS_REGION: us-east-1
+      - name: Install dependencies
+        run: |
+          npm ci
+
+

@@ -1106,6 +1106,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 // Explicit list of all providers so they are compiled by ncc.
 __webpack_require__(285);
 __webpack_require__(643);
+__webpack_require__(874);
 
 
 /***/ }),
@@ -43012,14 +43013,14 @@ const expressions_1 = __webpack_require__(134);
  *     |- <owner1>
  *          |- <repo1>
  *               |- lastEviction.tstamp
- *                   |- <key1>
- *                        |- committed.tstamp
- *                        |- lastAccessed.tstamp
- *                        |- <path1>
- *                        |- <path2>
- *                   |- <key2>
- *                        |- lastAccessed.tstamp
- *                        |- <path1>
+ *               |- <key1>
+ *                    |- committed.tstamp
+ *                    |- lastAccessed.tstamp
+ *                    |- <path1>
+ *                    |- <path2>
+ *               |- <key2>
+ *                    |- lastAccessed.tstamp
+ *                    |- <path1>
  *
  * Future work:
  *   1. Can a repo owner or name contain invalid characters on an OS?
@@ -43080,8 +43081,7 @@ class LocalStorageProvider extends provider_1.StorageProvider {
         this.writeTimestamp(this.getCommittedPath(key), new Date());
     }
     isCommitted(key) {
-        return fs.existsSync(this.getKeyFolder(key)) &&
-            fs.existsSync(this.getCommittedPath(key));
+        return fs.existsSync(this.getKeyFolder(key)) && fs.existsSync(this.getCommittedPath(key));
     }
     concatenateKeys(primaryKey, restoreKeys) {
         var result = [primaryKey];
@@ -43091,7 +43091,7 @@ class LocalStorageProvider extends provider_1.StorageProvider {
         return result;
     }
     preprocessPaths(paths) {
-        return paths.map(p => {
+        return paths.map((p) => {
             if (p.startsWith('~')) {
                 p = os.homedir() + p.substr(1);
             }
@@ -43139,7 +43139,7 @@ class LocalStorageProvider extends provider_1.StorageProvider {
     }
     async copyFolderWindows(source, target) {
         var _a;
-        const process = execa("robocopy", [source, target, "/E", "/MT:32", "/NP", "/NS", "/NC", "/NFL", "/NDL"]);
+        const process = execa('robocopy', [source, target, '/E', '/MT:32', '/NP', '/NS', '/NC', '/NFL', '/NDL']);
         try {
             await process;
         }
@@ -43161,7 +43161,7 @@ class LocalStorageProvider extends provider_1.StorageProvider {
         }
     }
     async copyFolder(source, target) {
-        if (process.env["CACHE_DISABLE_NATIVE"] === 'true') {
+        if (process.env['CACHE_DISABLE_NATIVE'] === 'true') {
             this.copyFolderInternal(source, target);
         }
         else {
@@ -43171,7 +43171,7 @@ class LocalStorageProvider extends provider_1.StorageProvider {
     listKeys(repo) {
         const path = this.getRepoFolder(repo);
         if (fs.existsSync(path)) {
-            return fs.readdirSync(path).map(p => {
+            return fs.readdirSync(path).map((p) => {
                 return { repo: repo, value: p };
             });
         }
@@ -43189,12 +43189,12 @@ class LocalStorageProvider extends provider_1.StorageProvider {
                 await this.restoreFolder(paths, cacheKey);
                 return cacheKey.value;
             }
-            // Prefix match
-            for (const testKey of this.listKeys(repo)) {
-                if (testKey.value.startsWith(key) && this.isCommitted(testKey)) {
-                    await this.restoreFolder(paths, testKey);
-                    return testKey.value;
-                }
+            // Prefix match - select most recently created entry
+            const matches = this.listKeys(repo).filter((k) => k.value.startsWith(key) && this.isCommitted(k));
+            if (matches) {
+                matches.sort((a, b) => fs.statSync(this.getKeyFolder(b)).ctimeMs - fs.statSync(this.getKeyFolder(a)).ctimeMs);
+                await this.restoreFolder(paths, matches[0]);
+                return matches[0].value;
             }
         }
     }
@@ -52921,7 +52921,141 @@ exports.default = _default;
 /***/ }),
 /* 872 */,
 /* 873 */,
-/* 874 */,
+/* 874 */
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const tar = __webpack_require__(434);
+const utils = __webpack_require__(15);
+const core = __webpack_require__(470);
+const github = __webpack_require__(469);
+const process = __webpack_require__(765);
+const path = __webpack_require__(622);
+const execa = __webpack_require__(955);
+const registry_1 = __webpack_require__(822);
+const provider_1 = __webpack_require__(880);
+/**
+ * Stores cache content to an AWS S3 bucket.  The bucket is specified using the
+ * AWS_BUCKET_NAME env var.  Each cache entry is accessed through a URL in the
+ * format:
+ *
+ *   s3://<bucket_name>/<owner>/<repo>/<key>
+ */
+class AwsStorageProvider extends provider_1.StorageProvider {
+    constructor() {
+        super();
+        this.bucketName = process.env['AWS_BUCKET_NAME'];
+        this.endpoint = process.env['AWS_ENDPOINT'];
+    }
+    getStoragePrefix() {
+        return `${github.context.repo.owner}/${github.context.repo.repo}`;
+    }
+    getStorageKey(key) {
+        return `${this.getStoragePrefix()}/${key}`;
+    }
+    async list() {
+        core.info(`Listing keys for ${this.getStoragePrefix()}`);
+        const args = ['s3', 'ls', `s3://${this.bucketName}/${this.getStoragePrefix()}/`];
+        if (this.endpoint) {
+            args.unshift('--endpoint-url', this.endpoint);
+        }
+        const output = await execa('aws', args);
+        // Each line in output contains four columns:
+        //   <date> <time> <size> <object_name>
+        // Lines with prefixes contain a different number of columns, which we exclude.
+        return output.stdout
+            .split('\n')
+            .map((s) => s.split(/\s+/, 4))
+            .filter((a) => a.length == 4)
+            .map((a) => {
+            return { key: a[3], size: parseInt(a[2]), created: new Date(`${a[0]} ${a[1]}`) };
+        });
+    }
+    validateBucketName() {
+        if (!this.bucketName) {
+            throw Error('Missing bucket name, must set environment variable AWS_BUCKET_NAME');
+        }
+    }
+    async restore(key) {
+        this.validateBucketName();
+        const compressionMethod = await utils.getCompressionMethod();
+        const archiveFolder = await utils.createTempDirectory();
+        const archivePath = path.join(archiveFolder, utils.getCacheFileName(compressionMethod));
+        core.info(`Restoring cache from ${this.getStorageKey(key)}`);
+        const args = ['s3', 'cp', `s3://${this.bucketName}/${this.getStorageKey(key)}`, archivePath];
+        if (this.endpoint) {
+            args.unshift('--endpoint-url', this.endpoint);
+        }
+        const subprocess = execa('aws', args, {
+            stdout: 'inherit',
+            stderr: 'inherit',
+        });
+        try {
+            await subprocess;
+        }
+        catch (e) {
+            core.error(e);
+            return false;
+        }
+        await tar.extractTar(archivePath, compressionMethod);
+        return true;
+    }
+    concatenateKeys(primaryKey, restoreKeys) {
+        var result = [primaryKey];
+        if (restoreKeys) {
+            result = result.concat(restoreKeys);
+        }
+        return result;
+    }
+    async restoreCache(paths, primaryKey, restoreKeys) {
+        const searchKeys = this.concatenateKeys(primaryKey, restoreKeys);
+        const content = await this.list();
+        for (const searchKey of searchKeys) {
+            const matches = content.filter((c) => c.key.startsWith(searchKey));
+            if (matches) {
+                // Exact match
+                if (matches.some((m) => m.key === searchKey)) {
+                    if (await this.restore(searchKey)) {
+                        return searchKey;
+                    }
+                }
+                // Prefix match - select most recently created entry
+                matches.sort((a, b) => b.created.getTime() - a.created.getTime());
+                if (await this.restore(matches[0].key)) {
+                    return matches[0].key;
+                }
+            }
+        }
+    }
+    async saveCache(paths, key) {
+        const resolvedPaths = await utils.resolvePaths(paths);
+        const compressionMethod = await utils.getCompressionMethod();
+        const archiveFolder = await utils.createTempDirectory();
+        const archivePath = path.join(archiveFolder, utils.getCacheFileName(compressionMethod));
+        await tar.createTar(archiveFolder, resolvedPaths, compressionMethod);
+        try {
+            core.info(`Saving cache to ${this.getStorageKey(key)}`);
+            const args = ['s3', 'cp', archivePath, `s3://${this.bucketName}/${this.getStorageKey(key)}`];
+            if (this.endpoint) {
+                args.unshift('--endpoint-url', this.endpoint);
+            }
+            await execa('aws', args, {
+                stdout: 'inherit',
+                stderr: 'inherit',
+            });
+        }
+        catch (e) {
+            core.error(e);
+        }
+    }
+}
+registry_1.providers.add('aws', new AwsStorageProvider());
+registry_1.providers.add('s3', new AwsStorageProvider());
+
+
+/***/ }),
 /* 875 */
 /***/ (function(__unusedmodule, exports, __webpack_require__) {
 
@@ -55928,16 +56062,13 @@ class CacheHandler {
         if (!provider) {
             throw Error(`No provider found for ${name}`);
         }
-        core.info(`Saving cache with ${provider.constructor.name}`);
+        core.info(`Using ${provider.constructor.name}`);
         return provider;
     }
     async saveCache(options) {
         const paths = await this.getPaths();
         const key = await this.getKeyForSave(options === null || options === void 0 ? void 0 : options.version);
         const restoredKey = state.readRestoredKey(this);
-        core.debug(`Paths: ${paths}`);
-        core.debug(`Key: ${key}`);
-        core.debug(`RestoredKey: ${restoredKey}`);
         if (key === restoredKey) {
             core.info(`Cache hit on primary key '${key}', skip saving cache`);
         }
@@ -55952,7 +56083,7 @@ class CacheHandler {
         const key = await this.getKeyForRestore(options === null || options === void 0 ? void 0 : options.version);
         const restoreKeys = await this.getRestoreKeys(options === null || options === void 0 ? void 0 : options.version);
         const storageProvider = this.getStorageProvider(options);
-        core.info(`Calling restoreCache('${paths}', '${key}', [${restoreKeys.map(s => `'${s}'`).join(', ')}])`);
+        core.info(`Calling restoreCache('${paths}', '${key}', [${restoreKeys.map((s) => `'${s}'`).join(', ')}])`);
         const restoredKey = await storageProvider.restoreCache(paths, key, restoreKeys);
         state.savePrimaryKey(this, key);
         state.addHandler(this);
@@ -56116,13 +56247,13 @@ class Gradle extends handler_1.CacheHandler {
         return ['~/.gradle/caches', '~/.gradle/wrapper'];
     }
     async getKey(version) {
-        return `${expressions_1.runner.os}-${version}-gradle-${await expressions_1.hashFiles('**/*.gradle')}`;
+        return `${expressions_1.runner.os}-${version}-gradle-${await expressions_1.hashFiles(['**/*.gradle', '**/gradle-wrapper.properties'])}`;
     }
     async getRestoreKeys(version) {
         return [`${expressions_1.runner.os}-${version}-gradle-`];
     }
     async shouldCache() {
-        return await expressions_1.matches('**/*.gradle');
+        return await expressions_1.matches(['**/*.gradle', '**/gradle-wrapper.properties']);
     }
 }
 registry_1.handlers.add('gradle', new Gradle());
