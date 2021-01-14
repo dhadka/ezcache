@@ -238,8 +238,8 @@ Under development.  Store caches in an AWS S3 bucket.
     type: npm
     provider: s3
   env:
-    AWS_ACCESS_ID: ${secrets.ACCESS_ID}
-    AWS_ACCESS_KEY: ${secrets.ACCESS_KEY}
+    AWS_ACCESS_ID: ${{secrets.ACCESS_ID}}
+    AWS_ACCESS_KEY: ${{secrets.ACCESS_KEY}}
     AWS_BUCKET_NAME: caches
 ```
 
