@@ -242,7 +242,7 @@ export class LocalStorageProvider extends StorageProvider {
       // Prefix match - select most recently created entry
       const matches = this.listKeys(repo).filter((k) => k.value.startsWith(key) && this.isCommitted(k))
 
-      if (matches) {
+      if (matches.length > 0) {
         matches.sort((a, b) => fs.statSync(this.getKeyFolder(b)).ctimeMs - fs.statSync(this.getKeyFolder(a)).ctimeMs)
 
         await this.restoreFolder(paths, matches[0])
