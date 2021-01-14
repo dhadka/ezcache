@@ -4,7 +4,6 @@ import * as core from '@actions/core'
 import * as github from '@actions/github'
 import * as fs from 'fs'
 import * as path from 'path'
-import * as crypto from 'crypto'
 import * as AWS from 'aws-sdk'
 import { providers } from '../registry'
 import { StorageProvider } from '../provider'
@@ -52,7 +51,8 @@ class AwsStorageProvider extends StorageProvider {
       await tar.extractTar(archivePath, compressionMethod)
     } catch (e) {
       const awsError = e as AWS.AWSError
-
+      core.info(typeof e)
+      core.info(awsError.toString())
       if (awsError) {
         if (awsError.code === 'NoSuchKey') {
           core.info("Key not found")
@@ -60,11 +60,11 @@ class AwsStorageProvider extends StorageProvider {
         }
       }
     } finally {
-      try {
-        fs.rmSync(archivePath, {force: true})
-      } catch (e) {
-        core.info(e)
-      }
+      // try {
+      //   fs.rmSync(archivePath, {force: true})
+      // } catch (e) {
+      //   core.info(e)
+      // }
     }
 
     return primaryKey
