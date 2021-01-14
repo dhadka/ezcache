@@ -190,7 +190,7 @@ any steps to install the remaining dependencies.  Here is an example for Powersh
 
 ## Versioning
 
-Most caches can also be versioned by specifying the `version` input, for example:
+Caches can also be versioned by specifying the `version` input, for example:
 
 ```
 - uses: dhadka/ezcache@master
