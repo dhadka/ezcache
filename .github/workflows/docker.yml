@@ -23,7 +23,7 @@ jobs:
 
       - name: Build docker images
         run: |
-          docker build apache --file Dockerfile --tag diun:$(date +%s)
+          docker build --file Dockerfile --tag kstaken/dockerfile-examples:dev apache
 
   test-buildx:
     runs-on: ubuntu-latest
