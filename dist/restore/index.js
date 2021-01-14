@@ -52938,6 +52938,7 @@ const tar = __webpack_require__(434);
 const utils = __webpack_require__(15);
 const core = __webpack_require__(470);
 const github = __webpack_require__(469);
+const process = __webpack_require__(765);
 const path = __webpack_require__(622);
 const execa = __webpack_require__(955);
 const registry_1 = __webpack_require__(822);
@@ -52957,18 +52958,18 @@ class AwsStorageProvider extends provider_1.StorageProvider {
         const compressionMethod = await utils.getCompressionMethod();
         const archiveFolder = await utils.createTempDirectory();
         const archivePath = path.join(archiveFolder, utils.getCacheFileName(compressionMethod));
-        const process = execa('aws', ['s3', 'cp', `s3://${this.bucketName}/${this.getStorageKey(primaryKey)}`, archivePath], {
-            stdout: 'pipe',
-            stderr: 'pipe'
+        const subprocess = execa('aws', ['s3', 'cp', `s3://${this.bucketName}/${this.getStorageKey(primaryKey)}`, archivePath], {
+            stdout: 'inherit',
+            stderr: 'inherit'
         });
         try {
-            await process;
+            await subprocess;
         }
         catch (e) {
-            core.info(`Process exited with status ${process.exitCode}`);
+            core.info(`Process exited with status ${subprocess.exitCode}`);
             return undefined;
         }
-        //await tar.extractTar(archivePath, compressionMethod)
+        await tar.extractTar(archivePath, compressionMethod);
         return primaryKey;
     }
     async saveCache(paths, key) {
@@ -52977,15 +52978,12 @@ class AwsStorageProvider extends provider_1.StorageProvider {
         const archiveFolder = await utils.createTempDirectory();
         const archivePath = path.join(archiveFolder, utils.getCacheFileName(compressionMethod));
         await tar.createTar(archiveFolder, resolvedPaths, compressionMethod);
-        const process = execa('aws', ['s3', 'cp', archivePath, `s3://${this.bucketName}/${this.getStorageKey(key)}`], {
-            stdout: 'pipe',
-            stderr: 'pipe'
-        });
         try {
-            await process;
+            const result = await execa('aws', ['s3', 'cp', archivePath, `s3://${this.bucketName}/${this.getStorageKey(key)}`]);
+            core.info(result.stdout);
         }
         catch (e) {
-            core.info(`Process exited with status ${process.exitCode}`);
+            core.info(e);
         }
     }
 }

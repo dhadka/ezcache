@@ -2,7 +2,7 @@ import * as tar from '@actions/cache/lib/internal/tar'
 import * as utils from '@actions/cache/lib/internal/cacheUtils'
 import * as core from '@actions/core'
 import * as github from '@actions/github'
-import * as fs from 'fs'
+import * as process from 'process'
 import * as path from 'path'
 import * as execa from 'execa'
 import { providers } from '../registry'
@@ -29,19 +29,19 @@ class AwsStorageProvider extends StorageProvider {
     const archiveFolder = await utils.createTempDirectory()
     const archivePath = path.join(archiveFolder, utils.getCacheFileName(compressionMethod))
 
-    const process = execa('aws', ['s3', 'cp', `s3://${this.bucketName}/${this.getStorageKey(primaryKey)}`, archivePath], {
-      stdout: 'pipe',
-      stderr: 'pipe'
+    const subprocess = execa('aws', ['s3', 'cp', `s3://${this.bucketName}/${this.getStorageKey(primaryKey)}`, archivePath], {
+      stdout: 'inherit',
+      stderr: 'inherit'
     })
+
     try {
-      await process
+      await subprocess
     } catch (e) {
-      core.info(`Process exited with status ${process.exitCode}`)
+      core.info(`Process exited with status ${subprocess.exitCode}`)
       return undefined
     }
 
-    //await tar.extractTar(archivePath, compressionMethod)
-
+    await tar.extractTar(archivePath, compressionMethod)
     return primaryKey
   }
 
@@ -53,14 +53,11 @@ class AwsStorageProvider extends StorageProvider {
 
     await tar.createTar(archiveFolder, resolvedPaths, compressionMethod)
 
-    const process = execa('aws', ['s3', 'cp', archivePath, `s3://${this.bucketName}/${this.getStorageKey(key)}`], {
-      stdout: 'pipe',
-      stderr: 'pipe'
-    })
     try {
-      await process
+      const result = await execa('aws', ['s3', 'cp', archivePath, `s3://${this.bucketName}/${this.getStorageKey(key)}`])
+      core.info(result.stdout)
     } catch (e) {
-      core.info(`Process exited with status ${process.exitCode}`)
+      core.info(e)
     }
   }
 }
