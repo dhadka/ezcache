@@ -44,19 +44,27 @@ class AwsStorageProvider extends StorageProvider {
     const archiveFolder = await utils.createTempDirectory()
     const archivePath = path.join(archiveFolder, utils.getCacheFileName(compressionMethod))
 
-    try {
-      const stream = fs.createWriteStream(archivePath)
-      
-      this.client.getObject(downloadParams)
+    try {   
+      const fileStream = fs.createWriteStream(archivePath)
+
+      const responseStream = this.client.getObject(downloadParams).createReadStream()
         .on('error', (e) => {
-          if (e.code === 'NoSuchKey') {
-            core.info('Key not found')
-            return undefined
-          } else {
-            throw e
-          }
+          console.error(e);
+          throw e
+          // if (e.code === 'NoSuchKey') {
+          //   core.info('Key not found')
+          //   return undefined
+          // } else {
+          //   throw e
+          // }
         })
-        .createReadStream().pipe(stream)
+
+        responseStream.pipe(fileStream).on('error', function(err) {
+          // capture any errors that occur when writing data to the file
+          console.error('File Stream:', err);
+      }).on('close', function() {
+          console.log('Done.');
+      })
       
       await tar.extractTar(archivePath, compressionMethod)
     } finally {

@@ -26,19 +26,15 @@ import { runner } from '../expressions'
  *     |- <owner1>
  *          |- <repo1>
  *               |- lastEviction.tstamp
- *                   |- <key1>
- *                        |- committed.tstamp
- *                        |- lastAccessed.tstamp
- *                        |- <path1>
- *                        |- <path2>
- *                   |- <key2>
- *                        |- lastAccessed.tstamp
- *                        |- <path1>
-<<<<<<< HEAD
+ *               |- <key1>
+ *                    |- committed.tstamp
+ *                    |- lastAccessed.tstamp
+ *                    |- <path1>
+ *                    |- <path2>
+ *               |- <key2>
+ *                    |- lastAccessed.tstamp
+ *                    |- <path1>
  *
-=======
- * 
->>>>>>> f486f63cc30abc82dbd6a883a9a4b40e129fa99b
  * Future work:
  *   1. Can a repo owner or name contain invalid characters on an OS?
  *   2. Override root folder, eviction settings, with env vars
