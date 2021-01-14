@@ -214,13 +214,13 @@ If the cache is ever corrupted, you can "clear" the cache by quickly changing th
 ## Storage Providers
 
 By default, `hosted` storage is used which is backed by the GitHub Actions Cache servers.  As such, the same
-restrictions and size limits as GitHub Actions Cache apply.  The following alternatives can be used:
+[usage limits and eviction policy](https://docs.github.com/en/free-pro-team@latest/actions/guides/caching-dependencies-to-speed-up-workflows#usage-limits-and-eviction-policy) applies.  The following alternatives can be used:
 
 ### `local`
 
 Stores caches on the local file system.  Caches can only be shared between jobs on the same machine.
-As a result, `local` caches can not be used when cached content needs to be shared across runners
-on different machines.  **Do not use with hosted runners.**
+As a result, `local` should be avoided when sharing content between jobs within a workflow, since
+each job can be picked up by a different runner.  **Do not use with hosted runners.**
 
 ```
 - uses: dhadka/ezcache@master
