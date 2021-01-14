@@ -28,7 +28,11 @@ class AwsStorageProvider extends StorageProvider {
     const result = await execa('aws', ['s3', 'ls', `s3://${this.bucketName}/${github.context.repo.owner}/${github.context.repo.repo}/`])
 
     core.info("Result: " + result.stdout)
-    const keys = result.stdout.split('\n').map(s => s.split(/(\s+)/, 4)[3].trim())
+    const keys = result.stdout
+      .split('\n')                  // Split output into lines
+      .map(s => s.split(/\s+/, 4))  // Split each line into four columns
+      .filter(a => a.length == 4)   // Exclude lines that do not contain all four columns, such are prefixes
+      .map(a => a[3])               // Grab the last column
 
     core.info("Keys:")
     for (const key of keys) {
