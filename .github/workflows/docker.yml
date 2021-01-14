@@ -21,9 +21,11 @@ jobs:
           type: layers
           version: v2
 
+      - run: cd apache
+
       - name: Build docker images
         run: |
-          docker build --file Dockerfile --tag kstaken/dockerfile-examples:dev apache
+          docker build --tag kstaken/dockerfile-examples:dev .
 
   test-buildx:
     runs-on: ubuntu-latest
