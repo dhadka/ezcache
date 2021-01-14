@@ -52936,7 +52936,6 @@ const path = __webpack_require__(622);
 const execa = __webpack_require__(955);
 const registry_1 = __webpack_require__(822);
 const provider_1 = __webpack_require__(880);
-// TODO: Save last accessed time in metadata, add eviction logic.
 /**
  * Stores cache content to an AWS S3 bucket.  The bucket is specified using the
  * AWS_BUCKET_NAME env var.  Each cache entry is accessed through a URL in the
@@ -52965,14 +52964,13 @@ class AwsStorageProvider extends provider_1.StorageProvider {
         const output = await execa('aws', args);
         // Each line in output contains four columns:
         //   <date> <time> <size> <object_name>
-        // Prefixes will only contain two columns
-        //   PRE <prefix>
+        // Lines with prefixes contain a different number of columns, which we exclude.
         return output.stdout
             .split('\n')
             .map((s) => s.split(/\s+/, 4))
             .filter((a) => a.length == 4)
             .map((a) => {
-            return { key: a[3], created: new Date(`${a[0]} ${a[1]}`) };
+            return { key: a[3], size: parseInt(a[2]), created: new Date(`${a[0]} ${a[1]}`) };
         });
     }
     validateBucketName() {

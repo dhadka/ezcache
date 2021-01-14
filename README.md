@@ -247,6 +247,10 @@ to save and restore cache content to an S3 bucket or compatible provider (Minio)
 
 To use a different endpoint URL, such as with Minio, set the AWS_ENDPOINT env var to the appropriate address.
 
+NOTE: There is no eviction logic built into the AWS S3 storage provider.  Instead, you must set up
+an [object lifecycle management policy](https://docs.aws.amazon.com/AmazonS3/latest/dev/object-lifecycle-mgmt.html)
+to evict old content.
+
 # Contributing
 
 Want to add support for a new language or tool?  Great!  The caching logic for each language / tool is contained

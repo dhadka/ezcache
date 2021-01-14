@@ -8,8 +8,6 @@ import * as execa from 'execa'
 import { providers } from '../registry'
 import { StorageProvider } from '../provider'
 
-// TODO: Save last accessed time in metadata, add eviction logic.
-
 /**
  * Stores cache content to an AWS S3 bucket.  The bucket is specified using the
  * AWS_BUCKET_NAME env var.  Each cache entry is accessed through a URL in the
@@ -48,14 +46,13 @@ class AwsStorageProvider extends StorageProvider {
 
     // Each line in output contains four columns:
     //   <date> <time> <size> <object_name>
-    // Prefixes will only contain two columns
-    //   PRE <prefix>
+    // Lines with prefixes contain a different number of columns, which we exclude.
     return output.stdout
       .split('\n')
       .map((s) => s.split(/\s+/, 4))
       .filter((a) => a.length == 4)
       .map<IEntry>((a) => {
-        return { key: a[3], created: new Date(`${a[0]} ${a[1]}`) }
+        return { key: a[3], size: parseInt(a[2]), created: new Date(`${a[0]} ${a[1]}`) }
       })
   }
 
@@ -158,6 +155,7 @@ class AwsStorageProvider extends StorageProvider {
 
 interface IEntry {
   key: string
+  size: number
   created: Date
 }
 
