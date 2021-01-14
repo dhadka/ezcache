@@ -52949,7 +52949,9 @@ class AwsStorageProvider extends provider_1.StorageProvider {
     }
     async list() {
         const result = await execa('aws', ['s3', 'ls', `s3://${this.bucketName}/${github.context.repo.owner}/${github.context.repo.repo}/`]);
+        core.info("Result: " + result.stdout);
         const keys = result.stdout.split('\n').map(s => s.split(/(\s+)/, 4)[3].trim());
+        core.info("Keys:");
         for (const key of keys) {
             core.info(key);
         }
