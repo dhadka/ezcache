@@ -46,25 +46,25 @@ class AwsStorageProvider extends StorageProvider {
 
     try {
       const stream = fs.createWriteStream(archivePath)
-      this.client.getObject(downloadParams).createReadStream().pipe(stream)
+      
+      this.client.getObject(downloadParams)
+        .on('error', (e) => {
+          if (e.code === 'NoSuchKey') {
+            core.info('Key not found')
+            return undefined
+          } else {
+            throw e
+          }
+        })
+        .createReadStream().pipe(stream)
       
       await tar.extractTar(archivePath, compressionMethod)
-    } catch (e) {
-      const awsError = e as AWS.AWSError
-      core.info(typeof e)
-      core.info(awsError.toString())
-      if (awsError) {
-        if (awsError.code === 'NoSuchKey') {
-          core.info("Key not found")
-          return undefined
-        }
-      }
     } finally {
-      // try {
-      //   fs.rmSync(archivePath, {force: true})
-      // } catch (e) {
-      //   core.info(e)
-      // }
+      try {
+        fs.unlinkSync(archivePath)
+      } catch (e) {
+        core.info(`Failed to unlink file: ${e}`)
+      }
     }
 
     return primaryKey
