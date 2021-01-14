@@ -54,5 +54,5 @@ jobs:
             --platform linux/386 \
             --output "type=image,push=false" \
             --tag kstaken/dockerfile-examples:dev \
-            --file ./Dockerfile \
-            ./apache
+            --file ./apache/Dockerfile \
+            ./
