@@ -13,7 +13,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
         with:
-          repository: crazy-max/diun
+          repository: kstaken/dockerfile-examples
 
       - name: Cache docker layers
         uses: dhadka/ezcache@master
@@ -23,14 +23,14 @@ jobs:
 
       - name: Build docker images
         run: |
-          docker build . --file Dockerfile --tag diun:$(date +%s)
+          docker build apache --file Dockerfile --tag diun:$(date +%s)
 
   test-buildx:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
         with:
-          repository: crazy-max/diun
+          repository: kstaken/dockerfile-examples
 
       - name: Set up Docker Buildx
         id: buildx
@@ -52,5 +52,6 @@ jobs:
             --cache-to "type=local,dest=/tmp/.buildx-cache" \
             --platform linux/386 \
             --output "type=image,push=false" \
-            --tag crazymax/diun:dev \
-            --file ./Dockerfile ./
+            --tag kstaken/dockerfile-examples:dev \
+            --file ./Dockerfile \
+            ./apache
