@@ -22,13 +22,14 @@ class DailyCache extends CacheHandler {
   }
 
   async getKey(version?: string): Promise<string> {
-    return `${runner.os}-${version}-daily-${this.today.getFullYear()}-${this.today.getMonth()}-${this.today.getDate()}`
+    // prettier-ignore
+    return `${runner.os}-${version}-daily-${this.today.getUTCFullYear()}-${this.today.getUTCMonth() + 1}-${this.today.getUTCDate()}`
   }
 
   async getRestoreKeys(version?: string): Promise<string[]> {
     return [
-      `${runner.os}-${version}-daily-${this.today.getFullYear()}-${this.today.getMonth()}-`,
-      `${runner.os}-${version}-daily-${this.today.getFullYear()}-`,
+      `${runner.os}-${version}-daily-${this.today.getUTCFullYear()}-${this.today.getUTCMonth() + 1}-`,
+      `${runner.os}-${version}-daily-${this.today.getUTCFullYear()}-`,
       `${runner.os}-${version}-daily-`,
     ]
   }

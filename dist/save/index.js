@@ -51637,12 +51637,13 @@ class DailyCache extends handler_1.CacheHandler {
             .map((s) => s.trim());
     }
     async getKey(version) {
-        return `${expressions_1.runner.os}-${version}-daily-${this.today.getFullYear()}-${this.today.getMonth()}-${this.today.getDate()}`;
+        // prettier-ignore
+        return `${expressions_1.runner.os}-${version}-daily-${this.today.getUTCFullYear()}-${this.today.getUTCMonth() + 1}-${this.today.getUTCDate()}`;
     }
     async getRestoreKeys(version) {
         return [
-            `${expressions_1.runner.os}-${version}-daily-${this.today.getFullYear()}-${this.today.getMonth()}-`,
-            `${expressions_1.runner.os}-${version}-daily-${this.today.getFullYear()}-`,
+            `${expressions_1.runner.os}-${version}-daily-${this.today.getUTCFullYear()}-${this.today.getUTCMonth() + 1}-`,
+            `${expressions_1.runner.os}-${version}-daily-${this.today.getUTCFullYear()}-`,
             `${expressions_1.runner.os}-${version}-daily-`,
         ];
     }
