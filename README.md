@@ -18,7 +18,8 @@ management tools.  Here's a few simple examples:
        type: npm
    ```
    
-3. Use a different backend storage provider.  Local storage works great on self-hosted runners and GitHub Enterprise Server!
+3. Use a different [backend storage provider](#storage-providers).  Local storage works great on self-hosted
+runners and GitHub Enterprise Server!
 
    ```
    - uses: dhadka/ezcache@master
