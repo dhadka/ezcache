@@ -43238,7 +43238,7 @@ class LocalStorageProvider extends provider_1.StorageProvider {
             }
             // Prefix match - select most recently created entry
             const matches = this.listKeys(repo).filter((k) => k.value.startsWith(key) && this.isCommitted(k));
-            if (matches) {
+            if (matches.length > 0) {
                 matches.sort((a, b) => fs.statSync(this.getKeyFolder(b)).ctimeMs - fs.statSync(this.getKeyFolder(a)).ctimeMs);
                 await this.restoreFolder(paths, matches[0]);
                 return matches[0].value;
@@ -51644,6 +51644,7 @@ class DailyCache extends handler_1.CacheHandler {
             .map((s) => s.trim());
     }
     async getKey(version) {
+        // prettier-ignore
         return `${expressions_1.runner.os}-${version}-daily-${this.today.getUTCFullYear()}-${this.today.getUTCMonth() + 1}-${this.today.getUTCDate()}`;
     }
     async getRestoreKeys(version) {
@@ -53021,7 +53022,7 @@ class AwsStorageProvider extends provider_1.StorageProvider {
         const content = await this.list();
         for (const searchKey of searchKeys) {
             const matches = content.filter((c) => c.key.startsWith(searchKey));
-            if (matches) {
+            if (matches.length > 0) {
                 // Exact match
                 if (matches.some((m) => m.key === searchKey)) {
                     if (await this.restore(searchKey)) {

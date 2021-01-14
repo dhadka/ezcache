@@ -109,7 +109,7 @@ class AwsStorageProvider extends StorageProvider {
     for (const searchKey of searchKeys) {
       const matches = content.filter((c) => c.key.startsWith(searchKey))
 
-      if (matches) {
+      if (matches.length > 0) {
         // Exact match
         if (matches.some((m) => m.key === searchKey)) {
           if (await this.restore(searchKey)) {
