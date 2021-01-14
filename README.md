@@ -245,7 +245,7 @@ to save and restore cache content to an S3 bucket or compatible provider (Minio)
     AWS_REGION: us-east-1
 ```
 
-To use a different endpoint URL, such as with Minio, set the AWS_ENDPOINT to the appropriate server.
+To use a different endpoint URL, such as with Minio, set the AWS_ENDPOINT env var to the appropriate address.
 
 # Contributing
 

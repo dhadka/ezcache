@@ -43237,7 +43237,7 @@ class LocalStorageProvider extends provider_1.StorageProvider {
                 return cacheKey.value;
             }
             // Prefix match - select most recently created entry
-            const matches = this.listKeys(repo).filter(k => k.value.startsWith(key) && this.isCommitted(k));
+            const matches = this.listKeys(repo).filter((k) => k.value.startsWith(key) && this.isCommitted(k));
             if (matches) {
                 matches.sort((a, b) => fs.statSync(this.getKeyFolder(b)).ctimeMs - fs.statSync(this.getKeyFolder(a)).ctimeMs);
                 await this.restoreFolder(paths, matches[0]);
@@ -52955,6 +52955,7 @@ class AwsStorageProvider extends provider_1.StorageProvider {
     constructor() {
         super();
         this.bucketName = process.env['AWS_BUCKET_NAME'];
+        this.endpoint = process.env['AWS_ENDPOINT'];
     }
     getStoragePrefix() {
         return `${github.context.repo.owner}/${github.context.repo.repo}`;
@@ -52964,7 +52965,11 @@ class AwsStorageProvider extends provider_1.StorageProvider {
     }
     async list() {
         core.info(`Listing keys for ${this.getStoragePrefix()}`);
-        const output = await execa('aws', ['s3', 'ls', `s3://${this.bucketName}/${this.getStoragePrefix()}/`]);
+        const args = ['s3', 'ls', `s3://${this.bucketName}/${this.getStoragePrefix()}/`];
+        if (this.endpoint) {
+            args.unshift('--endpoint-url', this.endpoint);
+        }
+        const output = await execa('aws', args);
         // Each line in output contains four columns:
         //   <date> <time> <size> <object_name>
         // Prefixes will only contain two columns
@@ -52988,7 +52993,11 @@ class AwsStorageProvider extends provider_1.StorageProvider {
         const archiveFolder = await utils.createTempDirectory();
         const archivePath = path.join(archiveFolder, utils.getCacheFileName(compressionMethod));
         core.info(`Restoring cache from ${this.getStorageKey(key)}`);
-        const subprocess = execa('aws', ['s3', 'cp', `s3://${this.bucketName}/${this.getStorageKey(key)}`, archivePath], {
+        const args = ['s3', 'cp', `s3://${this.bucketName}/${this.getStorageKey(key)}`, archivePath];
+        if (this.endpoint) {
+            args.unshift('--endpoint-url', this.endpoint);
+        }
+        const subprocess = execa('aws', args, {
             stdout: 'inherit',
             stderr: 'inherit',
         });
@@ -53037,7 +53046,11 @@ class AwsStorageProvider extends provider_1.StorageProvider {
         await tar.createTar(archiveFolder, resolvedPaths, compressionMethod);
         try {
             core.info(`Saving cache to ${this.getStorageKey(key)}`);
-            await execa('aws', ['s3', 'cp', archivePath, `s3://${this.bucketName}/${this.getStorageKey(key)}`], {
+            const args = ['s3', 'cp', archivePath, `s3://${this.bucketName}/${this.getStorageKey(key)}`];
+            if (this.endpoint) {
+                args.unshift('--endpoint-url', this.endpoint);
+            }
+            await execa('aws', args, {
                 stdout: 'inherit',
                 stderr: 'inherit',
             });
