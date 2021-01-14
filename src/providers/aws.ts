@@ -4,9 +4,9 @@ import * as core from '@actions/core'
 import * as github from '@actions/github'
 import * as fs from 'fs'
 import * as path from 'path'
+import * as execa from 'execa'
 import { providers } from '../registry'
 import { StorageProvider } from '../provider'
-import { exec } from '../expressions'
 
 /**
  * Stores cache content to an AWS S3 bucket.
@@ -29,7 +29,7 @@ class AwsStorageProvider extends StorageProvider {
     const archiveFolder = await utils.createTempDirectory()
     const archivePath = path.join(archiveFolder, utils.getCacheFileName(compressionMethod))
 
-    await exec('aws', 's3', 'sync', `s3://${this.bucketName}/${this.getStorageKey(primaryKey)}`, archivePath)
+    core.info((await execa('aws', ['s3', 'sync', `s3://${this.bucketName}/${this.getStorageKey(primaryKey)}`, archivePath])).stdout)
 
     await tar.extractTar(archivePath, compressionMethod)
 
