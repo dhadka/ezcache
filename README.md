@@ -230,17 +230,22 @@ on different machines.  **Do not use with hosted runners.**
 
 ### `s3`
 
-Under development.  Store caches in an AWS S3 bucket.
+**Under development.** This uses the AWS CLI that is installed on hosted runners (or needs to be installed
+on self-hosted runners) to save and restore cache content to an S3 bucket or compatible provider (Minio).
+Use the `configure-aws-credentials` action to configure your AWS credentials from secrets.
 
 ```
+- name: Configure AWS credentials
+  uses: aws-actions/configure-aws-credentials@v1
+  with:
+    aws-access-key-id: ${{ secrets.ACCESS_KEY_ID }}
+    aws-secret-access-key: ${{ secrets.SECRET_ACCESS_KEY }}
+    aws-region: us-east-1
+
 - uses: dhadka/ezcache@master
   with:
     type: npm
     provider: s3
-  env:
-    AWS_ACCESS_ID: ${{secrets.ACCESS_ID}}
-    AWS_ACCESS_KEY: ${{secrets.ACCESS_KEY}}
-    AWS_BUCKET_NAME: caches
 ```
 
 # Contributing
