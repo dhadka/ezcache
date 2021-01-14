@@ -230,8 +230,8 @@ on different machines.  **Do not use with hosted runners.**
 
 ### `s3`
 
-This uses the AWS CLI that is installed on hosted runners (or needs to be installed
-on self-hosted runners) to save and restore cache content to an S3 bucket or compatible provider (Minio).
+Uses the AWS CLI that is installed on hosted runners (or needs to be installed on self-hosted runners)
+to save and restore cache content to an S3 bucket or compatible provider (Minio).
 
 ```
 - uses: dhadka/ezcache@master
