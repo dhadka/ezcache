@@ -53019,20 +53019,20 @@ class AwsStorageProvider extends provider_1.StorageProvider {
         return result;
     }
     async restoreCache(paths, primaryKey, restoreKeys) {
-        const content = await this.list();
         const searchKeys = this.concatenateKeys(primaryKey, restoreKeys);
+        const content = await this.list();
         for (const searchKey of searchKeys) {
             const matches = content.filter((c) => c.key.startsWith(searchKey));
             if (matches) {
                 // Exact match
                 if (matches.some((m) => m.key === searchKey)) {
-                    if (this.restore(searchKey)) {
+                    if (await this.restore(searchKey)) {
                         return searchKey;
                     }
                 }
                 // Prefix match - select most recently created entry
                 matches.sort((a, b) => b.created.getTime() - a.created.getTime());
-                if (this.restore(matches[0].key)) {
+                if (await this.restore(matches[0].key)) {
                     return matches[0].key;
                 }
             }
@@ -56078,9 +56078,6 @@ class CacheHandler {
         const paths = await this.getPaths();
         const key = await this.getKeyForSave(options === null || options === void 0 ? void 0 : options.version);
         const restoredKey = state.readRestoredKey(this);
-        core.debug(`Paths: ${paths}`);
-        core.debug(`Key: ${key}`);
-        core.debug(`RestoredKey: ${restoredKey}`);
         if (key === restoredKey) {
             core.info(`Cache hit on primary key '${key}', skip saving cache`);
         }

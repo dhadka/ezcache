@@ -62,10 +62,6 @@ export abstract class CacheHandler {
     const key = await this.getKeyForSave(options?.version)
     const restoredKey = state.readRestoredKey(this)
 
-    core.debug(`Paths: ${paths}`)
-    core.debug(`Key: ${key}`)
-    core.debug(`RestoredKey: ${restoredKey}`)
-
     if (key === restoredKey) {
       core.info(`Cache hit on primary key '${key}', skip saving cache`)
     } else {

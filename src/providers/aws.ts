@@ -106,8 +106,8 @@ class AwsStorageProvider extends StorageProvider {
   }
 
   async restoreCache(paths: string[], primaryKey: string, restoreKeys?: string[]): Promise<string | undefined> {
-    const content = await this.list()
     const searchKeys = this.concatenateKeys(primaryKey, restoreKeys)
+    const content = await this.list()
 
     for (const searchKey of searchKeys) {
       const matches = content.filter((c) => c.key.startsWith(searchKey))
@@ -115,7 +115,7 @@ class AwsStorageProvider extends StorageProvider {
       if (matches) {
         // Exact match
         if (matches.some((m) => m.key === searchKey)) {
-          if (this.restore(searchKey)) {
+          if (await this.restore(searchKey)) {
             return searchKey
           }
         }
@@ -123,7 +123,7 @@ class AwsStorageProvider extends StorageProvider {
         // Prefix match - select most recently created entry
         matches.sort((a, b) => b.created.getTime() - a.created.getTime())
 
-        if (this.restore(matches[0].key)) {
+        if (await this.restore(matches[0].key)) {
           return matches[0].key
         }
       }
