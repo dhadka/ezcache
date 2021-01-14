@@ -52950,18 +52950,36 @@ class AwsStorageProvider extends provider_1.StorageProvider {
         const compressionMethod = await utils.getCompressionMethod();
         const archiveFolder = await utils.createTempDirectory();
         const archivePath = path.join(archiveFolder, utils.getCacheFileName(compressionMethod));
-        const process = execa('aws', ['s3', 'cp', `s3://${this.bucketName}/${this.getStorageKey(primaryKey)}`, archivePath]);
+        const process = execa('aws', ['s3', 'cp', `s3://${this.bucketName}/${this.getStorageKey(primaryKey)}`, archivePath], {
+            stdout: 'pipe',
+            stderr: 'pipe'
+        });
+        try {
+            await process;
+        }
+        catch (e) {
+            core.info(`Process exited with status ${process.exitCode}`);
+            return undefined;
+        }
+        //await tar.extractTar(archivePath, compressionMethod)
+        return primaryKey;
+    }
+    async saveCache(paths, key) {
+        const resolvedPaths = await utils.resolvePaths(paths);
+        const compressionMethod = await utils.getCompressionMethod();
+        const archiveFolder = await utils.createTempDirectory();
+        const archivePath = path.join(archiveFolder, utils.getCacheFileName(compressionMethod));
+        await tar.createTar(archiveFolder, resolvedPaths, compressionMethod);
+        const process = execa('aws', ['s3', 'cp', archivePath, `s3://${this.bucketName}/${this.getStorageKey(key)}`], {
+            stdout: 'pipe',
+            stderr: 'pipe'
+        });
         try {
             await process;
         }
         catch (e) {
             core.info(`Process exited with status ${process.exitCode}`);
         }
-        await tar.extractTar(archivePath, compressionMethod);
-        return primaryKey;
-    }
-    async saveCache(paths, key) {
-        //do nothing
     }
 }
 registry_1.providers.add('aws', new AwsStorageProvider());
