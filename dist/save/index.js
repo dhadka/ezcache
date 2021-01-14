@@ -52929,7 +52929,6 @@ exports.default = _default;
 Object.defineProperty(exports, "__esModule", { value: true });
 const tar = __webpack_require__(434);
 const utils = __webpack_require__(15);
-const core = __webpack_require__(470);
 const github = __webpack_require__(469);
 const path = __webpack_require__(622);
 const execa = __webpack_require__(955);
@@ -52950,7 +52949,10 @@ class AwsStorageProvider extends provider_1.StorageProvider {
         const compressionMethod = await utils.getCompressionMethod();
         const archiveFolder = await utils.createTempDirectory();
         const archivePath = path.join(archiveFolder, utils.getCacheFileName(compressionMethod));
-        core.info((await execa('aws', ['s3', 'sync', `s3://${this.bucketName}/${this.getStorageKey(primaryKey)}`, archivePath])).stdout);
+        await execa('aws', ['s3', 'sync', `s3://${this.bucketName}/${this.getStorageKey(primaryKey)}`, archivePath], {
+            stdout: 'inherit',
+            stderr: 'inherit'
+        });
         await tar.extractTar(archivePath, compressionMethod);
         return primaryKey;
     }
