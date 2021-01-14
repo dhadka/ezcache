@@ -8,58 +8,58 @@ on:
 
 jobs:
   
-  # Note: These are testing against @master, so this will not verify PR correctness.
-
   save-layers-cache:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+        
+      - uses: actions/checkout@v2
         with:
           repository: kstaken/dockerfile-examples
+          path: dockerfile-examples
 
       - name: Cache docker layers
-        uses: dhadka/ezcache@master
+        uses: ./
         with:
           type: layers
           version: ${{ github.run_id }}
 
       - name: Build docker images
         run: |
-          cd apache
-          docker build --tag kstaken/dockerfile-examples:dev .
+          cd dockerfile-examples/apache
+          docker build --tag apache:dev .
           
   restore-layers-cache:
     runs-on: ubuntu-latest
     needs: save-layers-cache
     steps:
       - uses: actions/checkout@v2
+        
+      - uses: actions/checkout@v2
         with:
           repository: kstaken/dockerfile-examples
+          path: dockerfile-examples
 
       - name: Cache docker layers
-        id: cache
-        uses: dhadka/ezcache@master
+        uses: ./
         with:
           type: layers
           version: ${{ github.run_id }}
-          
-      - name: Verify restore was successful
-        if: steps.cache.outputs.cache-hit != 'true'
-        run: |
-          echo "Restore failed!"
-          exit -1
 
       - name: Build docker images
         run: |
-          cd apache
-          docker build --tag kstaken/dockerfile-examples:dev .
+          cd dockerfile-examples/apache
+          docker build --tag apache:dev .
 
   save-buildx-cache:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+        
+      - uses: actions/checkout@v2
         with:
           repository: kstaken/dockerfile-examples
+          path: dockerfile-examples
 
       - name: Set up Docker Buildx
         id: buildx
@@ -81,8 +81,8 @@ jobs:
             --cache-to "type=local,dest=/tmp/.buildx-cache" \
             --platform linux/386 \
             --output "type=image,push=false" \
-            --tag kstaken/dockerfile-examples:dev \
-            --file ./apache/Dockerfile \
+            --tag apache:dev \
+            --file ./dockerfile-examples/apache/Dockerfile \
             ./
 
   restore-buildx-cache:
@@ -90,8 +90,11 @@ jobs:
     needs: save-buildx-cache
     steps:
       - uses: actions/checkout@v2
+        
+      - uses: actions/checkout@v2
         with:
           repository: kstaken/dockerfile-examples
+          path: dockerfile-examples
 
       - name: Set up Docker Buildx
         id: buildx
@@ -100,19 +103,12 @@ jobs:
           version: latest
 
       - name: Cache Buildx
-        id: cache
         uses: dhadka/ezcache@master
         with:
           type: buildx
           path: /tmp/.buildx-cache
           version: ${{ github.run_id }}
-          
-      - name: Verify restore was successful
-        if: steps.cache.outputs.cache-hit != 'true'
-        run: |
-          echo "Restore failed!"
-          exit -1
-          
+
       - name: Docker Buildx (build)
         run: |
           docker buildx build \
@@ -120,6 +116,6 @@ jobs:
             --cache-to "type=local,dest=/tmp/.buildx-cache" \
             --platform linux/386 \
             --output "type=image,push=false" \
-            --tag kstaken/dockerfile-examples:dev \
-            --file ./apache/Dockerfile \
+            --tag apache:dev \
+            --file ./dockerfile-examples/apache/Dockerfile \
             ./
