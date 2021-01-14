@@ -53,7 +53,7 @@ export abstract class CacheHandler {
       throw Error(`No provider found for ${name}`)
     }
 
-    core.info(`Saving cache with ${provider.constructor.name}`)
+    core.info(`Using ${provider.constructor.name}`)
     return provider
   }
 
@@ -61,10 +61,6 @@ export abstract class CacheHandler {
     const paths = await this.getPaths()
     const key = await this.getKeyForSave(options?.version)
     const restoredKey = state.readRestoredKey(this)
-
-    core.debug(`Paths: ${paths}`)
-    core.debug(`Key: ${key}`)
-    core.debug(`RestoredKey: ${restoredKey}`)
 
     if (key === restoredKey) {
       core.info(`Cache hit on primary key '${key}', skip saving cache`)
@@ -82,7 +78,8 @@ export abstract class CacheHandler {
     const restoreKeys = await this.getRestoreKeys(options?.version)
     const storageProvider = this.getStorageProvider(options)
 
-    core.info(`Calling restoreCache('${paths}', '${key}', [${restoreKeys.map(s => `'${s}'`).join(', ')}])`)
+    core.info(`Calling restoreCache('${paths}', '${key}', [${restoreKeys.map((s) => `'${s}'`).join(', ')}])`)
+
     const restoredKey = await storageProvider.restoreCache(paths, key, restoreKeys)
 
     state.savePrimaryKey(this, key)

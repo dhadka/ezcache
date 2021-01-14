@@ -230,7 +230,8 @@ on different machines.  **Do not use with hosted runners.**
 
 ### `s3`
 
-Under development.  Store caches in an AWS S3 bucket.
+Uses the AWS CLI that is installed on hosted runners (or needs to be installed on self-hosted runners)
+to save and restore cache content to an S3 bucket or compatible provider (Minio).
 
 ```
 - uses: dhadka/ezcache@master
@@ -238,10 +239,17 @@ Under development.  Store caches in an AWS S3 bucket.
     type: npm
     provider: s3
   env:
-    AWS_ACCESS_ID: ${secrets.ACCESS_ID}
-    AWS_ACCESS_KEY: ${secrets.ACCESS_KEY}
-    AWS_BUCKET_NAME: caches
+    AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+    AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+    AWS_BUCKET_NAME: ${{ secrets.AWS_BUCKET_NAME }}
+    AWS_REGION: us-east-1
 ```
+
+To use a different endpoint URL, such as with Minio, set the AWS_ENDPOINT env var to the appropriate address.
+
+NOTE: There is no eviction logic built into the AWS S3 storage provider.  Instead, you must set up
+an [object lifecycle management policy](https://docs.aws.amazon.com/AmazonS3/latest/dev/object-lifecycle-mgmt.html)
+to evict old content.
 
 # Contributing
 

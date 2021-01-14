@@ -47,9 +47,7 @@ class CacheHandlerRegistry extends Registry<CacheHandler> {
   }
 }
 
-class StorageProviderRegistry extends Registry<StorageProvider> {
-
-}
+class StorageProviderRegistry extends Registry<StorageProvider> {}
 
 export const handlers = new CacheHandlerRegistry()
 export const providers = new StorageProviderRegistry()
