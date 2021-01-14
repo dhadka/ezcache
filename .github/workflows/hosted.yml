@@ -174,15 +174,15 @@ jobs:
       - uses: actions/checkout@v2
       - uses: actions/checkout@v2
         with:
-          repository: pkainulainen/gradle-examples
-          path: gradle-examples
+          repository: jabedhasan21/java-hello-world-with-gradle
+          path: gradle-example
       - name: Cache gradle
         uses: ./
         with:
           type: gradle
       - name: Compile
         run: |
-          cd gradle-examples/spring-boot-web-application
+          cd gradle-example
           gradle clean build
           
   restore-gradle-cache:
@@ -192,8 +192,8 @@ jobs:
       - uses: actions/checkout@v2
       - uses: actions/checkout@v2
         with:
-          repository: pkainulainen/gradle-examples
-          path: gradle-examples
+          repository: jabedhasan21/java-hello-world-with-gradle
+          path: gradle-example
       - name: Cache gradle
         id: cache
         uses: ./
@@ -206,6 +206,6 @@ jobs:
           exit -1
       - name: Compile
         run: |
-          cd gradle-examples/spring-boot-web-application
+          cd gradle-example
           gradle clean build
           
