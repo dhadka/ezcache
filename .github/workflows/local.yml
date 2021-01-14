@@ -1,4 +1,4 @@
-name: Local Provider Tests
+name: Local Storage Tests
 
 on:
   push:
