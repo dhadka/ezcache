@@ -28,18 +28,6 @@ jobs:
           type: nuget
           version: v1
 
-  test-npm:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Cache npm
-        uses: ./
-        with:
-          type: npm
-          version: v1
-      - name: Install dependencies
-        run: npm ci
-
   test-run:
     runs-on: ubuntu-latest
     steps:
@@ -139,7 +127,7 @@ jobs:
               gradle clean build
           - type: npm
             repo: contentful/the-example-app.nodejs
-            script: npm install
+            script: npm ci
     steps:
       - uses: actions/checkout@v2
       - uses: actions/checkout@v2
@@ -177,7 +165,7 @@ jobs:
               gradle clean build
           - type: npm
             repo: contentful/the-example-app.nodejs
-            script: npm install
+            script: npm ci
     steps:
       - uses: actions/checkout@v2
       - uses: actions/checkout@v2
