@@ -7,6 +7,7 @@ import * as path from 'path'
 import * as execa from 'execa'
 import { providers } from '../registry'
 import { StorageProvider } from '../provider'
+import { concatenateKeys } from '../utils'
 
 /**
  * Stores cache content to an AWS S3 bucket.  The bucket is specified using the
@@ -92,18 +93,8 @@ class AwsStorageProvider extends StorageProvider {
     return true
   }
 
-  private concatenateKeys(primaryKey: string, restoreKeys?: string[]): string[] {
-    var result = [primaryKey]
-
-    if (restoreKeys) {
-      result = result.concat(restoreKeys)
-    }
-
-    return result
-  }
-
   async restoreCache(paths: string[], primaryKey: string, restoreKeys?: string[]): Promise<string | undefined> {
-    const searchKeys = this.concatenateKeys(primaryKey, restoreKeys)
+    const searchKeys = concatenateKeys(primaryKey, restoreKeys)
     const content = await this.list()
 
     for (const searchKey of searchKeys) {

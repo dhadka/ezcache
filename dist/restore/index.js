@@ -4787,7 +4787,42 @@ exports.NOOP_TRACER_PROVIDER = new NoopTracerProvider();
 //# sourceMappingURL=NoopTracerProvider.js.map
 
 /***/ }),
-/* 163 */,
+/* 163 */
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.concatenateKeys = exports.combineRestoreType = void 0;
+const handler_1 = __webpack_require__(895);
+function combineRestoreType(...types) {
+    if (types.length === 0) {
+        return handler_1.RestoreType.Miss;
+    }
+    return types.reduce((prev, curr) => {
+        if (prev === handler_1.RestoreType.Miss || curr === handler_1.RestoreType.Miss) {
+            return handler_1.RestoreType.Miss;
+        }
+        else if (prev === handler_1.RestoreType.Partial || curr === handler_1.RestoreType.Partial) {
+            return handler_1.RestoreType.Partial;
+        }
+        else {
+            return handler_1.RestoreType.Full;
+        }
+    });
+}
+exports.combineRestoreType = combineRestoreType;
+function concatenateKeys(primaryKey, restoreKeys) {
+    const result = [primaryKey];
+    if (restoreKeys) {
+        result.push(...restoreKeys);
+    }
+    return result;
+}
+exports.concatenateKeys = concatenateKeys;
+
+
+/***/ }),
 /* 164 */,
 /* 165 */
 /***/ (function(__unusedmodule, exports) {
@@ -32927,10 +32962,10 @@ class Powershell extends handler_1.CacheHandler {
     async getPaths() {
         switch (expressions_1.runner.os) {
             case 'Windows':
-                return ['~/Documents/PowerShell/Modules', process.env['ProgramFiles'] + '\\PowerShell\\Modules'];
+                return ['~/Documents/PowerShell/Modules', process.env['ProgramFiles'] + '/PowerShell/Modules'];
             case 'Linux':
             case 'macOS':
-                return ['~/.local/share/powershell/Modules'];
+                return ['~/.local/share/powershell/Modules', '/usr/local/share/powershell/Modules'];
         }
     }
     async getKeyForRestore(version) {
@@ -43075,6 +43110,7 @@ const github = __webpack_require__(469);
 const registry_1 = __webpack_require__(822);
 const provider_1 = __webpack_require__(880);
 const expressions_1 = __webpack_require__(134);
+const utils_1 = __webpack_require__(163);
 /**
  * Stores cache content on the local file system.  This is useful for self-hosted runners and
  * GitHub Enterprise Server.
@@ -43161,13 +43197,6 @@ class LocalStorageProvider extends provider_1.StorageProvider {
     }
     isCommitted(key) {
         return fs.existsSync(this.getKeyFolder(key)) && fs.existsSync(this.getCommittedPath(key));
-    }
-    concatenateKeys(primaryKey, restoreKeys) {
-        var result = [primaryKey];
-        if (restoreKeys) {
-            result = result.concat(restoreKeys);
-        }
-        return result;
     }
     preprocessPaths(paths) {
         return paths.map((p) => {
@@ -43259,7 +43288,7 @@ class LocalStorageProvider extends provider_1.StorageProvider {
         }
     }
     async restoreCache(paths, primaryKey, restoreKeys) {
-        const keys = this.concatenateKeys(primaryKey, restoreKeys);
+        const keys = utils_1.concatenateKeys(primaryKey, restoreKeys);
         const repo = this.getRepo();
         for (const key of keys) {
             const cacheKey = { repo: repo, value: key };
@@ -48293,22 +48322,23 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const core = __webpack_require__(470);
 const registry_1 = __webpack_require__(822);
 const handler_1 = __webpack_require__(895);
+const utils_1 = __webpack_require__(163);
 __webpack_require__(877);
 __webpack_require__(34);
 async function run() {
     let type = core.getInput('type');
     let version = core.getInput('version');
     let provider = core.getInput('provider');
-    let isFullRestore = true;
+    let results = [];
     for (const handler of await registry_1.handlers.getAll(type)) {
         core.info(`Restoring cache with ${handler.constructor.name} handler`);
         await handler.setup();
         const result = await handler.restoreCache({ version, provider });
-        if (result.type != handler_1.RestoreType.Full) {
-            isFullRestore = false;
-        }
+        results.push(result.type);
     }
-    core.setOutput('cache-hit', isFullRestore);
+    const finalResult = utils_1.combineRestoreType(...results);
+    core.setOutput('cache-restore-type', finalResult.toString().toLowerCase());
+    core.setOutput('cache-hit', finalResult === handler_1.RestoreType.Full);
 }
 run().catch((e) => {
     core.error(e);
@@ -52976,6 +53006,7 @@ const path = __webpack_require__(622);
 const execa = __webpack_require__(955);
 const registry_1 = __webpack_require__(822);
 const provider_1 = __webpack_require__(880);
+const utils_1 = __webpack_require__(163);
 /**
  * Stores cache content to an AWS S3 bucket.  The bucket is specified using the
  * AWS_BUCKET_NAME env var.  Each cache entry is accessed through a URL in the
@@ -53042,15 +53073,8 @@ class AwsStorageProvider extends provider_1.StorageProvider {
         await tar.extractTar(archivePath, compressionMethod);
         return true;
     }
-    concatenateKeys(primaryKey, restoreKeys) {
-        var result = [primaryKey];
-        if (restoreKeys) {
-            result = result.concat(restoreKeys);
-        }
-        return result;
-    }
     async restoreCache(paths, primaryKey, restoreKeys) {
-        const searchKeys = this.concatenateKeys(primaryKey, restoreKeys);
+        const searchKeys = utils_1.concatenateKeys(primaryKey, restoreKeys);
         const content = await this.list();
         for (const searchKey of searchKeys) {
             const matches = content.filter((c) => c.key.startsWith(searchKey));

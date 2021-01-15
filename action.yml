@@ -17,6 +17,8 @@ inputs:
 outputs:
   cache-hit:
     description: 'When "true", indicates an exact match was found for the key'
+  cache-restore-type:
+    description: 'Indicates the restore type, either "miss", "partial", or "full"'
 runs:
   using: 'node12'
   main: 'dist/restore/index.js'
