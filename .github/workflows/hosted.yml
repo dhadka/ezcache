@@ -213,3 +213,49 @@ jobs:
           cd gradle-examples/dependency-management
           gradle clean build
           
+  # ==================================================
+  # Pip Tests
+  # ==================================================
+          
+  save-pip-cache:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/checkout@v2
+        with:
+          repository: binder-examples/requirements
+          path: python-example
+      - name: Cache pip
+        uses: ./
+        with:
+          type: pip
+          version: ${{ github.run_id }}
+      - name: Compile
+        run: |
+          cd python-example
+          pip install -r requirements.txt
+          
+  restore-pip-cache:
+    runs-on: ubuntu-latest
+    needs: save-pip-cache
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/checkout@v2
+        with:
+          repository: binder-examples/requirements
+          path: python-example
+      - name: Cache pip
+        id: cache
+        uses: ./
+        with:
+          type: pip
+          version: ${{ github.run_id }}
+      - name: Verify restore
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          echo "Restore failed!"
+          exit -1
+      - name: Compile
+        run: |
+          cd binder-examples/requirements
+          pip install -r requirements.txt
