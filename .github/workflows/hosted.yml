@@ -137,6 +137,9 @@ jobs:
             script: |
               cd dependency-management
               gradle clean build
+          - type: npm
+            repo: contentful/the-example-app.nodejs
+            script: npm install
     steps:
       - uses: actions/checkout@v2
       - uses: actions/checkout@v2
@@ -172,6 +175,9 @@ jobs:
             script: |
               cd dependency-management
               gradle clean build
+          - type: npm
+            repo: contentful/the-example-app.nodejs
+            script: npm install
     steps:
       - uses: actions/checkout@v2
       - uses: actions/checkout@v2
@@ -179,6 +185,7 @@ jobs:
           repository: ${{ matrix.repo }}
           path: dev
       - name: Cache ${{ matrix.type }}
+        id: cache
         uses: ./
         with:
           type: ${{ matrix.type }}
@@ -192,144 +199,4 @@ jobs:
         run: |
           cd dev
           ${{ matrix.script }}
-          
-  # ==================================================
-  # Maven Tests
-  # ==================================================
-          
-  save-maven-cache:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions/checkout@v2
-        with:
-          repository: mkyong/maven-examples
-          path: maven-examples
-      - name: Cache maven
-        uses: ./
-        with:
-          type: maven
-          version: ${{ github.run_id }}
-      - name: Compile
-        run: |
-          cd maven-examples/java-project
-          mvn package
-          
-  restore-maven-cache:
-    runs-on: ubuntu-latest
-    needs: save-maven-cache
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions/checkout@v2
-        with:
-          repository: mkyong/maven-examples
-          path: maven-examples
-      - name: Cache maven
-        id: cache
-        uses: ./
-        with:
-          type: maven
-          version: ${{ github.run_id }}
-      - name: Verify restore
-        if: steps.cache.outputs.cache-hit != 'true'
-        run: |
-          echo "Restore failed!"
-          exit -1
-      - name: Compile
-        run: |
-          cd maven-examples/java-project
-          mvn package
-          
-  # ==================================================
-  # Gradle Tests
-  # ==================================================
-          
-  save-gradle-cache:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions/checkout@v2
-        with:
-          repository: pkainulainen/gradle-examples
-          path: gradle-examples
-      - name: Cache gradle
-        uses: ./
-        with:
-          type: gradle
-          version: ${{ github.run_id }}
-      - name: Compile
-        run: |
-          cd gradle-examples/dependency-management
-          gradle clean build
-          
-  restore-gradle-cache:
-    runs-on: ubuntu-latest
-    needs: save-gradle-cache
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions/checkout@v2
-        with:
-          repository: pkainulainen/gradle-examples
-          path: gradle-examples
-      - name: Cache gradle
-        id: cache
-        uses: ./
-        with:
-          type: gradle
-          version: ${{ github.run_id }}
-      - name: Verify restore
-        if: steps.cache.outputs.cache-hit != 'true'
-        run: |
-          echo "Restore failed!"
-          exit -1
-      - name: Compile
-        run: |
-          cd gradle-examples/dependency-management
-          gradle clean build
-          
-  # ==================================================
-  # Pip Tests
-  # ==================================================
-          
-  save-pip-cache:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions/checkout@v2
-        with:
-          repository: Project-Platypus/Platypus
-          path: python-example
-      - name: Cache pip
-        uses: ./
-        with:
-          type: pip
-          version: ${{ github.run_id }}
-      - name: Compile
-        run: |
-          cd python-example
-          pip install -r requirements.txt
-          
-  restore-pip-cache:
-    runs-on: ubuntu-latest
-    needs: save-pip-cache
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions/checkout@v2
-        with:
-          repository: Project-Platypus/Platypus
-          path: python-example
-      - name: Cache pip
-        id: cache
-        uses: ./
-        with:
-          type: pip
-          version: ${{ github.run_id }}
-      - name: Verify restore
-        if: steps.cache.outputs.cache-hit != 'true'
-        run: |
-          echo "Restore failed!"
-          exit -1
-      - name: Compile
-        run: |
-          cd python-example
-          pip install -r requirements.txt
+        
