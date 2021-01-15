@@ -107,6 +107,58 @@ jobs:
         run: |
           npm ci
           
+          
+          
+          - uses: dhadka/ezcache@master
+  id: cache
+  with:
+    type: powershell
+
+- name: Install PowerShell modules
+  if: steps.cache.outputs.cache-hit != 'true'
+  shell: pwsh
+  run: |
+    Set-PSRepository PSGallery -InstallationPolicy Trusted
+    Install-Module SqlServer, PSScriptAnalyzer -ErrorAction Stop
+
+  save-powershell:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Cache powershell
+        uses: ./
+        with:
+          type: powershell
+          version: ${{ github.run_id }}
+      - name: Run script
+        shell: pwsh
+        run: |
+          Set-PSRepository PSGallery -InstallationPolicy Trusted
+          Install-Module SqlServer, PSScriptAnalyzer -ErrorAction Stop
+          
+  restore-powershell:
+    needs: save-powershell
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Cache powershell
+        id: cache
+        uses: ./
+        with:
+          type: powershell
+          version: ${{ github.run_id }}
+      - name: Verify restore
+        if: steps.cache.outputs.cache-hit != 'true'
+        shell: pwsh
+        run: |
+          Write-Error "Restore failed!"
+      - name: Run script
+        shell: pwsh
+        run: |
+          Set-PSRepository PSGallery -InstallationPolicy Trusted
+          Install-Module SqlServer, PSScriptAnalyzer -ErrorAction Stop
+    
+          
   save:
     runs-on: ubuntu-latest
     strategy:
