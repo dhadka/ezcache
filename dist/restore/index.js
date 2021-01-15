@@ -32927,7 +32927,7 @@ class Powershell extends handler_1.CacheHandler {
     async getPaths() {
         switch (expressions_1.runner.os) {
             case 'Windows':
-                return ['~DocumentsPowerShellModules'];
+                return ['~/Documents/PowerShell/Modules', process.env['ProgramFiles'] + '\\PowerShell\\Modules'];
             case 'Linux':
             case 'macOS':
                 return ['~/.local/share/powershell/Modules'];
