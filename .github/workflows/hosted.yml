@@ -223,7 +223,7 @@ jobs:
       - uses: actions/checkout@v2
       - uses: actions/checkout@v2
         with:
-          repository: Project-Platypus/Rhodium
+          repository: Project-Platypus/Platypus
           path: python-example
       - name: Cache pip
         uses: ./
@@ -242,7 +242,7 @@ jobs:
       - uses: actions/checkout@v2
       - uses: actions/checkout@v2
         with:
-          repository: Project-Platypus/Rhodium
+          repository: Project-Platypus/Platypus
           path: python-example
       - name: Cache pip
         id: cache
