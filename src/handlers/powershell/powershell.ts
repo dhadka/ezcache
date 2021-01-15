@@ -1,7 +1,9 @@
+import * as core from '@actions/core'
+import * as execa from 'execa'
+import * as crypto from 'crypto'
 import { handlers } from '../../registry'
-import { hashFiles, runner } from '../../expressions'
-import { CacheHandler } from '../../handler'
-import * as os from 'os'
+import { runner } from '../../expressions'
+import { CacheHandler, ICacheOptions, IRestoreResult, RestoreType } from '../../handler'
 
 class Powershell extends CacheHandler {
   async getPaths(): Promise<string[]> {
@@ -14,16 +16,48 @@ class Powershell extends CacheHandler {
     }
   }
 
-  async getKeyForRestore(version?: string): Promise<string> {
-    return `powershell-never-match-primary-key`
+  getModules(): string[] {
+    const modules = core.getInput('modules')
+
+    if (!modules) {
+      throw Error('Powershell caches require the module input')
+    }
+
+    return modules.split(/\s*,\s*|\s+/).sort()
   }
 
-  async getKeyForSave(version?: string): Promise<string> {
-    return `${runner.os}-${version}-powershell-${await hashFiles(await this.getPaths())}`
+  getHash(): string {
+    const hash = crypto.createHash('sha256')
+    hash.update(this.getModules().join(','))
+    return hash.digest().toString()
+  }
+
+  async getKey(version?: string): Promise<string> {
+    return `${runner.os}-${version}-powershell-${this.getHash()}`
   }
 
   async getRestoreKeys(version?: string): Promise<string[]> {
     return [`${runner.os}-${version}-powershell-`]
+  }
+
+  async restoreCache(options?: ICacheOptions): Promise<IRestoreResult> {
+    const result = await super.restoreCache(options)
+
+    if (result.type !== RestoreType.Full) {
+      core.info('Installing powershell modules')
+
+      // prettier-ignore
+      await execa(
+        'PowerShell',
+        [
+          '-Command',
+          `Set-PSRepository PSGallery -InstallationPolicy Trusted; Install-Module ${this.getModules().join(',',)} -ErrorAction Stop`,
+        ],
+        { stdout: 'inherit', stderr: 'inherit' },
+      )
+    }
+
+    return result
   }
 }
 

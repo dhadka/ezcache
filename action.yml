@@ -14,6 +14,9 @@ inputs:
   provider:
     description: 'The provider for cache storage, supports "hosted", "local"'
     required: false
+  modules:
+    description: 'Comma-separated list of powershell modules to install, only valid for powershell caches'
+    required: false
 outputs:
   cache-hit:
     description: 'When "true", indicates an exact match was found for the key'

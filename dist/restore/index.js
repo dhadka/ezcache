@@ -32955,6 +32955,9 @@ exports.newPipeline = newPipeline;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
+const core = __webpack_require__(470);
+const execa = __webpack_require__(955);
+const crypto = __webpack_require__(417);
 const registry_1 = __webpack_require__(822);
 const expressions_1 = __webpack_require__(134);
 const handler_1 = __webpack_require__(895);
@@ -32968,14 +32971,34 @@ class Powershell extends handler_1.CacheHandler {
                 return ['~/.local/share/powershell/Modules', '/usr/local/share/powershell/Modules'];
         }
     }
-    async getKeyForRestore(version) {
-        return `powershell-never-match-primary-key`;
+    getModules() {
+        const modules = core.getInput('modules');
+        if (!modules) {
+            throw Error('Powershell caches require the module input');
+        }
+        return modules.split(/\s*,\s*|\s+/).sort();
     }
-    async getKeyForSave(version) {
-        return `${expressions_1.runner.os}-${version}-powershell-${await expressions_1.hashFiles(await this.getPaths())}`;
+    getHash() {
+        const hash = crypto.createHash('sha256');
+        hash.update(this.getModules().join(','));
+        return hash.digest().toString();
+    }
+    async getKey(version) {
+        return `${expressions_1.runner.os}-${version}-powershell-${this.getHash()}`;
     }
     async getRestoreKeys(version) {
         return [`${expressions_1.runner.os}-${version}-powershell-`];
+    }
+    async restoreCache(options) {
+        const result = await super.restoreCache(options);
+        if (result.type !== handler_1.RestoreType.Full) {
+            core.info('Installing powershell modules');
+            await execa('PowerShell', [
+                '-Command',
+                `Set-PSRepository PSGallery -InstallationPolicy Trusted; Install-Module ${this.getModules().join(',')} -ErrorAction Stop`,
+            ], { stdout: 'inherit', stderr: 'inherit' });
+        }
+        return result;
     }
 }
 registry_1.handlers.add('powershell', new Powershell());

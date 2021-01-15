@@ -111,21 +111,12 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v2
-      - name: Print powershell module path
-        shell: pwsh
-        run: |
-          Write-Host $PSHOME
-          Write-Host $env:PSModulePath
       - name: Cache powershell
         uses: ./
         with:
           type: powershell
+          modules: SqlServer, PSScriptAnalyzer
           version: ${{ github.run_id }}
-      - name: Run script
-        shell: pwsh
-        run: |
-          Set-PSRepository PSGallery -InstallationPolicy Trusted
-          Install-Module SqlServer, PSScriptAnalyzer -ErrorAction Stop
           
   restore-powershell:
     needs: save-powershell
@@ -133,21 +124,16 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Cache powershell
-        id: cache
         uses: ./
         with:
           type: powershell
+          modules: SqlServer, PSScriptAnalyzer
           version: ${{ github.run_id }}
       - name: Verify 
         shell: pwsh
-        if: steps.cache.outputs.cache-restore-type == 'miss'
+        if: steps.cache.outputs.cache-hit != 'true'
         run: |
           Write-Error "Restore failed!"
-      - name: Run script
-        shell: pwsh
-        run: |
-          Set-PSRepository PSGallery -InstallationPolicy Trusted
-          Install-Module SqlServer, PSScriptAnalyzer -ErrorAction Stop
     
           
   save:
