@@ -119,6 +119,79 @@ jobs:
         run: |
           npm ci
           
+  save:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - type: pip
+            repo: Project-Platypus/Platypus
+            script: pip install -r requirements.txt
+          - type: maven
+            repo: mkyong/maven-examples
+            script: |
+              cd java-project
+              mvn package
+          - type: gradle
+            repo: pkainulainen/gradle-examples
+            script: |
+              cd dependency-management
+              gradle clean build
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/checkout@v2
+        with:
+          repository: ${{ matrix.repo }}
+          path: dev
+      - name: Cache ${{ matrix.type }}
+        uses: ./
+        with:
+          type: ${{ matrix.type }}
+          version: ${{ github.run_id }}
+      - name: Run script
+        run: |
+          cd dev
+          ${{ matrix.script }}
+          
+  restore:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - type: pip
+            repo: Project-Platypus/Platypus
+            script: pip install -r requirements.txt
+          - type: maven
+            repo: mkyong/maven-examples
+            script: |
+              cd java-project
+              mvn package
+          - type: gradle
+            repo: pkainulainen/gradle-examples
+            script: |
+              cd dependency-management
+              gradle clean build
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/checkout@v2
+        with:
+          repository: ${{ matrix.repo }}
+          path: dev
+      - name: Cache ${{ matrix.type }}
+        uses: ./
+        with:
+          type: ${{ matrix.type }}
+          version: ${{ github.run_id }}
+      - name: Verify restore
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          echo "Restore failed!"
+          exit -1
+      - name: Run script
+        run: |
+          cd dev
+          ${{ matrix.script }}
+          
   # ==================================================
   # Maven Tests
   # ==================================================
