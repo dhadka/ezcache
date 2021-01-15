@@ -32909,26 +32909,46 @@ exports.newPipeline = newPipeline;
 
 Object.defineProperty(exports, "__esModule", { value: true });
 const core = __webpack_require__(470);
+const os = __webpack_require__(87);
+const fs = __webpack_require__(747);
+const path = __webpack_require__(622);
 const execa = __webpack_require__(955);
 const crypto = __webpack_require__(417);
 const registry_1 = __webpack_require__(822);
 const expressions_1 = __webpack_require__(134);
 const handler_1 = __webpack_require__(895);
-// TODO: Since we know the modules, we could list out the individual modules paths to reduce overhead
 class Powershell extends handler_1.CacheHandler {
     async getPaths() {
+        return this.getModulePaths();
+    }
+    getSearchPaths() {
         switch (expressions_1.runner.os) {
             case 'Windows':
                 return [
-                    '~\\Documents\\PowerShell\\Modules',
+                    os.homedir() + '\\Documents\\PowerShell\\Modules',
                     process.env['ProgramFiles'] + '\\PowerShell\\Modules',
-                    '~\\Documents\\WindowsPowerShell\\Modules',
+                    os.homedir() + '\\Documents\\WindowsPowerShell\\Modules',
                     process.env['ProgramFiles'] + '\\WindowsPowerShell\\Modules',
                 ];
             case 'Linux':
             case 'macOS':
                 return ['~/.local/share/powershell/Modules', '/usr/local/share/powershell/Modules'];
         }
+    }
+    getModulePaths() {
+        const modules = this.getModules();
+        const searchPaths = this.getSearchPaths();
+        const result = [];
+        for (const module of modules) {
+            for (const searchPath of searchPaths) {
+                const modulePath = path.join(searchPath, module);
+                if (fs.existsSync(modulePath)) {
+                    result.push(modulePath);
+                }
+            }
+            throw Error(`Unable to find module path for ${module}`);
+        }
+        return result;
     }
     getModules() {
         const modules = core.getInput('modules');

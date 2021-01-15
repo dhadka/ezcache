@@ -185,7 +185,13 @@ Caches misses should be expected and handled by the workflow.  There are two typ
 2. A **partial hit** where some of the cache contents are restored
 
 In both cases, this action will output `cache-hit` set to `false`.  You can then conditionally run 
-any steps to install the remaining dependencies.
+any steps to install the remaining dependencies:
+
+```
+- name: Install dependencies
+  if: steps.cache.outputs.cache-hit != 'true'
+  run: ...
+```
 
 ## Versioning
 
