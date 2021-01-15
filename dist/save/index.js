@@ -32940,13 +32940,18 @@ class Powershell extends handler_1.CacheHandler {
         const searchPaths = this.getSearchPaths();
         const result = [];
         for (const module of modules) {
+            let found = false;
             for (const searchPath of searchPaths) {
                 const modulePath = path.join(searchPath, module);
                 if (fs.existsSync(modulePath)) {
                     result.push(modulePath);
+                    found = true;
+                    break;
                 }
             }
-            throw Error(`Unable to find module path for ${module}`);
+            if (!found) {
+                throw Error(`Unable to find module path for ${module}`);
+            }
         }
         return result;
     }
