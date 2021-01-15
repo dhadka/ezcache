@@ -140,7 +140,7 @@ jobs:
           version: ${{ github.run_id }}
       - name: Verify 
         shell: pwsh
-        if: steps.cache.outputs.cache-restore-type != 'miss'
+        if: steps.cache.outputs.cache-restore-type == 'miss'
         run: |
           Write-Error "Restore failed!"
       - name: Run script
