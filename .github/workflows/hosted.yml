@@ -138,11 +138,6 @@ jobs:
         with:
           type: powershell
           version: ${{ github.run_id }}
-      - name: Verify restore
-        if: steps.cache.outputs.cache-hit != 'true'
-        shell: pwsh
-        run: |
-          Write-Error "Restore failed!"
       - name: Run script
         shell: pwsh
         run: |
