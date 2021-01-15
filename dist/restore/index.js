@@ -32914,7 +32914,39 @@ exports.newPipeline = newPipeline;
 /* 374 */,
 /* 375 */,
 /* 376 */,
-/* 377 */,
+/* 377 */
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const registry_1 = __webpack_require__(822);
+const expressions_1 = __webpack_require__(134);
+const handler_1 = __webpack_require__(895);
+class Powershell extends handler_1.CacheHandler {
+    async getPaths() {
+        switch (expressions_1.runner.os) {
+            case 'Windows':
+                return ['~DocumentsPowerShellModules'];
+            case 'Linux':
+            case 'macOS':
+                return ['~/.local/share/powershell/Modules'];
+        }
+    }
+    async getKeyForRestore(version) {
+        return `powershell-never-match-primary-key`;
+    }
+    async getKeyForSave(version) {
+        return `${expressions_1.runner.os}-${version}-powershell-${await expressions_1.hashFiles(await this.getPaths())}`;
+    }
+    async getRestoreKeys(version) {
+        return [`${expressions_1.runner.os}-${version}-powershell-`];
+    }
+}
+registry_1.handlers.add('powershell', new Powershell());
+
+
+/***/ }),
 /* 378 */,
 /* 379 */,
 /* 380 */,
@@ -53158,6 +53190,7 @@ __webpack_require__(467);
 __webpack_require__(443);
 __webpack_require__(322);
 __webpack_require__(769);
+__webpack_require__(377);
 __webpack_require__(859);
 __webpack_require__(899);
 __webpack_require__(941);
