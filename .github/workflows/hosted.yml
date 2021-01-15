@@ -106,20 +106,6 @@ jobs:
       - name: Install dependencies
         run: |
           npm ci
-          
-          
-          
-          - uses: dhadka/ezcache@master
-  id: cache
-  with:
-    type: powershell
-
-- name: Install PowerShell modules
-  if: steps.cache.outputs.cache-hit != 'true'
-  shell: pwsh
-  run: |
-    Set-PSRepository PSGallery -InstallationPolicy Trusted
-    Install-Module SqlServer, PSScriptAnalyzer -ErrorAction Stop
 
   save-powershell:
     runs-on: windows-latest
