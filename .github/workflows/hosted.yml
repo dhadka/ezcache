@@ -111,6 +111,11 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v2
+      - name: Print powershell module path
+        shell: pwsh
+        run: |
+          Write-Host $PSHOME
+          Write-Host $env:PSModulePath
       - name: Cache powershell
         uses: ./
         with:
