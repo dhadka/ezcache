@@ -43,7 +43,6 @@ The following languages and package management tools are auto-detected by `ezcac
 | Node     | NPM                | `npm`       |
 | Node     | Yarn               | `yarn`      |
 | PHP      | Composer           | `composer`  |
-| Powershell |                  | `powershell` |
 | Python   | Pip                | `pip`       |
 | Python   | Virtual Env w/ Pip | `pipenv`    |
 | Python   | Poetry             | `poetry`    |
@@ -123,6 +122,20 @@ field to ensure jobs that read the cache run after the job that create the cache
     path: ~/path/to/cache
 ```
 
+## Powershell
+
+For `powershell`, you specify the modules you need installed:
+
+```
+- uses: dhadka/ezcache@master
+  with:
+    type: powershell
+    modules: SqlServer, PSScriptAnalyzer
+```
+
+This will either restore the modules from the cache or invoke `Install-Module` to 
+install the modules on the runner.
+
 ## Docker Configurations
 
 ### Build Layers
@@ -172,21 +185,7 @@ Caches misses should be expected and handled by the workflow.  There are two typ
 2. A **partial hit** where some of the cache contents are restored
 
 In both cases, this action will output `cache-hit` set to `false`.  You can then conditionally run 
-any steps to install the remaining dependencies.  Here is an example for Powershell:
-
-```
-- uses: dhadka/ezcache@master
-  id: cache
-  with:
-    type: powershell
-
-- name: Install PowerShell modules
-  if: steps.cache.outputs.cache-hit != 'true'
-  shell: pwsh
-  run: |
-    Set-PSRepository PSGallery -InstallationPolicy Trusted
-    Install-Module SqlServer, PSScriptAnalyzer -ErrorAction Stop
-```
+any steps to install the remaining dependencies.
 
 ## Versioning
 

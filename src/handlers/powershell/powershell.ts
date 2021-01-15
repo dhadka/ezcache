@@ -29,7 +29,7 @@ class Powershell extends CacheHandler {
   getHash(): string {
     const hash = crypto.createHash('sha256')
     hash.update(this.getModules().join(','))
-    return hash.digest().toString()
+    return hash.digest('hex')
   }
 
   async getKey(version?: string): Promise<string> {

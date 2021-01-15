@@ -124,6 +124,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Cache powershell
+        id: cache
         uses: ./
         with:
           type: powershell

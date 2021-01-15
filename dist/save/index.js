@@ -32934,7 +32934,7 @@ class Powershell extends handler_1.CacheHandler {
     getHash() {
         const hash = crypto.createHash('sha256');
         hash.update(this.getModules().join(','));
-        return hash.digest().toString();
+        return hash.digest('hex');
     }
     async getKey(version) {
         return `${expressions_1.runner.os}-${version}-powershell-${this.getHash()}`;
@@ -32946,6 +32946,7 @@ class Powershell extends handler_1.CacheHandler {
         const result = await super.restoreCache(options);
         if (result.type !== handler_1.RestoreType.Full) {
             core.info('Installing powershell modules');
+            // prettier-ignore
             await execa('PowerShell', [
                 '-Command',
                 `Set-PSRepository PSGallery -InstallationPolicy Trusted; Install-Module ${this.getModules().join(',')} -ErrorAction Stop`,
