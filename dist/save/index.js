@@ -32910,7 +32910,6 @@ exports.newPipeline = newPipeline;
 Object.defineProperty(exports, "__esModule", { value: true });
 const core = __webpack_require__(470);
 const os = __webpack_require__(87);
-const fs = __webpack_require__(747);
 const path = __webpack_require__(622);
 const execa = __webpack_require__(955);
 const crypto = __webpack_require__(417);
@@ -32919,41 +32918,17 @@ const expressions_1 = __webpack_require__(134);
 const handler_1 = __webpack_require__(895);
 class Powershell extends handler_1.CacheHandler {
     async getPaths() {
-        return this.getModulePaths();
+        const installationPath = this.getModuleInstallPath();
+        return this.getModules().map(module => path.join(installationPath, module));
     }
-    getSearchPaths() {
+    getModuleInstallPath() {
         switch (expressions_1.runner.os) {
             case 'Windows':
-                return [
-                    os.homedir() + '\\Documents\\PowerShell\\Modules',
-                    process.env['ProgramFiles'] + '\\PowerShell\\Modules',
-                    os.homedir() + '\\Documents\\WindowsPowerShell\\Modules',
-                    process.env['ProgramFiles'] + '\\WindowsPowerShell\\Modules',
-                ];
+                return os.homedir() + '\\Documents\\WindowsPowerShell\\Modules';
             case 'Linux':
             case 'macOS':
-                return ['~/.local/share/powershell/Modules', '/usr/local/share/powershell/Modules'];
+                return '~/.local/share/powershell/Modules';
         }
-    }
-    getModulePaths() {
-        const modules = this.getModules();
-        const searchPaths = this.getSearchPaths();
-        const result = [];
-        for (const module of modules) {
-            let found = false;
-            for (const searchPath of searchPaths) {
-                const modulePath = path.join(searchPath, module);
-                if (fs.existsSync(modulePath)) {
-                    result.push(modulePath);
-                    found = true;
-                    break;
-                }
-            }
-            if (!found) {
-                throw Error(`Unable to find module path for ${module}`);
-            }
-        }
-        return result;
     }
     getModules() {
         const modules = core.getInput('modules');
@@ -32980,7 +32955,7 @@ class Powershell extends handler_1.CacheHandler {
             // prettier-ignore
             await execa('PowerShell', [
                 '-Command',
-                `Set-PSRepository PSGallery -InstallationPolicy Trusted; Install-Module ${this.getModules().join(',')} -ErrorAction Stop`,
+                `Set-PSRepository PSGallery -InstallationPolicy Trusted; Install-Module ${this.getModules().join(',')} -Scope CurrentUser -ErrorAction Stop`,
             ], { stdout: 'inherit', stderr: 'inherit' });
         }
         return result;

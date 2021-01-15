@@ -133,8 +133,10 @@ jobs:
       - name: Verify 
         shell: pwsh
         if: steps.cache.outputs.cache-hit != 'true'
-        run: |
-          Write-Error "Restore failed!"
+        run: Write-Error "Restore failed!"
+      - name: Show installed modules
+        shell: pwsh
+        run: Get-InstalledModule
     
           
   save:

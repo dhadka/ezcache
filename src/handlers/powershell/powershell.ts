@@ -10,48 +10,18 @@ import { CacheHandler, ICacheOptions, IRestoreResult, RestoreType } from '../../
 
 class Powershell extends CacheHandler {
   async getPaths(): Promise<string[]> {
-    return this.getModulePaths()
+    const installationPath = this.getModuleInstallPath()
+    return this.getModules().map(module => path.join(installationPath, module))
   }
 
-  getSearchPaths(): string[] {
+  getModuleInstallPath(): string {
     switch (runner.os) {
       case 'Windows':
-        return [
-          os.homedir() + '\\Documents\\PowerShell\\Modules',
-          process.env['ProgramFiles'] + '\\PowerShell\\Modules',
-          os.homedir() + '\\Documents\\WindowsPowerShell\\Modules',
-          process.env['ProgramFiles'] + '\\WindowsPowerShell\\Modules',
-        ]
+        return os.homedir() + '\\Documents\\WindowsPowerShell\\Modules'
       case 'Linux':
       case 'macOS':
-        return ['~/.local/share/powershell/Modules', '/usr/local/share/powershell/Modules']
+        return '~/.local/share/powershell/Modules'
     }
-  }
-
-  getModulePaths(): string[] {
-    const modules = this.getModules()
-    const searchPaths = this.getSearchPaths()
-    const result: string[] = []
-
-    for (const module of modules) {
-      let found = false
-
-      for (const searchPath of searchPaths) {
-        const modulePath = path.join(searchPath, module)
-
-        if (fs.existsSync(modulePath)) {
-          result.push(modulePath)
-          found = true
-          break
-        }
-      }
-
-      if (!found) {
-        throw Error(`Unable to find module path for ${module}`)
-      }
-    }
-
-    return result
   }
 
   getModules(): string[] {
@@ -89,7 +59,7 @@ class Powershell extends CacheHandler {
         'PowerShell',
         [
           '-Command',
-          `Set-PSRepository PSGallery -InstallationPolicy Trusted; Install-Module ${this.getModules().join(',')} -ErrorAction Stop`,
+          `Set-PSRepository PSGallery -InstallationPolicy Trusted; Install-Module ${this.getModules().join(',')} -Scope CurrentUser -ErrorAction Stop`,
         ],
         { stdout: 'inherit', stderr: 'inherit' },
       )
