@@ -32914,11 +32914,17 @@ const crypto = __webpack_require__(417);
 const registry_1 = __webpack_require__(822);
 const expressions_1 = __webpack_require__(134);
 const handler_1 = __webpack_require__(895);
+// TODO: Since we know the modules, we could list out the individual modules paths to reduce overhead
 class Powershell extends handler_1.CacheHandler {
     async getPaths() {
         switch (expressions_1.runner.os) {
             case 'Windows':
-                return ['~/Documents/PowerShell/Modules', process.env['ProgramFiles'] + '/PowerShell/Modules'];
+                return [
+                    '~\\Documents\\PowerShell\\Modules',
+                    process.env['ProgramFiles'] + '\\PowerShell\\Modules',
+                    '~\\Documents\\WindowsPowerShell\\Modules',
+                    process.env['ProgramFiles'] + '\\WindowsPowerShell\\Modules',
+                ];
             case 'Linux':
             case 'macOS':
                 return ['~/.local/share/powershell/Modules', '/usr/local/share/powershell/Modules'];
@@ -32927,7 +32933,7 @@ class Powershell extends handler_1.CacheHandler {
     getModules() {
         const modules = core.getInput('modules');
         if (!modules) {
-            throw Error('Powershell caches require the module input');
+            throw Error('Missing input: modules');
         }
         return modules.split(/\s*,\s*|\s+/).sort();
     }

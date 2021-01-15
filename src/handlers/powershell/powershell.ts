@@ -5,11 +5,17 @@ import { handlers } from '../../registry'
 import { runner } from '../../expressions'
 import { CacheHandler, ICacheOptions, IRestoreResult, RestoreType } from '../../handler'
 
+// TODO: Since we know the modules, we could list out the individual modules paths to reduce overhead
 class Powershell extends CacheHandler {
   async getPaths(): Promise<string[]> {
     switch (runner.os) {
       case 'Windows':
-        return ['~/Documents/PowerShell/Modules', process.env['ProgramFiles'] + '/PowerShell/Modules']
+        return [
+          '~\\Documents\\PowerShell\\Modules',
+          process.env['ProgramFiles'] + '\\PowerShell\\Modules',
+          '~\\Documents\\WindowsPowerShell\\Modules',
+          process.env['ProgramFiles'] + '\\WindowsPowerShell\\Modules',
+        ]
       case 'Linux':
       case 'macOS':
         return ['~/.local/share/powershell/Modules', '/usr/local/share/powershell/Modules']
@@ -20,7 +26,7 @@ class Powershell extends CacheHandler {
     const modules = core.getInput('modules')
 
     if (!modules) {
-      throw Error('Powershell caches require the module input')
+      throw Error('Missing input: modules')
     }
 
     return modules.split(/\s*,\s*|\s+/).sort()
@@ -51,7 +57,7 @@ class Powershell extends CacheHandler {
         'PowerShell',
         [
           '-Command',
-          `Set-PSRepository PSGallery -InstallationPolicy Trusted; Install-Module ${this.getModules().join(',',)} -ErrorAction Stop`,
+          `Set-PSRepository PSGallery -InstallationPolicy Trusted; Install-Module ${this.getModules().join(',')} -ErrorAction Stop`,
         ],
         { stdout: 'inherit', stderr: 'inherit' },
       )
