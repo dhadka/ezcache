@@ -154,6 +154,7 @@ jobs:
           ${{ matrix.script }}
           
   restore:
+    needs: save
     runs-on: ubuntu-latest
     strategy:
       matrix:
