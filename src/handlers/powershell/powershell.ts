@@ -8,6 +8,9 @@ import { handlers } from '../../registry'
 import { runner } from '../../expressions'
 import { CacheHandler, ICacheOptions, IRestoreResult, RestoreType } from '../../handler'
 
+/**
+ * Installs and caches specific powershell modules.
+ */
 class Powershell extends CacheHandler {
   async getPaths(): Promise<string[]> {
     const installationPath = this.getModuleInstallPath()

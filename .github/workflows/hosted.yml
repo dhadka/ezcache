@@ -136,7 +136,7 @@ jobs:
         run: Write-Error "Restore failed!"
       - name: Show installed modules
         shell: pwsh
-        run: Get-InstalledModule
+        run: ls ~\Documents\WindowsPowerShell\Modules
     
           
   save:
