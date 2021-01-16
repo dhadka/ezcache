@@ -70,7 +70,7 @@ so there is no need to invoke `Install-Module`.
     modules: SqlServer, PSScriptAnalyzer
 ```
 
-## General-Purpose Configurations
+## General-Purpose Caches
 
 ezcache also supports a number of general-purpose cache types designed to store a user-defined path.
 
@@ -146,7 +146,7 @@ field to ensure jobs that read the cache run after the job that create the cache
     path: ~/path/to/cache
 ```
 
-## Docker Configurations
+## Docker Caches
 
 ### Build Layers
 
