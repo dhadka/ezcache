@@ -52,6 +52,7 @@ jobs:
           version: ${{ github.run_id }}
       - name: Create cache content
         run: 
+          mkdir cache
           echo "v1" > cache/version.txt
 
   update-diff:
