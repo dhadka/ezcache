@@ -30,7 +30,9 @@ runners and GitHub Enterprise Server!
 
 ## Supported Languages
 
-The following languages and package management tools are auto-detected by `ezcache`:
+ezcache recognizes the following programming languages and package management tools.  If you do
+not explicitly specify the `type`, ezcache will attempt to auto-detect the appropriate type
+(or types) for your repository.
 
 | Language | Package Manager    | Type        |
 | -------- | ------------------ | ----------- |
@@ -55,16 +57,28 @@ The following languages and package management tools are auto-detected by `ezcac
 | Swfit    | Mint               | `mint`      |
 | Swift    | SPM                | `spm`       |
 
-## Special Configurations
+## Powershell
 
-The following special cache types are also supported.  These can cache any arbitrary path.
+When creating a `powershell` cache, you must also specify a comma-separated list of
+modules to install.  ezcache also handles installing the modules after a cache miss,
+so there is no need to invoke `Install-Module`.
+
+```
+- uses: dhadka/ezcache@master
+  with:
+    type: powershell
+    modules: SqlServer, PSScriptAnalyzer
+```
+
+## General-Purpose Configurations
+
+ezcache also supports a number of general-purpose cache types designed to store a user-defined path.
 
 ### daily
 
-A `daily` cache stores one (or more) folders such that the cache is updated once a day.  This is useful when caching
-some content that changes frequently, but we don't want to create new caches for every change.  For example,
-this could be used to cache the `.git` folder for a large repo, where a full checkout is slow but pulling
-new changes is relatively fast.
+Creates a cache that is updated once a day.  This is useful when caching content that changes frequently,
+but we don't want to create new caches after every change.  For example, this could be used to cache the
+`.git` folder for a large repo, where a full checkout is slow but pulling new changes is relatively fast:
 
 ```
 - uses: dhadka/ezcache@master
@@ -76,8 +90,7 @@ new changes is relatively fast.
 
 ### diff
 
-A `diff` cache will store one (or more) folders.  As the name suggests, the cache is updated whenever
-the folder contents change.  Likewise, the last cache created on the branch is restored.
+Creates a cache that is updated whenever the folder contents change.
 
 ```
 - uses: dhadka/ezcache@master
@@ -88,8 +101,7 @@ the folder contents change.  Likewise, the last cache created on the branch is r
 
 ### env
 
-A `env` cache triggers cache updates by setting the `UPDATE_CACHE` environment variable to `true`.
-The last saved cache is restored.
+Creates a cache that is updated only when the `UPDATE_CACHE` environment variable is set to `true`.
 
 ```
 - uses: dhadka/ezcache@master
@@ -108,9 +120,9 @@ The last saved cache is restored.
 
 ### run
 
-Using `run` will create a new cache for every run of your workflow.  This can be used to share data between
-different jobs in a workflow.  Please use this with caution as caches can be evicted at any time, potentially
-leading to failing restores.
+Creates a new cache for every run of your workflow.  This can be used to share data between different jobs
+in a workflow.  Please use this with caution as caches can be evicted at any time, potentially leading to
+failing restores.
 
 Tip: Use the [needs](https://docs.github.com/en/free-pro-team@latest/actions/reference/workflow-syntax-for-github-actions#jobsjob_idneeds)
 field to ensure jobs that read the cache run after the job that create the cache.
@@ -122,25 +134,11 @@ field to ensure jobs that read the cache run after the job that create the cache
     path: ~/path/to/cache
 ```
 
-## Powershell
-
-For `powershell`, you specify the modules you need installed:
-
-```
-- uses: dhadka/ezcache@master
-  with:
-    type: powershell
-    modules: SqlServer, PSScriptAnalyzer
-```
-
-This will either restore the modules from the cache or invoke `Install-Module` to 
-install the modules on the runner.
-
 ## Docker Configurations
 
 ### Build Layers
 
-Using `layers` will cache all Docker layers found on the runner, ignoring any images that existed previously on the runner.
+Caches each Docker layer found on the runner (excluding any that previously existed on the runner) to improve build times.
 This was originally developed by [satackey/action-docker-layer-caching](https://github.com/satackey/action-docker-layer-caching).
 
 ```
@@ -152,7 +150,8 @@ This was originally developed by [satackey/action-docker-layer-caching](https://
 
 ### BuildX
 
-The following example demonstrates how to cache the build artifacts from Docker's buildx by specifying the `--cache-from` and `--cache-to` options:
+Caches build artifacts from Docker's BuildX.  This works by specifying the `--cache-from` and `--cache-to` options
+used by BuildX:
 
 ```
 - name: Set up Docker Buildx

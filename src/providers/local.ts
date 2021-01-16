@@ -46,7 +46,7 @@ export class LocalStorageProvider extends StorageProvider {
   }
 
   private getCacheRoot(): string {
-    return path.join(os.homedir(), '.RunnerCache')
+    return process.env['LOCAL_CACHE_PATH'] || path.join(os.homedir(), '.RunnerCache')
   }
 
   private getRepoFolder(repo: IRepo): string {

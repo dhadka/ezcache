@@ -4507,28 +4507,33 @@ function state(list, sortMethod)
 Object.defineProperty(exports, "__esModule", { value: true });
 const core = __webpack_require__(470);
 const registry_1 = __webpack_require__(822);
-const expressions_1 = __webpack_require__(134);
-const handler_1 = __webpack_require__(895);
+const diff_1 = __webpack_require__(467);
 const fs = __webpack_require__(747);
 const defaultCacheFolder = '.buildx-cache';
-class DockerBuildX extends handler_1.CacheHandler {
+class DockerBuildX extends diff_1.DiffCache {
     getCachePath() {
         return core.getInput('path') || defaultCacheFolder;
     }
     async getPaths() {
         return [this.getCachePath()];
     }
-    async getKeyForRestore(version) {
-        return 'buildx-never-match-primary-key';
-    }
-    async getKeyForSave(version) {
-        return `${expressions_1.runner.os}-${version}-buildx-${await expressions_1.hashFiles(this.getCachePath())}`;
-    }
-    async getRestoreKeys(version) {
-        return [`${expressions_1.runner.os}-${version}-buildx-`];
-    }
     async setup() {
         fs.mkdirSync(this.getCachePath(), { recursive: true });
+    }
+    extendVersion(options) {
+        if (options) {
+            options.version = options.version ? `${options.version}-buildx` : 'buildx';
+            return options;
+        }
+        else {
+            return { version: 'buildx' };
+        }
+    }
+    async saveCache(options) {
+        await super.saveCache(this.extendVersion(options));
+    }
+    async restoreCache(options) {
+        return await super.restoreCache(this.extendVersion(options));
     }
 }
 registry_1.handlers.add('buildx', new DockerBuildX());
@@ -32916,6 +32921,9 @@ const crypto = __webpack_require__(417);
 const registry_1 = __webpack_require__(822);
 const expressions_1 = __webpack_require__(134);
 const handler_1 = __webpack_require__(895);
+/**
+ * Installs and caches powershell modules.
+ */
 class Powershell extends handler_1.CacheHandler {
     async getPaths() {
         const installationPath = this.getModuleInstallPath();
@@ -38744,6 +38752,7 @@ module.exports.argument = escapeArgument;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.DiffCache = void 0;
 const core = __webpack_require__(470);
 const registry_1 = __webpack_require__(822);
 const expressions_1 = __webpack_require__(134);
@@ -38770,6 +38779,7 @@ class DiffCache extends handler_1.CacheHandler {
         return [`${expressions_1.runner.os}-${version}-diff-`];
     }
 }
+exports.DiffCache = DiffCache;
 registry_1.handlers.add('diff', new DiffCache());
 
 
@@ -43129,7 +43139,7 @@ class LocalStorageProvider extends provider_1.StorageProvider {
         return { owner: github.context.repo.owner, name: github.context.repo.repo };
     }
     getCacheRoot() {
-        return path.join(os.homedir(), '.RunnerCache');
+        return process.env['LOCAL_CACHE_PATH'] || path.join(os.homedir(), '.RunnerCache');
     }
     getRepoFolder(repo) {
         return path.join(this.getCacheRoot(), repo.owner, repo.name);

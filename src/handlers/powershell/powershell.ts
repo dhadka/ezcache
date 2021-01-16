@@ -1,6 +1,5 @@
 import * as core from '@actions/core'
 import * as os from 'os'
-import * as fs from 'fs'
 import * as path from 'path'
 import * as execa from 'execa'
 import * as crypto from 'crypto'
@@ -9,7 +8,7 @@ import { runner } from '../../expressions'
 import { CacheHandler, ICacheOptions, IRestoreResult, RestoreType } from '../../handler'
 
 /**
- * Installs and caches specific powershell modules.
+ * Installs and caches powershell modules.
  */
 class Powershell extends CacheHandler {
   async getPaths(): Promise<string[]> {
