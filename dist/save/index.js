@@ -47098,7 +47098,51 @@ exports.default = _default;
 
 /***/ }),
 /* 736 */,
-/* 737 */,
+/* 737 */
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const core = __webpack_require__(470);
+const execa = __webpack_require__(955);
+const registry_1 = __webpack_require__(822);
+const expressions_1 = __webpack_require__(134);
+const handler_1 = __webpack_require__(895);
+class InstallScriptCache extends handler_1.CacheHandler {
+    async getPaths() {
+        return core
+            .getInput('path')
+            .split('\n')
+            .map((s) => s.trim());
+    }
+    getScript() {
+        const script = core.getInput('script');
+        if (!script) {
+            throw Error(`Missing required input 'script'`);
+        }
+        return script;
+    }
+    async getKey(version) {
+        return `${expressions_1.runner.os}-${version}-script-${await expressions_1.hashFiles(this.getScript())}`;
+    }
+    async getRestoreKeys(version) {
+        return [`${expressions_1.runner.os}-${version}-script-`];
+    }
+    async restoreCache(options) {
+        const result = await super.restoreCache(options);
+        if (result.type !== handler_1.RestoreType.Full) {
+            const script = this.getScript();
+            core.info(`Invoking installation script ${script}`);
+            await execa(script, [], { stdout: 'inherit', stderr: 'inherit' });
+        }
+        return result;
+    }
+}
+registry_1.handlers.add('script', new InstallScriptCache());
+
+
+/***/ }),
 /* 738 */
 /***/ (function(module, __unusedexports, __webpack_require__) {
 
@@ -53040,6 +53084,10 @@ const utils_1 = __webpack_require__(163);
  * format:
  *
  *   s3://<bucket_name>/<owner>/<repo>/<key>
+ *
+ * This uses the AWS CLI, which must be installed on the runner.  The original plan
+ * was to use the AWS-SDK JavaScript library, but it add 6 MBs of dependencies to
+ * this action, nearly quadrupling its size.
  */
 class AwsStorageProvider extends provider_1.StorageProvider {
     constructor() {
@@ -53240,6 +53288,7 @@ __webpack_require__(854);
 __webpack_require__(467);
 __webpack_require__(443);
 __webpack_require__(322);
+__webpack_require__(737);
 __webpack_require__(769);
 __webpack_require__(377);
 __webpack_require__(859);

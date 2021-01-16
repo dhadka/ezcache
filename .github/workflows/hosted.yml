@@ -130,7 +130,7 @@ jobs:
           type: powershell
           modules: SqlServer, PSScriptAnalyzer
           version: ${{ github.run_id }}
-      - name: Verify 
+      - name: Verify restore
         shell: pwsh
         if: steps.cache.outputs.cache-hit != 'true'
         run: Write-Error "Restore failed!"
@@ -138,6 +138,44 @@ jobs:
         shell: pwsh
         run: ls ~\Documents\WindowsPowerShell\Modules
     
+  save-script:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup install script
+        run: |
+          echo "npm install @actions/cache" > install.sh
+          chmod +x install.sh
+      - name: Cache script
+        uses: ./
+        with:
+          type: script
+          script: install.sh
+          path: ~/.npm
+          version: ${{ github.run_id }}
+          
+  restore-script:
+    needs: save-script
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup install script
+        run: |
+          echo "npm install @actions/cache" > install.sh
+          chmod +x install.sh
+      - name: Cache script
+        id: cache
+        uses: ./
+        with:
+          type: script
+          script: install.sh
+          path: ~/.npm
+          version: ${{ github.run_id }}
+      - name: Verify restore
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          echo "Restore failed!"
+          exit -1
           
   save:
     runs-on: ubuntu-latest

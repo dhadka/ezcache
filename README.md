@@ -99,6 +99,18 @@ Creates a cache that is updated whenever the folder contents change.
     path: ~/path/to/cache
 ```
 
+### script
+
+Creates a cache based off an installation script.  The cache is updated whenever the script changes.
+
+```
+- uses: dhadka/ezcache@master
+  with:
+    type: script
+    script: install-dependencies.sh
+    path: ~/path/to/dependencies
+```
+
 ### env
 
 Creates a cache that is updated only when the `UPDATE_CACHE` environment variable is set to `true`.

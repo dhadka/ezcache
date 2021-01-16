@@ -15,7 +15,10 @@ inputs:
     description: 'The provider for cache storage, supports "hosted", "local"'
     required: false
   modules:
-    description: 'Comma-separated list of powershell modules to install, only valid for powershell caches'
+    description: 'Comma-separated list of powershell modules to install, only valid for the "powershell" cache'
+    required: false
+  script:
+    description: 'Path to a script that installs dependencies, only valid for the "script" cache'
     required: false
 outputs:
   cache-hit:
