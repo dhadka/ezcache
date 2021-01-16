@@ -144,9 +144,8 @@ jobs:
       - uses: actions/checkout@v2
       - name: Setup install script
         run: |
-          echo "#/bin/bash\nnpm install @actions/cache" > install.sh
+          echo -e "#/bin/bash\nnpm install @actions/cache\necho 'Install finished!'" > install.sh
           chmod +x install.sh
-          ls -al
       - name: Cache script
         uses: ./
         with:
@@ -162,9 +161,8 @@ jobs:
       - uses: actions/checkout@v2
       - name: Setup install script
         run: |
-          echo -e "#/bin/bash\nnpm install @actions/cache" > install.sh
+          echo -e "#/bin/bash\nnpm install @actions/cache\necho 'Install finished!'" > install.sh
           chmod +x install.sh
-          ls -al
       - name: Cache script
         id: cache
         uses: ./
