@@ -144,7 +144,7 @@ jobs:
       - uses: actions/checkout@v2
       - name: Setup install script
         run: |
-          echo "npm install @actions/cache" > install.sh
+          echo "#/bin/bash\nnpm install @actions/cache" > install.sh
           chmod +x install.sh
       - name: Cache script
         uses: ./
