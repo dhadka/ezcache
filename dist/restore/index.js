@@ -4507,15 +4507,25 @@ function state(list, sortMethod)
 Object.defineProperty(exports, "__esModule", { value: true });
 const core = __webpack_require__(470);
 const registry_1 = __webpack_require__(822);
-const diff_1 = __webpack_require__(467);
+const expressions_1 = __webpack_require__(134);
+const handler_1 = __webpack_require__(895);
 const fs = __webpack_require__(747);
 const defaultCacheFolder = '.buildx-cache';
-class DockerBuildX extends diff_1.DiffCache {
+class DockerBuildX extends handler_1.CacheHandler {
     getCachePath() {
         return core.getInput('path') || defaultCacheFolder;
     }
     async getPaths() {
         return [this.getCachePath()];
+    }
+    async getKeyForRestore(version) {
+        return 'buildx-never-match-primary-key';
+    }
+    async getKeyForSave(version) {
+        return `${expressions_1.runner.os}-${version}-buildx-${await expressions_1.hashFiles(this.getCachePath())}`;
+    }
+    async getRestoreKeys(version) {
+        return [`${expressions_1.runner.os}-${version}-buildx-`];
     }
     async setup() {
         fs.mkdirSync(this.getCachePath(), { recursive: true });

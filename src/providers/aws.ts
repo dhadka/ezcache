@@ -15,6 +15,10 @@ import { concatenateKeys } from '../utils'
  * format:
  *
  *   s3://<bucket_name>/<owner>/<repo>/<key>
+ * 
+ * This uses the AWS CLI, which must be installed on the runner.  The original plan
+ * was to use the AWS-SDK JavaScript library, but it add 6 MBs of dependencies to
+ * this action, nearly quadrupling its size.
  */
 class AwsStorageProvider extends StorageProvider {
   bucketName: string | undefined
