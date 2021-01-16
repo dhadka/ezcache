@@ -60,7 +60,7 @@ not explicitly specify the `type`, ezcache will attempt to auto-detect the appro
 ## Powershell
 
 When creating a `powershell` cache, you must also specify a comma-separated list of
-modules to install.  ezcache also handles installing the modules after a cache miss,
+modules to install.  ezcache handles installing the modules after a cache miss,
 so there is no need to invoke `Install-Module`.
 
 ```
@@ -108,7 +108,7 @@ dependencies.  On a cache hit, the script is skipped.  Changes to the script tri
 - uses: dhadka/ezcache@master
   with:
     type: script
-    script: install-dependencies.sh
+    script: ./install-dependencies.sh
     path: ~/path/to/dependencies
 ```
 
