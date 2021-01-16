@@ -4520,21 +4520,6 @@ class DockerBuildX extends diff_1.DiffCache {
     async setup() {
         fs.mkdirSync(this.getCachePath(), { recursive: true });
     }
-    extendVersion(options) {
-        if (options) {
-            options.version = options.version ? `${options.version}-buildx` : 'buildx';
-            return options;
-        }
-        else {
-            return { version: 'buildx' };
-        }
-    }
-    async saveCache(options) {
-        await super.saveCache(this.extendVersion(options));
-    }
-    async restoreCache(options) {
-        return await super.restoreCache(this.extendVersion(options));
-    }
 }
 registry_1.handlers.add('buildx', new DockerBuildX());
 
