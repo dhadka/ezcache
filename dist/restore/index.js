@@ -47133,6 +47133,18 @@ const execa = __webpack_require__(955);
 const registry_1 = __webpack_require__(822);
 const expressions_1 = __webpack_require__(134);
 const handler_1 = __webpack_require__(895);
+/**
+ * Create caches based on an install script.  To use this cache type:
+ *
+ *   1. Create a script (with execute permissions) that installs the dependencies.
+ *
+ *   2. Specify the path, or paths, needed to cache the installed dependencies.
+ *
+ * On a cache miss, this handler will run the script and save the cache.  On a cache hit,
+ * this handler will restore the cached files and skip running the script.
+ *
+ * A new cache is created whenever the script file changes.
+ */
 class InstallScriptCache extends handler_1.CacheHandler {
     async getPaths() {
         return core

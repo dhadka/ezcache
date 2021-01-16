@@ -6,6 +6,18 @@ import { handlers } from '../../registry'
 import { runner, hashFiles } from '../../expressions'
 import { CacheHandler, ICacheOptions, IRestoreResult, RestoreType } from '../../handler'
 
+/**
+ * Create caches based on an install script.  To use this cache type:
+ * 
+ *   1. Create a script (with execute permissions) that installs the dependencies.
+ * 
+ *   2. Specify the path, or paths, needed to cache the installed dependencies.
+ * 
+ * On a cache miss, this handler will run the script and save the cache.  On a cache hit,
+ * this handler will restore the cached files and skip running the script.
+ * 
+ * A new cache is created whenever the script file changes.
+ */
 class InstallScriptCache extends CacheHandler {
   async getPaths(): Promise<string[]> {
     return core
