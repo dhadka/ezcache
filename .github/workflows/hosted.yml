@@ -150,7 +150,7 @@ jobs:
         uses: ./
         with:
           type: script
-          script: ./install.sh
+          script: install.sh
           path: ~/.npm
           version: ${{ github.run_id }}
           
@@ -168,7 +168,7 @@ jobs:
         uses: ./
         with:
           type: script
-          script: ./install.sh
+          script: install.sh
           path: ~/.npm
           version: ${{ github.run_id }}
       - name: Verify restore
