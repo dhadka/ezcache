@@ -146,11 +146,12 @@ jobs:
         run: |
           echo "#/bin/bash\nnpm install @actions/cache" > install.sh
           chmod +x install.sh
+          ls -al
       - name: Cache script
         uses: ./
         with:
           type: script
-          script: install.sh
+          script: ./install.sh
           path: ~/.npm
           version: ${{ github.run_id }}
           
@@ -163,12 +164,13 @@ jobs:
         run: |
           echo -e "#/bin/bash\nnpm install @actions/cache" > install.sh
           chmod +x install.sh
+          ls -al
       - name: Cache script
         id: cache
         uses: ./
         with:
           type: script
-          script: install.sh
+          script: ./install.sh
           path: ~/.npm
           version: ${{ github.run_id }}
       - name: Verify restore
