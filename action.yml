@@ -14,9 +14,17 @@ inputs:
   provider:
     description: 'The provider for cache storage, supports "hosted", "local"'
     required: false
+  modules:
+    description: 'Comma-separated list of powershell modules to install, only valid for the "powershell" cache'
+    required: false
+  script:
+    description: 'Path to a script that installs dependencies, only valid for the "script" cache'
+    required: false
 outputs:
   cache-hit:
     description: 'When "true", indicates an exact match was found for the key'
+  cache-restore-type:
+    description: 'Indicates the restore type, either "miss", "partial", or "full"'
 runs:
   using: 'node12'
   main: 'dist/restore/index.js'

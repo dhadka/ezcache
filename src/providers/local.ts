@@ -8,6 +8,7 @@ import * as github from '@actions/github'
 import { providers } from '../registry'
 import { StorageProvider } from '../provider'
 import { runner } from '../expressions'
+import { concatenateKeys } from '../utils'
 
 /**
  * Stores cache content on the local file system.  This is useful for self-hosted runners and
@@ -45,7 +46,7 @@ export class LocalStorageProvider extends StorageProvider {
   }
 
   private getCacheRoot(): string {
-    return path.join(os.homedir(), '.RunnerCache')
+    return process.env['LOCAL_CACHE_PATH'] || path.join(os.homedir(), '.RunnerCache')
   }
 
   private getRepoFolder(repo: IRepo): string {
@@ -109,16 +110,6 @@ export class LocalStorageProvider extends StorageProvider {
 
   private isCommitted(key: IKey): boolean {
     return fs.existsSync(this.getKeyFolder(key)) && fs.existsSync(this.getCommittedPath(key))
-  }
-
-  private concatenateKeys(primaryKey: string, restoreKeys?: string[]): string[] {
-    var result = [primaryKey]
-
-    if (restoreKeys) {
-      result = result.concat(restoreKeys)
-    }
-
-    return result
   }
 
   private preprocessPaths(paths: string[]): string[] {
@@ -227,7 +218,7 @@ export class LocalStorageProvider extends StorageProvider {
   }
 
   async restoreCache(paths: string[], primaryKey: string, restoreKeys?: string[]): Promise<string | undefined> {
-    const keys = this.concatenateKeys(primaryKey, restoreKeys)
+    const keys = concatenateKeys(primaryKey, restoreKeys)
     const repo = this.getRepo()
 
     for (const key of keys) {

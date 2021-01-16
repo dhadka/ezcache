@@ -68,7 +68,7 @@ jobs:
           version: latest
 
       - name: Cache Buildx
-        uses: dhadka/ezcache@master
+        uses: ./
         with:
           type: buildx
           path: /tmp/.buildx-cache
@@ -103,7 +103,7 @@ jobs:
           version: latest
 
       - name: Cache Buildx
-        uses: dhadka/ezcache@master
+        uses: ./
         with:
           type: buildx
           path: /tmp/.buildx-cache

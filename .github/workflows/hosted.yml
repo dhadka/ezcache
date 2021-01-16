@@ -8,14 +8,14 @@ on:
 
 jobs:
 
-  #build:
-    #runs-on: ubuntu-latest
-    #steps:
-    #  - uses: actions/checkout@v2
-    #  - run: npm install
-    #  - run: npm run build
-    #  - run: npm test
-    #  - run: npm run lint
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - run: npm install
+      - run: npm run build
+      - run: npm test
+      #- run: npm run lint
 
   test-nuget:
     runs-on: ubuntu-latest
@@ -27,18 +27,6 @@ jobs:
         with:
           type: nuget
           version: v1
-
-  test-npm:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Cache npm
-        uses: ./
-        with:
-          type: npm
-          version: v1
-      - name: Install dependencies
-        run: npm ci
 
   test-run:
     runs-on: ubuntu-latest
@@ -118,3 +106,155 @@ jobs:
       - name: Install dependencies
         run: |
           npm ci
+
+  save-powershell:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Cache powershell
+        uses: ./
+        with:
+          type: powershell
+          modules: SqlServer, PSScriptAnalyzer
+          version: ${{ github.run_id }}
+          
+  restore-powershell:
+    needs: save-powershell
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Cache powershell
+        id: cache
+        uses: ./
+        with:
+          type: powershell
+          modules: SqlServer, PSScriptAnalyzer
+          version: ${{ github.run_id }}
+      - name: Verify restore
+        shell: pwsh
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: Write-Error "Restore failed!"
+      - name: Show installed modules
+        shell: pwsh
+        run: ls ~\Documents\WindowsPowerShell\Modules
+    
+  save-script:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup install script
+        run: |
+          echo -e "#/bin/bash\nnpm install @actions/cache\necho 'Install finished!'" > install.sh
+          chmod +x install.sh
+      - name: Cache script
+        uses: ./
+        with:
+          type: script
+          script: ./install.sh
+          path: ~/.npm
+          version: ${{ github.run_id }}
+          
+  restore-script:
+    needs: save-script
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup install script
+        run: |
+          echo -e "#/bin/bash\nnpm install @actions/cache\necho 'Install finished!'" > install.sh
+          chmod +x install.sh
+      - name: Cache script
+        id: cache
+        uses: ./
+        with:
+          type: script
+          script: ./install.sh
+          path: ~/.npm
+          version: ${{ github.run_id }}
+      - name: Verify restore
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          echo "Restore failed!"
+          exit -1
+          
+  save:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - type: pip
+            repo: Project-Platypus/Platypus
+            script: pip install -r requirements.txt
+          - type: maven
+            repo: mkyong/maven-examples
+            script: |
+              cd java-project
+              mvn package
+          - type: gradle
+            repo: pkainulainen/gradle-examples
+            script: |
+              cd dependency-management
+              gradle clean build
+          - type: npm
+            repo: contentful/the-example-app.nodejs
+            script: npm ci
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/checkout@v2
+        with:
+          repository: ${{ matrix.repo }}
+          path: dev
+      - name: Cache ${{ matrix.type }}
+        uses: ./
+        with:
+          type: ${{ matrix.type }}
+          version: ${{ github.run_id }}
+      - name: Run script
+        run: |
+          cd dev
+          ${{ matrix.script }}
+          
+  restore:
+    needs: save
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - type: pip
+            repo: Project-Platypus/Platypus
+            script: pip install -r requirements.txt
+          - type: maven
+            repo: mkyong/maven-examples
+            script: |
+              cd java-project
+              mvn package
+          - type: gradle
+            repo: pkainulainen/gradle-examples
+            script: |
+              cd dependency-management
+              gradle clean build
+          - type: npm
+            repo: contentful/the-example-app.nodejs
+            script: npm ci
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/checkout@v2
+        with:
+          repository: ${{ matrix.repo }}
+          path: dev
+      - name: Cache ${{ matrix.type }}
+        id: cache
+        uses: ./
+        with:
+          type: ${{ matrix.type }}
+          version: ${{ github.run_id }}
+      - name: Verify restore
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          echo "Restore failed!"
+          exit -1
+      - name: Run script
+        run: |
+          cd dev
+          ${{ matrix.script }}
+        

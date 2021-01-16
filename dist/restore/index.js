@@ -4787,7 +4787,42 @@ exports.NOOP_TRACER_PROVIDER = new NoopTracerProvider();
 //# sourceMappingURL=NoopTracerProvider.js.map
 
 /***/ }),
-/* 163 */,
+/* 163 */
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.concatenateKeys = exports.combineRestoreType = void 0;
+const handler_1 = __webpack_require__(895);
+function combineRestoreType(...types) {
+    if (types.length === 0) {
+        return handler_1.RestoreType.Miss;
+    }
+    return types.reduce((prev, curr) => {
+        if (prev === handler_1.RestoreType.Miss || curr === handler_1.RestoreType.Miss) {
+            return handler_1.RestoreType.Miss;
+        }
+        else if (prev === handler_1.RestoreType.Partial || curr === handler_1.RestoreType.Partial) {
+            return handler_1.RestoreType.Partial;
+        }
+        else {
+            return handler_1.RestoreType.Full;
+        }
+    });
+}
+exports.combineRestoreType = combineRestoreType;
+function concatenateKeys(primaryKey, restoreKeys) {
+    const result = [primaryKey];
+    if (restoreKeys) {
+        result.push(...restoreKeys);
+    }
+    return result;
+}
+exports.concatenateKeys = concatenateKeys;
+
+
+/***/ }),
 /* 164 */,
 /* 165 */
 /***/ (function(__unusedmodule, exports) {
@@ -32914,7 +32949,72 @@ exports.newPipeline = newPipeline;
 /* 374 */,
 /* 375 */,
 /* 376 */,
-/* 377 */,
+/* 377 */
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const core = __webpack_require__(470);
+const os = __webpack_require__(87);
+const path = __webpack_require__(622);
+const execa = __webpack_require__(955);
+const crypto = __webpack_require__(417);
+const registry_1 = __webpack_require__(822);
+const expressions_1 = __webpack_require__(134);
+const handler_1 = __webpack_require__(895);
+/**
+ * Installs and caches powershell modules.
+ */
+class Powershell extends handler_1.CacheHandler {
+    async getPaths() {
+        const installationPath = this.getModuleInstallPath();
+        return this.getModules().map(module => path.join(installationPath, module));
+    }
+    getModuleInstallPath() {
+        switch (expressions_1.runner.os) {
+            case 'Windows':
+                return os.homedir() + '\\Documents\\WindowsPowerShell\\Modules';
+            case 'Linux':
+            case 'macOS':
+                return '~/.local/share/powershell/Modules';
+        }
+    }
+    getModules() {
+        const modules = core.getInput('modules');
+        if (!modules) {
+            throw Error('Missing input: modules');
+        }
+        return modules.split(/\s*,\s*|\s+/).sort();
+    }
+    getHash() {
+        const hash = crypto.createHash('sha256');
+        hash.update(this.getModules().join(','));
+        return hash.digest('hex');
+    }
+    async getKey(version) {
+        return `${expressions_1.runner.os}-${version}-powershell-${this.getHash()}`;
+    }
+    async getRestoreKeys(version) {
+        return [`${expressions_1.runner.os}-${version}-powershell-`];
+    }
+    async restoreCache(options) {
+        const result = await super.restoreCache(options);
+        if (result.type !== handler_1.RestoreType.Full) {
+            core.info('Installing powershell modules');
+            // prettier-ignore
+            await execa('PowerShell', [
+                '-Command',
+                `Set-PSRepository PSGallery -InstallationPolicy Trusted; Install-Module ${this.getModules().join(',')} -Scope CurrentUser -ErrorAction Stop`,
+            ], { stdout: 'inherit', stderr: 'inherit' });
+        }
+        return result;
+    }
+}
+registry_1.handlers.add('powershell', new Powershell());
+
+
+/***/ }),
 /* 378 */,
 /* 379 */,
 /* 380 */,
@@ -38694,6 +38794,7 @@ module.exports.argument = escapeArgument;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.DiffCache = void 0;
 const core = __webpack_require__(470);
 const registry_1 = __webpack_require__(822);
 const expressions_1 = __webpack_require__(134);
@@ -38720,6 +38821,7 @@ class DiffCache extends handler_1.CacheHandler {
         return [`${expressions_1.runner.os}-${version}-diff-`];
     }
 }
+exports.DiffCache = DiffCache;
 registry_1.handlers.add('diff', new DiffCache());
 
 
@@ -43043,6 +43145,7 @@ const github = __webpack_require__(469);
 const registry_1 = __webpack_require__(822);
 const provider_1 = __webpack_require__(880);
 const expressions_1 = __webpack_require__(134);
+const utils_1 = __webpack_require__(163);
 /**
  * Stores cache content on the local file system.  This is useful for self-hosted runners and
  * GitHub Enterprise Server.
@@ -43078,7 +43181,7 @@ class LocalStorageProvider extends provider_1.StorageProvider {
         return { owner: github.context.repo.owner, name: github.context.repo.repo };
     }
     getCacheRoot() {
-        return path.join(os.homedir(), '.RunnerCache');
+        return process.env['LOCAL_CACHE_PATH'] || path.join(os.homedir(), '.RunnerCache');
     }
     getRepoFolder(repo) {
         return path.join(this.getCacheRoot(), repo.owner, repo.name);
@@ -43129,13 +43232,6 @@ class LocalStorageProvider extends provider_1.StorageProvider {
     }
     isCommitted(key) {
         return fs.existsSync(this.getKeyFolder(key)) && fs.existsSync(this.getCommittedPath(key));
-    }
-    concatenateKeys(primaryKey, restoreKeys) {
-        var result = [primaryKey];
-        if (restoreKeys) {
-            result = result.concat(restoreKeys);
-        }
-        return result;
     }
     preprocessPaths(paths) {
         return paths.map((p) => {
@@ -43227,7 +43323,7 @@ class LocalStorageProvider extends provider_1.StorageProvider {
         }
     }
     async restoreCache(paths, primaryKey, restoreKeys) {
-        const keys = this.concatenateKeys(primaryKey, restoreKeys);
+        const keys = utils_1.concatenateKeys(primaryKey, restoreKeys);
         const repo = this.getRepo();
         for (const key of keys) {
             const cacheKey = { repo: repo, value: key };
@@ -47024,7 +47120,51 @@ exports.default = _default;
 
 /***/ }),
 /* 736 */,
-/* 737 */,
+/* 737 */
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const core = __webpack_require__(470);
+const execa = __webpack_require__(955);
+const registry_1 = __webpack_require__(822);
+const expressions_1 = __webpack_require__(134);
+const handler_1 = __webpack_require__(895);
+class InstallScriptCache extends handler_1.CacheHandler {
+    async getPaths() {
+        return core
+            .getInput('path')
+            .split('\n')
+            .map((s) => s.trim());
+    }
+    getScript() {
+        const script = core.getInput('script');
+        if (!script) {
+            throw Error(`Missing required input 'script'`);
+        }
+        return script;
+    }
+    async getKey(version) {
+        return `${expressions_1.runner.os}-${version}-script-${await expressions_1.hashFiles(this.getScript())}`;
+    }
+    async getRestoreKeys(version) {
+        return [`${expressions_1.runner.os}-${version}-script-`];
+    }
+    async restoreCache(options) {
+        const result = await super.restoreCache(options);
+        if (result.type !== handler_1.RestoreType.Full) {
+            const script = this.getScript();
+            core.info(`Invoking installation script ${script}`);
+            await execa(script, [], { stdout: 'inherit', stderr: 'inherit' });
+        }
+        return result;
+    }
+}
+registry_1.handlers.add('script', new InstallScriptCache());
+
+
+/***/ }),
 /* 738 */
 /***/ (function(module, __unusedexports, __webpack_require__) {
 
@@ -48261,22 +48401,23 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const core = __webpack_require__(470);
 const registry_1 = __webpack_require__(822);
 const handler_1 = __webpack_require__(895);
+const utils_1 = __webpack_require__(163);
 __webpack_require__(877);
 __webpack_require__(34);
 async function run() {
     let type = core.getInput('type');
     let version = core.getInput('version');
     let provider = core.getInput('provider');
-    let isFullRestore = true;
+    let results = [];
     for (const handler of await registry_1.handlers.getAll(type)) {
         core.info(`Restoring cache with ${handler.constructor.name} handler`);
         await handler.setup();
         const result = await handler.restoreCache({ version, provider });
-        if (result.type != handler_1.RestoreType.Full) {
-            isFullRestore = false;
-        }
+        results.push(result.type);
     }
-    core.setOutput('cache-hit', isFullRestore);
+    const finalResult = utils_1.combineRestoreType(...results);
+    core.setOutput('cache-restore-type', finalResult.toString().toLowerCase());
+    core.setOutput('cache-hit', finalResult === handler_1.RestoreType.Full);
 }
 run().catch((e) => {
     core.error(e);
@@ -52944,12 +53085,17 @@ const path = __webpack_require__(622);
 const execa = __webpack_require__(955);
 const registry_1 = __webpack_require__(822);
 const provider_1 = __webpack_require__(880);
+const utils_1 = __webpack_require__(163);
 /**
  * Stores cache content to an AWS S3 bucket.  The bucket is specified using the
  * AWS_BUCKET_NAME env var.  Each cache entry is accessed through a URL in the
  * format:
  *
  *   s3://<bucket_name>/<owner>/<repo>/<key>
+ *
+ * This uses the AWS CLI, which must be installed on the runner.  The original plan
+ * was to use the AWS-SDK JavaScript library, but it add 6 MBs of dependencies to
+ * this action, nearly quadrupling its size.
  */
 class AwsStorageProvider extends provider_1.StorageProvider {
     constructor() {
@@ -53010,15 +53156,8 @@ class AwsStorageProvider extends provider_1.StorageProvider {
         await tar.extractTar(archivePath, compressionMethod);
         return true;
     }
-    concatenateKeys(primaryKey, restoreKeys) {
-        var result = [primaryKey];
-        if (restoreKeys) {
-            result = result.concat(restoreKeys);
-        }
-        return result;
-    }
     async restoreCache(paths, primaryKey, restoreKeys) {
-        const searchKeys = this.concatenateKeys(primaryKey, restoreKeys);
+        const searchKeys = utils_1.concatenateKeys(primaryKey, restoreKeys);
         const content = await this.list();
         for (const searchKey of searchKeys) {
             const matches = content.filter((c) => c.key.startsWith(searchKey));
@@ -53157,7 +53296,9 @@ __webpack_require__(854);
 __webpack_require__(467);
 __webpack_require__(443);
 __webpack_require__(322);
+__webpack_require__(737);
 __webpack_require__(769);
+__webpack_require__(377);
 __webpack_require__(859);
 __webpack_require__(899);
 __webpack_require__(941);

@@ -8,7 +8,7 @@ import { CacheHandler } from '../../handler'
  * change.  By design, this will never have an exact match during restore.  Instead,
  * it restores the last created cache on the current branch.
  */
-class DiffCache extends CacheHandler {
+export class DiffCache extends CacheHandler {
   async getPaths(): Promise<string[]> {
     return core
       .getInput('path')
