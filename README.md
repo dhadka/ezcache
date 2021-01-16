@@ -101,7 +101,8 @@ Creates a cache that is updated whenever the folder contents change.
 
 ### script
 
-Creates a cache based off an installation script.  The cache is updated whenever the script changes.
+Creates a cache based off an installation script.  On a cache miss, the script is invoked to install the
+dependencies.  On a cache hit, the script is skipped.  Changes to the script trigger a cache update.
 
 ```
 - uses: dhadka/ezcache@master
