@@ -47127,6 +47127,8 @@ exports.default = _default;
 
 Object.defineProperty(exports, "__esModule", { value: true });
 const core = __webpack_require__(470);
+const fs = __webpack_require__(747);
+const path = __webpack_require__(622);
 const execa = __webpack_require__(955);
 const registry_1 = __webpack_require__(822);
 const expressions_1 = __webpack_require__(134);
@@ -47154,7 +47156,14 @@ class InstallScriptCache extends handler_1.CacheHandler {
     async restoreCache(options) {
         const result = await super.restoreCache(options);
         if (result.type !== handler_1.RestoreType.Full) {
-            const script = this.getScript();
+            let script = this.getScript();
+            if (fs.existsSync(script)) {
+                // Get the full path (Linux / MacOS need a path segment before the filename)
+                script = path.resolve(script);
+            }
+            else {
+                throw Error(`Script not found: ${script}`);
+            }
             core.info(`Invoking installation script ${script}`);
             await execa(script, [], { stdout: 'inherit', stderr: 'inherit' });
         }
