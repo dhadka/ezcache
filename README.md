@@ -281,6 +281,8 @@ NOTE: There is no eviction logic built into the AWS S3 storage provider.  Instea
 an [object lifecycle management policy](https://docs.aws.amazon.com/AmazonS3/latest/dev/object-lifecycle-mgmt.html)
 to evict old content.
 
+# Explicit Save and Restore Steps
+
 # Contributing
 
 Want to add support for a new language or tool?  Great!  The caching logic for each language / tool is contained
