@@ -1669,13 +1669,13 @@ class Cargo extends handler_1.CacheHandler {
         return ['~/.cargo/bin', '~/.cargo/registry/index', '~/.cargo/registry/cache', '~/.cargo/git/db', 'target'];
     }
     async getKey(version) {
-        return `${expressions_1.runner.os}-${version}-cargo-${await expressions_1.hashFiles('**/Cargo.lock')}`;
+        return `${expressions_1.runner.os}-${version}-cargo-${await expressions_1.hashFiles(['**/Cargo.lock', '**/Cargo.toml'])}`;
     }
     async getRestoreKeys(version) {
         return [`${expressions_1.runner.os}-${version}-cargo-`];
     }
     async shouldCache() {
-        return await expressions_1.matches('**/Cargo.lock');
+        return await expressions_1.matches(['**/Cargo.lock', '**/Cargo.toml']);
     }
 }
 registry_1.handlers.add('cargo', new Cargo());

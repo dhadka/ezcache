@@ -306,6 +306,12 @@ jobs:
           - type: npm
             repo: contentful/the-example-app.nodejs
             script: npm ci
+          - type: yarn
+            repo: yarnpkg/example-yarn-package
+            script: yarn install
+          - type: cargo
+            repo: AtheMathmo/rusty-machine
+            script: cargo build
     steps:
       - uses: actions/checkout@v2
       - uses: actions/checkout@v2
@@ -344,6 +350,12 @@ jobs:
           - type: npm
             repo: contentful/the-example-app.nodejs
             script: npm ci
+          - type: yarn
+            repo: yarnpkg/example-yarn-package
+            script: yarn install
+          - type: cargo
+            repo: AtheMathmo/rusty-machine
+            script: cargo build
     steps:
       - uses: actions/checkout@v2
       - uses: actions/checkout@v2
