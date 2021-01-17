@@ -8,7 +8,7 @@ class Cargo extends CacheHandler {
   }
 
   async getKey(version?: string): Promise<string> {
-    return `${runner.os}-${version}-cargo-${await hashFiles('**/Cargo.lock')}`
+    return `${runner.os}-${version}-cargo-${await hashFiles(['**/Cargo.lock', '**/Cargo.toml'])}`
   }
 
   async getRestoreKeys(version?: string): Promise<string[]> {
@@ -16,7 +16,7 @@ class Cargo extends CacheHandler {
   }
 
   async shouldCache(): Promise<boolean> {
-    return await matches('**/Cargo.lock')
+    return await matches(['**/Cargo.lock', '**/Cargo.toml'])
   }
 }
 
