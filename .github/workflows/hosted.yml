@@ -231,7 +231,7 @@ jobs:
           set -e
           INSTALLED_VERSION=""
 
-          apt install hxnormalize pup
+          sudo apt install hxnormalize pup
 
           if command -v parallel; then
             INSTALLED_VERSION=$(parallel --version | head -1 | cut -d ' ' -f3)
