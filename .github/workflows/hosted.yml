@@ -215,6 +215,44 @@ jobs:
             exit -1
           fi
 
+  test-env:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Cache .local
+        uses: ./
+        with:
+          type: diff
+          path: ~/.local
+      - name: Add .local to PATH
+        run: echo "$HOME/.local/bin" >> $GITHUB_PATH
+      - name: Setup .local binaries
+        run: |
+          set -e
+          INSTALLED_VERSION=""
+
+          if command -v parallel; then
+            INSTALLED_VERSION=$(parallel --version | head -1 | cut -d ' ' -f3)
+          fi
+          
+          LATEST_VERSION=$(curl -fsSL https://ftp.gnu.org/gnu/parallel | hxnormalize | pup 'a[href]' 'text{}' | grep 'parallel-' | grep -v 'latest' | cut -d '-' -f2 | cut -d '.' -f1 | sort -r | head -1)
+
+          if [[ INSTALLED_VERSION != LATEST_VERSION ]]; then
+            mkdir -p parallel && pushd parallel
+
+            wget -q -t5 -O "parallel.tar.bz2" "http://ftp.gnu.org/gnu/parallel/parallel-$LATEST_VERSION.tar.gz2"
+            tar -xjf "parallel.tar.bz2"
+
+            pushd "parallel-$LATEST_VERSION"
+
+            ./configure --prefix="$HOME/.local"
+            make
+            make install
+
+            popd && popd
+            echo "UPDATE_CACHE=true" >> $GITHUB_ENV
+          fi
+
   save-powershell:
     runs-on: windows-latest
     steps:
