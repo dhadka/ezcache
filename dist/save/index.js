@@ -47105,10 +47105,24 @@ exports.default = _default;
 
 Object.defineProperty(exports, "__esModule", { value: true });
 const core = __webpack_require__(470);
+const fs = __webpack_require__(747);
+const path = __webpack_require__(622);
 const execa = __webpack_require__(955);
 const registry_1 = __webpack_require__(822);
 const expressions_1 = __webpack_require__(134);
 const handler_1 = __webpack_require__(895);
+/**
+ * Create caches based on an install script.  To use this cache type:
+ *
+ *   1. Create a script (with execute permissions) that installs the dependencies.
+ *
+ *   2. Specify the path, or paths, needed to cache the installed dependencies.
+ *
+ * On a cache miss, this handler will run the script and save the cache.  On a cache hit,
+ * this handler will restore the cached files and skip running the script.
+ *
+ * A new cache is created whenever the script file changes.
+ */
 class InstallScriptCache extends handler_1.CacheHandler {
     async getPaths() {
         return core
@@ -47132,7 +47146,14 @@ class InstallScriptCache extends handler_1.CacheHandler {
     async restoreCache(options) {
         const result = await super.restoreCache(options);
         if (result.type !== handler_1.RestoreType.Full) {
-            const script = this.getScript();
+            let script = this.getScript();
+            if (fs.existsSync(script)) {
+                // Get the full path (Linux / MacOS need a path segment before the filename)
+                script = path.resolve(script);
+            }
+            else {
+                throw Error(`Script not found: ${script}`);
+            }
             core.info(`Invoking installation script ${script}`);
             await execa(script, [], { stdout: 'inherit', stderr: 'inherit' });
         }

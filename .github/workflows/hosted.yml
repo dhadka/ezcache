@@ -40,20 +40,67 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-  test-diff:
+  save-diff:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - name: Cache by diff
+      - name: Cache diff
         uses: ./
         with:
           type: diff
-          path: ~/.npm
-          version: v2
-      - name: Install dependencies
-        run: npm ci
+          path: cache
+          version: ${{ github.run_id }}
+      - name: Create cache content
+        run: |
+          mkdir cache
+          echo "v1" > cache/version.txt
 
-  test-auto:
+  update-diff:
+    needs: save-diff
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Cache diff
+        id: cache
+        uses: ./
+        with:
+          type: diff
+          path: cache
+          version: ${{ github.run_id }}
+      - name: Verify restore
+        if: steps.cache.outputs.cache-restore-type == 'miss'
+        run: |
+          echo "Restore failed!"
+          exit -1
+      - name: Change version
+        run: |
+          echo "v2" > cache/version.txt 
+
+  verify-diff:
+    needs: update-diff
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Cache diff
+        id: cache
+        uses: ./
+        with:
+          type: diff
+          path: cache
+          version: ${{ github.run_id }}
+      - name: Verify restore
+        if: steps.cache.outputs.cache-restore-type == 'miss'
+        run: |
+          echo "Restore failed!"
+          exit -1
+      - name: Verify cache updated
+        run: |
+          if [[ "$(cat cache/version.txt)" != "v2" ]]; then
+            echo "Version was not updated!"
+            exit -1
+          fi
+
+  save-auto:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -61,6 +108,7 @@ jobs:
         uses: ./
         with:
           type: auto
+          verson: ${{ github.run_id }}
       - name: Install dependencies
         run: npm ci
 
@@ -79,33 +127,93 @@ jobs:
           repository: nodejs/node
           path: nodejs
 
-  test-env-create-or-update:
+  save-env:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+      - name: Write cache content
+        run: |
+          mkdir cache
+          echo "v1" > cache/version.txt
       - name: Env cache
         uses: ./
         with:
           type: env
-          path: ~/.npm
-      - name: Install dependencies
+          path: cache
+          version: ${{ github.run_id }}
+
+  restore-env:
+    needs: save-env
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Env cache
+        id: cache
+        uses: ./
+        with:
+          type: env
+          path: cache
+          version: ${{ github.run_id }}
+      - name: Verify restore
+        if: steps.cache.outputs.cache-restore-type == 'miss'
         run: |
-          npm ci
+          echo "Restore failed!"
+          exit -1
+      - name: Change version but do not update
+        run: |
+          echo "v2" > cache/version.txt
+
+  update-env:
+    needs: restore-env
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Env cache
+        id: cache
+        uses: ./
+        with:
+          type: env
+          path: cache
+          version: ${{ github.run_id }}
+      - name: Verify restore
+        if: steps.cache.outputs.cache-restore-type == 'miss'
+        run: |
+          echo "Restore failed!"
+          exit -1
+      - name: Verify version not changed
+        run: |
+          if [[ "$(cat cache/version.txt)" != "v1" ]]; then
+            echo "Version changed!"
+            exit -1
+          fi
+      - name: Change version and update cache
+        run: |
+          echo "v2" > cache/version.txt
           echo "UPDATE_CACHE=true" >> $GITHUB_ENV
 
-  test-env-no-update:
-    needs: test-env-create-or-update
+  verify-env:
+    needs: update-env
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - name: Env cache
+        id: cache
         uses: ./
         with:
           type: env
-          path: ~/.npm
-      - name: Install dependencies
+          path: cache
+          version: ${{ github.run_id }}
+      - name: Verify restore
+        if: steps.cache.outputs.cache-restore-type == 'miss'
         run: |
-          npm ci
+          echo "Restore failed!"
+          exit -1
+      - name: Verify cache updated
+        run: |
+          if [[ "$(cat cache/version.txt)" != "v2" ]]; then
+            echo "Version was not updated!"
+            exit -1
+          fi
 
   save-powershell:
     runs-on: windows-latest
@@ -150,7 +258,7 @@ jobs:
         uses: ./
         with:
           type: script
-          script: ./install.sh
+          script: install.sh
           path: ~/.npm
           version: ${{ github.run_id }}
           
@@ -168,7 +276,7 @@ jobs:
         uses: ./
         with:
           type: script
-          script: ./install.sh
+          script: install.sh
           path: ~/.npm
           version: ${{ github.run_id }}
       - name: Verify restore

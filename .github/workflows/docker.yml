@@ -8,7 +8,7 @@ on:
 
 jobs:
   
-  save-layers-cache:
+  save-layers:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -29,9 +29,9 @@ jobs:
           cd dockerfile-examples/apache
           docker build --tag apache:dev .
           
-  restore-layers-cache:
+  restore-layers:
     runs-on: ubuntu-latest
-    needs: save-layers-cache
+    needs: save-layers
     steps:
       - uses: actions/checkout@v2
         
@@ -51,7 +51,7 @@ jobs:
           cd dockerfile-examples/apache
           docker build --tag apache:dev .
 
-  save-buildx-cache:
+  save-buildx:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -85,9 +85,9 @@ jobs:
             --file ./dockerfile-examples/apache/Dockerfile \
             ./
 
-  restore-buildx-cache:
+  restore-buildx:
     runs-on: ubuntu-latest
-    needs: save-buildx-cache
+    needs: save-buildx
     steps:
       - uses: actions/checkout@v2
         
