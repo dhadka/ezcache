@@ -1666,7 +1666,7 @@ const expressions_1 = __webpack_require__(134);
 const handler_1 = __webpack_require__(895);
 class Cargo extends handler_1.CacheHandler {
     async getPaths() {
-        return ['~/.cargo/registry', '~/.cargo/git', 'target'];
+        return ['~/.cargo/bin', '~/.cargo/registry/index', '~/.cargo/registry/cache', '~/.cargo/git/db', 'target'];
     }
     async getKey(version) {
         return `${expressions_1.runner.os}-${version}-cargo-${await expressions_1.hashFiles('**/Cargo.lock')}`;
@@ -53353,6 +53353,7 @@ __webpack_require__(981);
 __webpack_require__(151);
 __webpack_require__(38);
 __webpack_require__(948);
+__webpack_require__(891);
 __webpack_require__(780);
 __webpack_require__(905);
 __webpack_require__(664);
@@ -56042,7 +56043,33 @@ exports.PollerStoppedError = PollerStoppedError;
 
 /***/ }),
 /* 890 */,
-/* 891 */,
+/* 891 */
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const registry_1 = __webpack_require__(822);
+const expressions_1 = __webpack_require__(134);
+const handler_1 = __webpack_require__(895);
+class Rebar3 extends handler_1.CacheHandler {
+    async getPaths() {
+        return ['~/.cache/rebar3', '_build'];
+    }
+    async getKey(version) {
+        return `${expressions_1.runner.os}-${version}-erlang-${process.env['OTP_VERSION']}-${await expressions_1.hashFiles('**/*rebar.lock')}`;
+    }
+    async getRestoreKeys(version) {
+        return [`${expressions_1.runner.os}-${version}-erlang-${process.env['OTP_VERSION']}-`];
+    }
+    async shouldCache() {
+        return await expressions_1.matches('**/*rebar.lock');
+    }
+}
+registry_1.handlers.add('rebar3', new Rebar3());
+
+
+/***/ }),
 /* 892 */
 /***/ (function(module, __unusedexports, __webpack_require__) {
 
@@ -57415,7 +57442,7 @@ const expressions_1 = __webpack_require__(134);
 const handler_1 = __webpack_require__(895);
 class Mix extends handler_1.CacheHandler {
     async getPaths() {
-        return ['deps'];
+        return ['deps', '_build'];
     }
     async getKey(version) {
         return `${expressions_1.runner.os}-${version}-mix-${await expressions_1.hashFiles('mix.lock')}`;

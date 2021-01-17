@@ -4,7 +4,7 @@ import { CacheHandler } from '../../handler'
 
 class Mix extends CacheHandler {
   async getPaths(): Promise<string[]> {
-    return ['deps']
+    return ['deps', '_build']
   }
 
   async getKey(version?: string): Promise<string> {

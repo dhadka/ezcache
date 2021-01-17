@@ -4,7 +4,7 @@ import { CacheHandler } from '../../handler'
 
 class Cargo extends CacheHandler {
   async getPaths(): Promise<string[]> {
-    return ['~/.cargo/registry', '~/.cargo/git', 'target']
+    return ['~/.cargo/bin', '~/.cargo/registry/index', '~/.cargo/registry/cache', '~/.cargo/git/db', 'target']
   }
 
   async getKey(version?: string): Promise<string> {

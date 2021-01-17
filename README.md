@@ -39,6 +39,7 @@ not explicitly specify the `type`, ezcache will attempt to auto-detect the appro
 | C#       | Nuget              | `nuget`     |
 | D        | Dub                | `dub`       |
 | Elixir   | Mix                | `mix`       |
+| Erlang   | Rebar3             | `rebar3`    |
 | Go       |                    | `go`        |
 | Java     | Gradle             | `gradle`    |
 | Java     | Maven              | `maven`     |
