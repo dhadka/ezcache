@@ -57,11 +57,10 @@ not explicitly specify the `type`, ezcache will attempt to auto-detect the appro
 | Swfit    | Mint               | `mint`      |
 | Swift    | SPM                | `spm`       |
 
-## Powershell
+## Powershell Cache
 
-When creating a `powershell` cache, you must also specify a comma-separated list of
-modules to install.  ezcache handles installing the modules after a cache miss,
-so there is no need to invoke `Install-Module`.
+The `powershell` cache will not only cache the specified modules but will also
+automatically install them during a cache miss.
 
 ```
 - uses: dhadka/ezcache@master
@@ -88,6 +87,18 @@ but we don't want to create new caches after every change.  For example, this co
 - uses: actions/checkout@v2
 ```
 
+### weekly
+
+Similar to `daily` except, you guessed it, updates once a week.
+
+```
+- uses: dhadka/ezcache@master
+  with:
+    type: weekly
+    path: .git
+- uses: actions/checkout@v2
+```
+
 ### diff
 
 Creates a cache that is updated whenever the folder contents change.
@@ -101,8 +112,8 @@ Creates a cache that is updated whenever the folder contents change.
 
 ### script
 
-Creates a cache based off an installation script.  On a cache miss, the script is invoked to install the
-dependencies.  On a cache hit, the script is skipped.  Changes to the script trigger a cache update.
+Creates a cache based off an installation script.  Changes to the script will trigger a cache miss.
+During a cache miss, the updated script will be invoked and a new cache created.
 
 ```
 - uses: dhadka/ezcache@master

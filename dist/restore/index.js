@@ -1099,14 +1099,47 @@ Object.defineProperty(exports, "__esModule", { value: true });
 
 /***/ }),
 /* 34 */
-/***/ (function(__unusedmodule, __unusedexports, __webpack_require__) {
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
 
 "use strict";
 
-// Explicit list of all providers so they are compiled by ncc.
-__webpack_require__(285);
-__webpack_require__(643);
-__webpack_require__(874);
+Object.defineProperty(exports, "__esModule", { value: true });
+const core = __webpack_require__(470);
+const registry_1 = __webpack_require__(822);
+const expressions_1 = __webpack_require__(134);
+const handler_1 = __webpack_require__(895);
+/**
+ * Creates a cache that updates once a week.  Monday is considered the first day of the week.
+ */
+class WeeklyCache extends handler_1.CacheHandler {
+    constructor() {
+        super();
+        this.today = new Date();
+    }
+    async getPaths() {
+        return core
+            .getInput('path')
+            .split('\n')
+            .map((s) => s.trim());
+    }
+    formatYear() {
+        return this.today.getUTCFullYear().toString();
+    }
+    formatWeekOfYear() {
+        const date = new Date(Date.UTC(this.today.getFullYear(), this.today.getMonth(), this.today.getDate()));
+        date.setUTCDate(date.getUTCDate() + 4 - (date.getUTCDay() || 7));
+        const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
+        const weekNumber = Math.ceil(((date.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
+        return weekNumber.toString().padStart(2, '0');
+    }
+    async getKey(version) {
+        return `${expressions_1.runner.os}-${version}-weekly-${this.formatYear()}-${this.formatWeekOfYear()}`;
+    }
+    async getRestoreKeys(version) {
+        return [`${expressions_1.runner.os}-${version}-weekly-${this.formatYear()}-`, `${expressions_1.runner.os}-${version}-weekly-`];
+    }
+}
+registry_1.handlers.add('weekly', new WeeklyCache());
 
 
 /***/ }),
@@ -32969,7 +33002,7 @@ const handler_1 = __webpack_require__(895);
 class Powershell extends handler_1.CacheHandler {
     async getPaths() {
         const installationPath = this.getModuleInstallPath();
-        return this.getModules().map(module => path.join(installationPath, module));
+        return this.getModules().map((module) => path.join(installationPath, module));
     }
     getModuleInstallPath() {
         switch (expressions_1.runner.os) {
@@ -47638,7 +47671,18 @@ exports.defaultSetter = defaultSetter;
 /* 755 */,
 /* 756 */,
 /* 757 */,
-/* 758 */,
+/* 758 */
+/***/ (function(__unusedmodule, __unusedexports, __webpack_require__) {
+
+"use strict";
+
+// Explicit list of all providers so they are compiled by ncc.
+__webpack_require__(285);
+__webpack_require__(643);
+__webpack_require__(874);
+
+
+/***/ }),
 /* 759 */,
 /* 760 */,
 /* 761 */
@@ -48424,7 +48468,7 @@ const registry_1 = __webpack_require__(822);
 const handler_1 = __webpack_require__(895);
 const utils_1 = __webpack_require__(163);
 __webpack_require__(877);
-__webpack_require__(34);
+__webpack_require__(758);
 async function run() {
     let type = core.getInput('type');
     let version = core.getInput('version');
@@ -51792,7 +51836,7 @@ const registry_1 = __webpack_require__(822);
 const expressions_1 = __webpack_require__(134);
 const handler_1 = __webpack_require__(895);
 /**
- * Creates a cache of an arbitrary path (or paths) that updates once a day.
+ * Creates a cache that updates once a day.
  */
 class DailyCache extends handler_1.CacheHandler {
     constructor() {
@@ -51805,14 +51849,23 @@ class DailyCache extends handler_1.CacheHandler {
             .split('\n')
             .map((s) => s.trim());
     }
+    formatYear() {
+        return this.today.getUTCFullYear().toString();
+    }
+    formatMonth() {
+        return (this.today.getUTCMonth() + 1).toString().padStart(2, '0');
+    }
+    formatDay() {
+        return this.today.getUTCDate().toString().padStart(2, '0');
+    }
     async getKey(version) {
         // prettier-ignore
-        return `${expressions_1.runner.os}-${version}-daily-${this.today.getUTCFullYear()}-${this.today.getUTCMonth() + 1}-${this.today.getUTCDate()}`;
+        return `${expressions_1.runner.os}-${version}-daily-${this.formatYear()}-${this.formatMonth()}-${this.formatDay()}`;
     }
     async getRestoreKeys(version) {
         return [
-            `${expressions_1.runner.os}-${version}-daily-${this.today.getUTCFullYear()}-${this.today.getUTCMonth() + 1}-`,
-            `${expressions_1.runner.os}-${version}-daily-${this.today.getUTCFullYear()}-`,
+            `${expressions_1.runner.os}-${version}-daily-${this.formatYear()}-${this.formatMonth()}-`,
+            `${expressions_1.runner.os}-${version}-daily-${this.formatYear()}-`,
             `${expressions_1.runner.os}-${version}-daily-`,
         ];
     }
@@ -53318,6 +53371,7 @@ __webpack_require__(467);
 __webpack_require__(443);
 __webpack_require__(322);
 __webpack_require__(737);
+__webpack_require__(34);
 __webpack_require__(769);
 __webpack_require__(377);
 __webpack_require__(859);

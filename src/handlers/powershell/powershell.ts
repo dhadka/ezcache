@@ -13,7 +13,7 @@ import { CacheHandler, ICacheOptions, IRestoreResult, RestoreType } from '../../
 class Powershell extends CacheHandler {
   async getPaths(): Promise<string[]> {
     const installationPath = this.getModuleInstallPath()
-    return this.getModules().map(module => path.join(installationPath, module))
+    return this.getModules().map((module) => path.join(installationPath, module))
   }
 
   getModuleInstallPath(): string {
