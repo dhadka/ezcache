@@ -1,4 +1,4 @@
-name: Publish actions
+name: Publish Actions
 
 on:
   push:
@@ -34,15 +34,15 @@ jobs:
         run: |
           mkdir -p ezcache-restore/dist/restore
           cp action.yml ezcache-restore/action.yml
-          cp dist/restore/index.js ezcache-restore/dist/restore/index.js
+          cp dist/restore/index.js ezcache-restore/dist/index.js
 
           mkdir -p ezcache-save/dist/save
           cp action.yml ezcache-save/action.yml
-          cp dist/save/index.js ezcache-save/dist/save/index.js
+          cp dist/save/index.js ezcache-save/dist/index.js
 
           # configure main and post for the individual actions
-          sed -i -e "/post:/d" -e "/post-if:/d" -e "s/main:.*/main: 'dist\/restore\/index.js'/g" -e "s/name:.*/name: 'ezcache-restore'/g" ezcache-restore/action.yml
-          sed -i -e "/post:/d" -e "/post-if:/d" -e "s/main:.*/main: 'dist\/save\/index.js'/g" -e "s/name:.*/name: 'ezcache-save'/g" ezcache-save/action.yml
+          sed -i -e "/post:/d" -e "/post-if:/d" -e "s/main:.*/main: 'dist\/index.js'/g" -e "s/name:.*/name: 'ezcache-restore'/g" ezcache-restore/action.yml
+          sed -i -e "/post:/d" -e "/post-if:/d" -e "s/main:.*/main: 'dist\/index.js'/g" -e "s/name:.*/name: 'ezcache-save'/g" ezcache-save/action.yml
 
       - name: Prepare test cache
         run: |
