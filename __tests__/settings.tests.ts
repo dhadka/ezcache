@@ -67,7 +67,6 @@ test('test getBoolean', () => {
 test('test env', () => {
     process.env['TEST_VALUE'] = 'foo'
     expect(env.get('TEST_VALUE')).toBe('foo')
-    expect(env.get('test_value')).toBe('foo')
     expect(env.get('undefined')).toBeUndefined()
 })
 
@@ -80,7 +79,6 @@ test('test input', () => {
 
 test('test state', () => {
     process.env['STATE_FOO'] = 'bar'
-    expect(state.get('foo')).toBe('bar')
     expect(state.get('FOO')).toBe('bar')
     expect(state.get('undefined')).toBeUndefined()
 })
