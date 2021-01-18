@@ -1,0 +1,102 @@
+name: Publish Actions
+
+on:
+  push:
+    branches: [ master ]
+  workflow_dispatch:
+
+jobs:
+
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Checkout ezcache-restore
+        uses: actions/checkout@v2
+        with:
+          repository: dhadka/ezcache-restore
+          path: ezcache-restore
+          ref: master
+          token: ${{ secrets.PAT }}
+
+      - name: Checkout ezcache-save
+        uses: actions/checkout@v2
+        with:
+          repository: dhadka/ezcache-save
+          path: ezcache-save
+          ref: master
+          token: ${{ secrets.PAT }}
+
+      - name: Update files 
+        run: |
+          mkdir -p ezcache-restore/dist/restore
+          cp action.yml ezcache-restore/action.yml
+          cp dist/restore/index.js ezcache-restore/dist/index.js
+
+          mkdir -p ezcache-save/dist/save
+          cp action.yml ezcache-save/action.yml
+          cp dist/save/index.js ezcache-save/dist/index.js
+
+          # configure main and post for the individual actions
+          sed -i -e "/post:/d" -e "/post-if:/d" -e "s/main:.*/main: 'dist\/index.js'/g" -e "s/name:.*/name: 'ezcache-restore'/g" ezcache-restore/action.yml
+          sed -i -e "/post:/d" -e "/post-if:/d" -e "s/main:.*/main: 'dist\/index.js'/g" -e "s/name:.*/name: 'ezcache-save'/g" ezcache-save/action.yml
+
+      - name: Prepare test cache
+        run: |
+          mkdir -p cache
+          dd if=/dev/urandom of=cache/file.dat bs=1M count=10
+
+      - name: Test cache save
+        uses: ./ezcache-save/
+        with:
+          type: diff
+          path: cache
+          version: test-${{ github.run_id }}
+
+      - name: Test cache restore
+        id: cache
+        uses: ./ezcache-restore/
+        with:
+          type: diff
+          path: cache
+          version: test-${{ github.run_id }}
+
+      - name: Verify restore
+        if: steps.cache.outputs.cache-restore-type == 'miss'
+        run: |
+          echo "Restore failed!"
+          exit -1
+
+      - name: Set commit SHA
+        run: |
+          echo "COMMIT_SHA=$(git rev-parse HEAD)" >> $GITHUB_ENV
+
+      - name: Configure git
+        run: |
+          git config --global user.email "${{ secrets.EMAIL }}"
+          git config --global user.name "${{ secrets.NAME }}"
+
+      - name: Publish restore action
+        run: |
+          cd ezcache-restore
+
+          if [[ `git status --porcelain` ]]; then
+            git add .
+            git commit -m "Syncing to SHA $COMMIT_SHA"
+            git push origin master
+          else
+            echo "No changes to publish"
+          fi
+
+      - name: Publish save action
+        run: |
+          cd ezcache-save
+
+          if [[ `git status --porcelain` ]]; then
+            git add .
+            git commit -m "Syncing to SHA $COMMIT_SHA"
+            git push origin master
+          else
+            echo "No changes to publish"
+          fi

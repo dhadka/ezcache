@@ -283,6 +283,22 @@ to evict old content.
 
 # Explicit Save and Restore Steps
 
+By default, caches are saved at the end of a workflow, in the so called "post step".  This post step is only
+executed when all steps in the workflow are successful.  If you need more control over when to save the cache,
+you can call the restore and save operations explicitly:
+
+```
+- uses: dhadka/ezcache-restore@master
+  with:
+    type: npm
+
+...
+
+- uses: dhadka/ezcache-save@master
+  with:
+    type: npm
+```
+
 # Contributing
 
 Want to add support for a new language or tool?  Great!  The caching logic for each language / tool is contained
