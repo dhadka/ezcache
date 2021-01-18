@@ -33,7 +33,7 @@ jobs:
       - name: Update files 
         run: |
           cp action.yml ezcache-restore/action.yml
-          cp action.yml ezcache-save/actions.yml
+          cp action.yml ezcache-save/action.yml
 
           # configure main and post for the individual actions
           sed -i -e "/post:/d" -e "/post-if:/d" -e "s/main:.*/main: 'dist\/restore\/index.js'/g" -e "s/name:.*/name: 'ezcache-restore'/g" ezcache-restore/action.yml
