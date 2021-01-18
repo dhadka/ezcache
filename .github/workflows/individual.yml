@@ -1,0 +1,61 @@
+name: Publish Individual Actions
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Checkout ezcache-restore
+        uses: actions/checkout@v2
+        with:
+          repository: dhadka/ezcache-restore
+          path: ezcache-restore
+          token: ${{ secrets.PAT }}
+
+      - name: Checkout ezcache-save
+        uses: actions/checkout@v2
+        with:
+          repository: dhadka/ezcache-save
+          path: ezcache-save
+          token: ${{ secrets.PAT }}
+
+      - name: Update files 
+        run: |
+          cp action.yml ezcache-restore/action.yml
+          cp action.yml ezcache-save/actions.yml
+
+          # configure main and post for the individual actions
+          sed -i -e "/post:/d" -e "/post-if:/d" -e "s/main:.*/main: 'dist\/restore\/index.js'/g" -e "s/name:.*/name: 'ezcache-restore'/g" ezcache-restore/action.yml
+          sed -i -e "/post:/d" -e "/post-if:/d" -e "s/main:.*/main: 'dist\/save\/index.js'/g" -e "s/name:.*/name: 'ezcache-save'/g" ezcache-save/action.yml
+
+      - name: Test cache save
+        uses: ./ezcache-save/
+        with:
+          type: npm
+          version: ${{ github.run_id }}
+
+      - name: Test cache restore
+        id: cache
+        uses: ./ezcache-restore/
+        with:
+          type: npm
+          version: ${{ github.run_id }}
+
+      - name: Verify restore
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          echo "Restore failed!"
+          exit -1
+
+      - name: Commit and push new version
+        run: |
+          #git config --global user.email "${{ secrets.EMAIL }}"
+          #git config --global user.name "${{ secrets.NAME }}"
