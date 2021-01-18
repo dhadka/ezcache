@@ -18,7 +18,7 @@ management tools.  Here's a few simple examples:
        type: npm
    ```
 
-3. Separate save and restore steps for even more control:
+3. [Separate save and restore steps](#explicit-save-and-restore-steps) for even more control:
 
    ```
    - uses: dhadka/ezcache-restore@master
