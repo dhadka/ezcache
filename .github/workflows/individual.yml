@@ -19,7 +19,7 @@ jobs:
         with:
           repository: dhadka/ezcache-restore
           path: ezcache-restore
-          branch: master
+          ref: master
           token: ${{ secrets.PAT }}
 
       - name: Checkout ezcache-save
@@ -27,7 +27,7 @@ jobs:
         with:
           repository: dhadka/ezcache-save
           path: ezcache-save
-          branch: master
+          ref: master
           token: ${{ secrets.PAT }}
 
       - name: Update files 
