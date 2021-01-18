@@ -32,8 +32,13 @@ jobs:
 
       - name: Update files 
         run: |
+          mkdir -p ezcache-restore/dist/restore
           cp action.yml ezcache-restore/action.yml
+          cp dist/restore/index.js ezcache-restore/dist/restore/index.js
+
+          mkdir -p ezcache-save/dist/save
           cp action.yml ezcache-save/action.yml
+          cp dist/save/index.js ezcache-save/dist/save/index.js
 
           # configure main and post for the individual actions
           sed -i -e "/post:/d" -e "/post-if:/d" -e "s/main:.*/main: 'dist\/restore\/index.js'/g" -e "s/name:.*/name: 'ezcache-restore'/g" ezcache-restore/action.yml
