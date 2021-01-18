@@ -25,17 +25,6 @@ jobs:
             exit 1
           fi
 
-  test-nuget:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - run: nuget install Newtonsoft.Json
-      - name: Cache nuget
-        uses: ./
-        with:
-          type: nuget
-          version: v1
-
   test-run:
     runs-on: ubuntu-latest
     steps:
@@ -320,9 +309,13 @@ jobs:
           - type: cargo
             repo: AtheMathmo/rusty-machine
             script: cargo build
+          - type: nuget
+            repo: ''
+            script: nuget install Newtonsoft.Json
     steps:
       - uses: actions/checkout@v2
       - uses: actions/checkout@v2
+        if: matrix.repo != ''
         with:
           repository: ${{ matrix.repo }}
           path: dev
@@ -363,10 +356,14 @@ jobs:
             script: yarn install
           - type: cargo
             repo: AtheMathmo/rusty-machine
-            script: cargo build
+            script: cargo 
+          - type: nuget
+            repo: ''
+            script: nuget install Newtonsoft.Json
     steps:
       - uses: actions/checkout@v2
       - uses: actions/checkout@v2
+        if: matrix.repo != ''
         with:
           repository: ${{ matrix.repo }}
           path: dev
