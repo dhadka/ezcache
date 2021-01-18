@@ -281,6 +281,38 @@ jobs:
         run: |
           echo "Restore failed!"
           exit -1
+
+  save-nuget:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Cache nuget
+        uses: ./
+        with:
+          type: nuget
+          version: ${{ github.run_id }}
+      - name: Run script
+        run: nuget install Newtonsoft.Json
+          
+  restore-nuget:
+    needs: save-nuget
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Cache nuget
+        id: cache
+        uses: ./
+        with:
+          type: nuget
+          version: ${{ github.run_id }}
+      - name: Verify restore
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          echo "Restore failed!"
+          exit -1
+      - name: Run script
+        run: nuget install Newtonsoft.Json
+
           
   save:
     runs-on: ubuntu-latest
@@ -309,9 +341,6 @@ jobs:
           - type: cargo
             repo: AtheMathmo/rusty-machine
             script: cargo build
-          - type: nuget
-            repo: dhadka/empty
-            script: nuget install Newtonsoft.Json
     steps:
       - uses: actions/checkout@v2
       - uses: actions/checkout@v2
@@ -356,9 +385,6 @@ jobs:
           - type: cargo
             repo: AtheMathmo/rusty-machine
             script: cargo 
-          - type: nuget
-            repo: dhadka/empty
-            script: nuget install Newtonsoft.Json
     steps:
       - uses: actions/checkout@v2
       - uses: actions/checkout@v2
