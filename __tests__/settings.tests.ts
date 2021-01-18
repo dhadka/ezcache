@@ -24,6 +24,8 @@ test('test getString', () => {
   expect(settings.getString('string', { defaultValue: 'other' })).toBe('string')
   expect(settings.getString('string', { required: true })).toBe('string')
 
+  expect(settings.getString('emptyString')).toBe('')
+
   expect(settings.getString('undefined')).toBe('')
   expect(settings.getString('undefined', { defaultValue: 'other' })).toBe('other')
   expect(() => settings.getString('undefined', { required: true })).toThrowError()
@@ -38,6 +40,8 @@ test('test getInt', () => {
   expect(settings.getInt('int', { minValue: 5, maxValue: 5 })).toBe(5)
   expect(() => settings.getInt('int', { minValue: 10 })).toThrowError()
   expect(() => settings.getInt('int', { maxValue: 0 })).toThrowError()
+
+  expect(settings.getInt('emptyString')).toBe(0)
 
   expect(settings.getInt('undefined')).toBe(0)
   expect(settings.getInt('undefined', { defaultValue: 10 })).toBe(10)
@@ -56,6 +60,7 @@ test('test getBoolean', () => {
   expect(settings.getBoolean('false', { defaultValue: true })).toBe(false)
   expect(settings.getBoolean('false', { required: true })).toBe(false)
 
+  expect(settings.getBoolean('emptyString')).toBe(false)
   expect(settings.getBoolean('string')).toBe(false)
 
   expect(settings.getBoolean('undefined')).toBe(false)
