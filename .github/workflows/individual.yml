@@ -1,4 +1,4 @@
-name: Publish Individual Actions
+name: Publish actions
 
 on:
   push:
@@ -70,7 +70,35 @@ jobs:
           echo "Restore failed!"
           exit -1
 
-      - name: Commit and push new version
+      - name: Set commit SHA
         run: |
-          #git config --global user.email "${{ secrets.EMAIL }}"
-          #git config --global user.name "${{ secrets.NAME }}"
+          echo "COMMIT_SHA=$(git rev-parse HEAD)" >> $GITHUB_ENV
+
+      - name: Configure git
+        run: |
+          git config --global user.email "${{ secrets.EMAIL }}"
+          git config --global user.name "${{ secrets.NAME }}"
+
+      - name: Publish restore action
+        run: |
+          cd ezcache-restore
+
+          if [[ `git status --porcelain` ]]; then
+            git add .
+            git commit -m "Syncing to SHA $COMMIT_SHA"
+            git push origin master
+          else
+            echo "No changes to publish"
+          fi
+
+      - name: Publish save action
+        run: |
+          cd ezcache-save
+
+          if [[ `git status --porcelain` ]]; then
+            git add .
+            git commit -m "Syncing to SHA $COMMIT_SHA"
+            git push origin master
+          else
+            echo "No changes to publish"
+          fi
