@@ -26,8 +26,8 @@ management tools.  Here's a few simple examples:
    - uses: dhadka/ezcache-save@master
    ```
    
-4. Different [backend storage providers](#storage-providers), including local and AWS S3.  These
-   work great on self-hosted runners and GitHub Enterprise Server!
+4. Different [backend storage providers](#storage-providers), including hosted, local and AWS S3.  Use local
+   or S3 to cache content of self-hosted runners and GitHub Enterprise Server!
 
    ```
    - uses: dhadka/ezcache@master
@@ -255,9 +255,8 @@ By default, `hosted` storage is used which is backed by the GitHub Actions Cache
 
 ### `local`
 
-Stores caches on the local file system.  Caches can only be shared between jobs on the same machine.
-As a result, `local` should be avoided when sharing content between jobs within a workflow, since
-each job can be picked up by a different runner.  **Do not use with hosted runners.**
+Stores caches on the local file system.  Please note that caches can only be shared between jobs on the same machine.
+Therefore, avoid using when multiple self-hosted runners are registered or on hosted runners.
 
 ```
 - uses: dhadka/ezcache@master
@@ -268,8 +267,8 @@ each job can be picked up by a different runner.  **Do not use with hosted runne
 
 ### `s3`
 
-Uses the AWS CLI that is installed on hosted runners (or needs to be installed on self-hosted runners)
-to save and restore cache content to an S3 bucket or compatible provider (Minio).
+Uses the AWS CLI that is installed on hosted runners (or [needs to be installed](https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2.html)
+on self-hosted runners) to save and restore cache content to an S3 bucket. 
 
 ```
 - uses: dhadka/ezcache@master
@@ -283,7 +282,7 @@ to save and restore cache content to an S3 bucket or compatible provider (Minio)
     AWS_REGION: us-east-1
 ```
 
-To use a different endpoint URL, such as with Minio, set the AWS_ENDPOINT env var to the appropriate address.
+To use with an S3 compatible provider, such as Minio, set the AWS_ENDPOINT env var to the appropriate address.
 
 NOTE: There is no eviction logic built into the AWS S3 storage provider.  Instead, you must set up
 an [object lifecycle management policy](https://docs.aws.amazon.com/AmazonS3/latest/dev/object-lifecycle-mgmt.html)

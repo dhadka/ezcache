@@ -9,7 +9,7 @@ inputs:
     description: 'The version number of the cache'
     required: false
   path:
-    description: 'The cache path, only valid for types "run", "diff", "daily", "env"'
+    description: 'The cache path, only valid for types "run", "diff", "daily", "weely", "env", and "script"'
     required: false
   provider:
     description: 'The provider for cache storage, supports "hosted", "local"'
