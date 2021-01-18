@@ -65,7 +65,7 @@ jobs:
           version: test-${{ github.run_id }}
 
       - name: Verify restore
-        if: steps.cache.outputs.cache-hit != 'true'
+        if: steps.cache.outputs.cache-restore-type != 'miss'
         run: |
           echo "Restore failed!"
           exit -1
