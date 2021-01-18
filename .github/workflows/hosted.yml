@@ -310,12 +310,11 @@ jobs:
             repo: AtheMathmo/rusty-machine
             script: cargo build
           - type: nuget
-            repo: ''
+            repo: dhadka/empty
             script: nuget install Newtonsoft.Json
     steps:
       - uses: actions/checkout@v2
       - uses: actions/checkout@v2
-        if: matrix.repo != ''
         with:
           repository: ${{ matrix.repo }}
           path: dev
@@ -358,12 +357,11 @@ jobs:
             repo: AtheMathmo/rusty-machine
             script: cargo 
           - type: nuget
-            repo: ''
+            repo: dhadka/empty
             script: nuget install Newtonsoft.Json
     steps:
       - uses: actions/checkout@v2
       - uses: actions/checkout@v2
-        if: matrix.repo != ''
         with:
           repository: ${{ matrix.repo }}
           path: dev
