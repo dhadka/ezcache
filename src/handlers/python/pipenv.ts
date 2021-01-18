@@ -1,10 +1,11 @@
 import { handlers } from '../../registry'
 import { hashFiles, runner, matches } from '../../expressions'
 import { CacheHandler } from '../../handler'
+import { env } from '../../settings'
 
 class PipEnv extends CacheHandler {
   getPythonVersion(): string {
-    return process.env['PYTHON_VERSION'] || 'undef'
+    return env.getString('PYTHON_VERSION', { defaultValue: 'undefined' })
   }
 
   async getPaths(): Promise<string[]> {

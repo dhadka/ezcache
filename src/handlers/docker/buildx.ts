@@ -2,13 +2,14 @@ import * as core from '@actions/core'
 import { handlers } from '../../registry'
 import { hashFiles, runner } from '../../expressions'
 import { CacheHandler } from '../../handler'
+import { inputs } from '../../settings'
 import * as fs from 'fs'
 
 const defaultCacheFolder = '.buildx-cache'
 
 class DockerBuildX extends CacheHandler {
   getCachePath(): string {
-    return core.getInput('path') || defaultCacheFolder
+    return inputs.getString('path', { defaultValue: defaultCacheFolder })
   }
 
   async getPaths(): Promise<string[]> {

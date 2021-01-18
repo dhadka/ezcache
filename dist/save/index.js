@@ -1010,7 +1010,106 @@ exports.default = _default;
 /***/ }),
 /* 23 */,
 /* 24 */,
-/* 25 */,
+/* 25 */
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.state = exports.env = exports.inputs = exports.Settings = void 0;
+const core = __webpack_require__(470);
+/**
+ * Provides common methods for reading and parsing values from inputs, states, and environment
+ * variables.
+ */
+class Settings {
+    missing(name) {
+        throw Error(`Required setting is missing: ${name}`);
+    }
+    outOfBounds(name, value, minValue, maxValue) {
+        throw Error(`Setting is out of bounds: ${name}. Value: ${value}, Min Value: ${minValue}, Max Value: ${maxValue}`);
+    }
+    notInt(name, value) {
+        throw Error(`Setting is not an integer: ${name}. Value: ${value}`);
+    }
+    /**
+     * Returns the setting as a string.  If the value is not set and no default is
+     * specified, returns ''.
+     *
+     * @param name the setting name
+     * @param options the setting options
+     */
+    getString(name, options) {
+        const value = this.get(name);
+        if ((options === null || options === void 0 ? void 0 : options.required) && !value) {
+            this.missing(name);
+        }
+        return value ? value : (options === null || options === void 0 ? void 0 : options.defaultValue) || '';
+    }
+    /**
+     * Parses the setting to an int.  If the value is not set and no default is specified,
+     * returns 0.
+     *
+     * @param name the setting name
+     * @param options the setting options
+     */
+    getInt(name, options) {
+        const value = this.get(name);
+        if ((options === null || options === void 0 ? void 0 : options.required) && !value) {
+            this.missing(name);
+        }
+        const numericValue = value ? parseInt(value) : (options === null || options === void 0 ? void 0 : options.defaultValue) || 0;
+        if (isNaN(numericValue)) {
+            this.notInt(name, value);
+        }
+        if ((typeof (options === null || options === void 0 ? void 0 : options.minValue) === 'number' && numericValue < options.minValue) ||
+            (typeof (options === null || options === void 0 ? void 0 : options.maxValue) === 'number' && numericValue > options.maxValue)) {
+            this.outOfBounds(name, numericValue, options.minValue, options.maxValue);
+        }
+        return numericValue;
+    }
+    /**
+     * Parses the setting to a boolean.  If the value is not set and no default is specified,
+     * returns false.
+     *
+     * @param name the setting name
+     * @param options the setting options
+     */
+    getBoolean(name, options) {
+        let value = this.get(name);
+        if ((options === null || options === void 0 ? void 0 : options.required) && !value) {
+            this.missing(name);
+        }
+        return value ? value.toLowerCase() === 'true' : (options === null || options === void 0 ? void 0 : options.defaultValue) || false;
+    }
+}
+exports.Settings = Settings;
+class Inputs extends Settings {
+    get(name) {
+        const value = core.getInput(name);
+        return value !== '' ? value : undefined;
+    }
+}
+class Env extends Settings {
+    get(name) {
+        return process.env[name];
+    }
+}
+class State extends Settings {
+    get(name) {
+        const value = core.getState(name);
+        return value !== '' ? value : undefined;
+    }
+    setString(name, value) {
+        core.saveState(name, value);
+    }
+}
+exports.inputs = new Inputs();
+exports.env = new Env();
+exports.state = new State();
+
+
+/***/ }),
 /* 26 */,
 /* 27 */,
 /* 28 */,
@@ -1181,7 +1280,7 @@ const cache = __webpack_require__(692);
 const registry_1 = __webpack_require__(822);
 const expressions_1 = __webpack_require__(134);
 const handler_1 = __webpack_require__(895);
-const state = __webpack_require__(510);
+const settings_1 = __webpack_require__(25);
 const execa = __webpack_require__(955);
 const path = __webpack_require__(622);
 const fs = __webpack_require__(747);
@@ -1465,9 +1564,9 @@ class DockerLayers extends handler_1.CacheHandler {
     }
     async saveCache(options) {
         const key = await this.getKey(options === null || options === void 0 ? void 0 : options.version);
-        const restoredKey = state.readRestoredKey(this);
-        const alreadyExistingImages = JSON.parse(core.getState(`already-existing-images`));
-        const restoredImages = JSON.parse(core.getState(`restored-images`));
+        const restoredKey = this.readRestoredKey();
+        const alreadyExistingImages = JSON.parse(settings_1.state.getString(`already-existing-images`, { required: true }));
+        const restoredImages = JSON.parse(settings_1.state.getString(`restored-images`, { required: true }));
         const imageDetector = new ImageDetector();
         if (await imageDetector.checkIfImageHasAdded(restoredImages)) {
             core.info(`Key ${restoredKey} already exists, not saving cache.`);
@@ -1479,7 +1578,6 @@ class DockerLayers extends handler_1.CacheHandler {
             return;
         }
         const layerCache = new LayerCache(imagesToSave);
-        //layerCache.concurrency = parseInt(core.getInput(`concurrency`, { required: true }), 10)
         await layerCache.store(key);
         await layerCache.cleanUp();
     }
@@ -1489,16 +1587,15 @@ class DockerLayers extends handler_1.CacheHandler {
         const imageDetector = new ImageDetector();
         const alreadyExistingImages = await imageDetector.getExistingImages();
         const layerCache = new LayerCache([]);
-        //layerCache.concurrency = parseInt(core.getInput(`concurrency`, { required: true }), 10)
         const restoredKey = await layerCache.restore(key, restoreKeys);
         await layerCache.cleanUp();
-        core.saveState(`already-existing-images`, JSON.stringify(alreadyExistingImages));
-        core.saveState(`restored-images`, JSON.stringify(await imageDetector.getImagesShouldSave(alreadyExistingImages)));
-        state.savePrimaryKey(this, key);
-        state.addHandler(this);
+        settings_1.state.setString(`already-existing-images`, JSON.stringify(alreadyExistingImages));
+        settings_1.state.setString(`restored-images`, JSON.stringify(await imageDetector.getImagesShouldSave(alreadyExistingImages)));
+        this.savePrimaryKey(key);
+        this.addHandler();
         if (restoredKey) {
             core.info(`Restored cache with key '${restoredKey}'`);
-            state.saveRestoredKey(this, restoredKey);
+            this.saveRestoredKey(restoredKey);
         }
         return {
             type: restoredKey ? (key === restoredKey ? handler_1.RestoreType.Full : handler_1.RestoreType.Partial) : handler_1.RestoreType.Miss,
@@ -4538,15 +4635,15 @@ function state(list, sortMethod)
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const core = __webpack_require__(470);
 const registry_1 = __webpack_require__(822);
 const expressions_1 = __webpack_require__(134);
 const handler_1 = __webpack_require__(895);
+const settings_1 = __webpack_require__(25);
 const fs = __webpack_require__(747);
 const defaultCacheFolder = '.buildx-cache';
 class DockerBuildX extends handler_1.CacheHandler {
     getCachePath() {
-        return core.getInput('path') || defaultCacheFolder;
+        return settings_1.inputs.getString('path', { defaultValue: defaultCacheFolder });
     }
     async getPaths() {
         return [this.getCachePath()];
@@ -8653,7 +8750,7 @@ var logger$1 = __webpack_require__(928);
 var abortController = __webpack_require__(106);
 var os = __webpack_require__(87);
 var stream = __webpack_require__(413);
-__webpack_require__(711);
+__webpack_require__(510);
 var crypto = __webpack_require__(417);
 var coreLro = __webpack_require__(889);
 var events = __webpack_require__(614);
@@ -32949,6 +33046,7 @@ const crypto = __webpack_require__(417);
 const registry_1 = __webpack_require__(822);
 const expressions_1 = __webpack_require__(134);
 const handler_1 = __webpack_require__(895);
+const settings_1 = __webpack_require__(25);
 /**
  * Installs and caches powershell modules.
  */
@@ -32967,10 +33065,7 @@ class Powershell extends handler_1.CacheHandler {
         }
     }
     getModules() {
-        const modules = core.getInput('modules');
-        if (!modules) {
-            throw Error('Missing input: modules');
-        }
+        const modules = settings_1.inputs.getString('modules', { required: true });
         return modules.split(/\s*,\s*|\s+/).sort();
     }
     getHash() {
@@ -36446,7 +36541,7 @@ const core = __webpack_require__(470);
 const registry_1 = __webpack_require__(822);
 const expressions_1 = __webpack_require__(134);
 const handler_1 = __webpack_require__(895);
-const state = __webpack_require__(510);
+const settings_1 = __webpack_require__(25);
 /**
  * Creates a new cache when an environment variable changes.  This works by
  * appending a unique value, such as the current time (yes, this is not guaranteed
@@ -36464,9 +36559,8 @@ class EnvCache extends handler_1.CacheHandler {
         return `env-never-match-primary-key`;
     }
     async getKeyForSave(version) {
-        var _a;
-        const restoredKey = state.readRestoredKey(this);
-        if (((_a = process.env['UPDATE_CACHE']) === null || _a === void 0 ? void 0 : _a.toLowerCase()) === 'true' || !restoredKey || restoredKey === '') {
+        const restoredKey = this.readRestoredKey();
+        if (settings_1.env.getBoolean('UPDATE_CACHE') || !restoredKey || restoredKey === '') {
             return `${expressions_1.runner.os}-${version}-env-${Date.now()}`;
         }
         else {
@@ -39729,44 +39823,10 @@ function defer(fn)
 
 "use strict";
 
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT license.
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.readHandlers = exports.readPrimaryKey = exports.readRestoredKey = exports.addHandler = exports.savePrimaryKey = exports.saveRestoredKey = void 0;
-const core = __webpack_require__(470);
-var State;
-(function (State) {
-    State["RestoredKey"] = "RestoredKey";
-    State["PrimaryKey"] = "PrimaryKey";
-    State["CacheHandlers"] = "CacheHandlers";
-})(State || (State = {}));
-function getScopedStateKey(handler, name) {
-    return `${handler.constructor.name}-${name}`;
-}
-function saveRestoredKey(handler, value) {
-    core.saveState(getScopedStateKey(handler, State.RestoredKey), value);
-}
-exports.saveRestoredKey = saveRestoredKey;
-function savePrimaryKey(handler, value) {
-    core.saveState(getScopedStateKey(handler, State.PrimaryKey), value);
-}
-exports.savePrimaryKey = savePrimaryKey;
-function addHandler(handler) {
-    const handlers = readHandlers();
-    handlers.push(handler.constructor.name);
-    core.saveState(State.CacheHandlers, handlers.join(','));
-}
-exports.addHandler = addHandler;
-function readRestoredKey(handler) {
-    return core.getState(getScopedStateKey(handler, State.RestoredKey));
-}
-exports.readRestoredKey = readRestoredKey;
-function readPrimaryKey(handler) {
-    return core.getState(getScopedStateKey(handler, State.PrimaryKey));
-}
-exports.readPrimaryKey = readPrimaryKey;
-function readHandlers() {
-    return core.getState(State.CacheHandlers).split(',');
-}
-exports.readHandlers = readHandlers;
+__webpack_require__(71);
 
 
 /***/ }),
@@ -43132,6 +43192,7 @@ const registry_1 = __webpack_require__(822);
 const provider_1 = __webpack_require__(880);
 const expressions_1 = __webpack_require__(134);
 const utils_1 = __webpack_require__(163);
+const settings_1 = __webpack_require__(25);
 /**
  * Stores cache content on the local file system.  This is useful for self-hosted runners and
  * GitHub Enterprise Server.
@@ -43160,14 +43221,24 @@ const utils_1 = __webpack_require__(163);
  *
  * Future work:
  *   1. Can a repo owner or name contain invalid characters on an OS?
- *   2. Override root folder, eviction settings, with env vars
+ *   2. What is the fastest way to save/restore?
+ *      - Copying directories using fs
+ *      - Calling native methods (e.g., cp -R src/ dst/)
+ *      - Creating / extracting tar
  */
 class LocalStorageProvider extends provider_1.StorageProvider {
+    constructor() {
+        super();
+        this.cacheRoot = settings_1.env.getString('LOCAL_CACHE_PATH', { defaultValue: path.join(os.homedir(), '.RunnerCache') });
+        this.evictionFrequency = settings_1.env.getInt('LOCAL_CACHE_EVICTION_FREQUENCY', { defaultValue: 1, minValue: 1 });
+        this.maxAge = settings_1.env.getInt('LOCAL_CACHE_MAX_AGE', { defaultValue: 1, minValue: 1 });
+        this.disableNativeCopy = settings_1.env.getBoolean('LOCAL_CACHE_DISABLE_NATIVE');
+    }
     getRepo() {
         return { owner: github.context.repo.owner, name: github.context.repo.repo };
     }
     getCacheRoot() {
-        return process.env['LOCAL_CACHE_PATH'] || path.join(os.homedir(), '.RunnerCache');
+        return this.cacheRoot;
     }
     getRepoFolder(repo) {
         return path.join(this.getCacheRoot(), repo.owner, repo.name);
@@ -43290,7 +43361,7 @@ class LocalStorageProvider extends provider_1.StorageProvider {
         }
     }
     async copyFolder(source, target) {
-        if (process.env['CACHE_DISABLE_NATIVE'] === 'true') {
+        if (this.disableNativeCopy) {
             this.copyFolderInternal(source, target);
         }
         else {
@@ -43333,10 +43404,10 @@ class LocalStorageProvider extends provider_1.StorageProvider {
         return date;
     }
     shouldRunEviction(repo) {
-        return this.getLastEvicted(repo) < this.daysInPast(1);
+        return this.getLastEvicted(repo) < this.daysInPast(this.evictionFrequency);
     }
     shouldEvictKey(key) {
-        return this.getLastAccessed(key) < this.daysInPast(7);
+        return this.getLastAccessed(key) < this.daysInPast(this.maxAge);
     }
     shouldEvictUncommittedKey(key) {
         return fs.statSync(this.getKeyFolder(key)).ctime < this.daysInPast(1);
@@ -43362,7 +43433,7 @@ class LocalStorageProvider extends provider_1.StorageProvider {
     evictKey(key) {
         // It's technically possible for a machine to have multiple runners where a job
         // tries to restore a cache that is being evicted.  However, given that we only
-        // evict after a cache has been unused for 7 days, this is very unlikely.
+        // evict after a cache has been unused for 7 days, this is extremely unlikely.
         fs.rmSync(this.getCommittedPath(key), { force: true });
         fs.rmSync(this.getKeyFolder(key), { recursive: true, force: true });
     }
@@ -45644,12 +45715,13 @@ exports.fromPromise = function (fn) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const core = __webpack_require__(470);
 const registry_1 = __webpack_require__(822);
+const settings_1 = __webpack_require__(25);
 __webpack_require__(877);
 __webpack_require__(758);
 async function run() {
-    let type = core.getInput('type');
-    let version = core.getInput('version');
-    let provider = core.getInput('provider');
+    let type = settings_1.inputs.getString('type');
+    let version = settings_1.inputs.getString('version');
+    let provider = settings_1.inputs.getString('provider');
     for (const handler of await registry_1.handlers.getAll(type)) {
         core.info(`Saving cache with ${handler.constructor.name} handler`);
         await handler.saveCache({ version, provider });
@@ -46695,18 +46767,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 /***/ }),
 /* 709 */,
 /* 710 */,
-/* 711 */
-/***/ (function(__unusedmodule, exports, __webpack_require__) {
-
-"use strict";
-
-// Copyright (c) Microsoft Corporation.
-// Licensed under the MIT license.
-Object.defineProperty(exports, "__esModule", { value: true });
-__webpack_require__(71);
-
-
-/***/ }),
+/* 711 */,
 /* 712 */,
 /* 713 */,
 /* 714 */,
@@ -47144,6 +47205,7 @@ const execa = __webpack_require__(955);
 const registry_1 = __webpack_require__(822);
 const expressions_1 = __webpack_require__(134);
 const handler_1 = __webpack_require__(895);
+const settings_1 = __webpack_require__(25);
 /**
  * Create caches based on an install script.  To use this cache type:
  *
@@ -47164,11 +47226,7 @@ class InstallScriptCache extends handler_1.CacheHandler {
             .map((s) => s.trim());
     }
     getScript() {
-        const script = core.getInput('script');
-        if (!script) {
-            throw Error(`Missing required input 'script'`);
-        }
-        return script;
+        return settings_1.inputs.getString('script', { required: true });
     }
     async getKey(version) {
         return `${expressions_1.runner.os}-${version}-script-${await expressions_1.hashFiles(this.getScript())}`;
@@ -53146,12 +53204,12 @@ const tar = __webpack_require__(434);
 const utils = __webpack_require__(15);
 const core = __webpack_require__(470);
 const github = __webpack_require__(469);
-const process = __webpack_require__(765);
 const path = __webpack_require__(622);
 const execa = __webpack_require__(955);
 const registry_1 = __webpack_require__(822);
 const provider_1 = __webpack_require__(880);
 const utils_1 = __webpack_require__(163);
+const settings_1 = __webpack_require__(25);
 /**
  * Stores cache content to an AWS S3 bucket.  The bucket is specified using the
  * AWS_BUCKET_NAME env var.  Each cache entry is accessed through a URL in the
@@ -53160,14 +53218,15 @@ const utils_1 = __webpack_require__(163);
  *   s3://<bucket_name>/<owner>/<repo>/<key>
  *
  * This uses the AWS CLI, which must be installed on the runner.  The original plan
- * was to use the AWS-SDK JavaScript library, but it add 6 MBs of dependencies to
+ * was to use the AWS-SDK JavaScript library, but it adds 6 MBs of dependencies to
  * this action, nearly quadrupling its size.
  */
 class AwsStorageProvider extends provider_1.StorageProvider {
-    constructor() {
-        super();
-        this.bucketName = process.env['AWS_BUCKET_NAME'];
-        this.endpoint = process.env['AWS_ENDPOINT'];
+    getBucketName() {
+        return settings_1.env.getString('AWS_BUCKET_NAME', { required: true });
+    }
+    getEndpoint() {
+        return settings_1.env.getString('AWS_ENDPOINT');
     }
     getStoragePrefix() {
         return `${github.context.repo.owner}/${github.context.repo.repo}`;
@@ -53177,9 +53236,9 @@ class AwsStorageProvider extends provider_1.StorageProvider {
     }
     async list() {
         core.info(`Listing keys for ${this.getStoragePrefix()}`);
-        const args = ['s3', 'ls', `s3://${this.bucketName}/${this.getStoragePrefix()}/`];
-        if (this.endpoint) {
-            args.unshift('--endpoint-url', this.endpoint);
+        const args = ['s3', 'ls', `s3://${this.getBucketName()}/${this.getStoragePrefix()}/`];
+        if (this.getEndpoint()) {
+            args.unshift('--endpoint-url', this.getEndpoint());
         }
         const output = await execa('aws', args);
         // Each line in output contains four columns:
@@ -53193,20 +53252,14 @@ class AwsStorageProvider extends provider_1.StorageProvider {
             return { key: a[3], size: parseInt(a[2]), created: new Date(`${a[0]} ${a[1]}`) };
         });
     }
-    validateBucketName() {
-        if (!this.bucketName) {
-            throw Error('Missing bucket name, must set environment variable AWS_BUCKET_NAME');
-        }
-    }
     async restore(key) {
-        this.validateBucketName();
         const compressionMethod = await utils.getCompressionMethod();
         const archiveFolder = await utils.createTempDirectory();
         const archivePath = path.join(archiveFolder, utils.getCacheFileName(compressionMethod));
         core.info(`Restoring cache from ${this.getStorageKey(key)}`);
-        const args = ['s3', 'cp', `s3://${this.bucketName}/${this.getStorageKey(key)}`, archivePath];
-        if (this.endpoint) {
-            args.unshift('--endpoint-url', this.endpoint);
+        const args = ['s3', 'cp', `s3://${this.getBucketName()}/${this.getStorageKey(key)}`, archivePath];
+        if (this.getEndpoint()) {
+            args.unshift('--endpoint-url', this.getEndpoint());
         }
         const subprocess = execa('aws', args, {
             stdout: 'inherit',
@@ -53250,9 +53303,9 @@ class AwsStorageProvider extends provider_1.StorageProvider {
         await tar.createTar(archiveFolder, resolvedPaths, compressionMethod);
         try {
             core.info(`Saving cache to ${this.getStorageKey(key)}`);
-            const args = ['s3', 'cp', archivePath, `s3://${this.bucketName}/${this.getStorageKey(key)}`];
-            if (this.endpoint) {
-                args.unshift('--endpoint-url', this.endpoint);
+            const args = ['s3', 'cp', archivePath, `s3://${this.getBucketName()}/${this.getStorageKey(key)}`];
+            if (this.getEndpoint()) {
+                args.unshift('--endpoint-url', this.getEndpoint());
             }
             await execa('aws', args, {
                 stdout: 'inherit',
@@ -56052,15 +56105,16 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const registry_1 = __webpack_require__(822);
 const expressions_1 = __webpack_require__(134);
 const handler_1 = __webpack_require__(895);
+const settings_1 = __webpack_require__(25);
 class Rebar3 extends handler_1.CacheHandler {
     async getPaths() {
         return ['~/.cache/rebar3', '_build'];
     }
     async getKey(version) {
-        return `${expressions_1.runner.os}-${version}-erlang-${process.env['OTP_VERSION']}-${await expressions_1.hashFiles('**/*rebar.lock')}`;
+        return `${expressions_1.runner.os}-${version}-erlang-${settings_1.env.getString('OTP_VERSION')}-${await expressions_1.hashFiles('**/*rebar.lock')}`;
     }
     async getRestoreKeys(version) {
-        return [`${expressions_1.runner.os}-${version}-erlang-${process.env['OTP_VERSION']}-`];
+        return [`${expressions_1.runner.os}-${version}-erlang-${settings_1.env.getString('OTP_VERSION')}-`];
     }
     async shouldCache() {
         return await expressions_1.matches('**/*rebar.lock');
@@ -56274,13 +56328,19 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.CacheHandler = exports.RestoreType = void 0;
 const core = __webpack_require__(470);
 const registry_1 = __webpack_require__(822);
-const state = __webpack_require__(510);
+const settings_1 = __webpack_require__(25);
 var RestoreType;
 (function (RestoreType) {
     RestoreType[RestoreType["Miss"] = 0] = "Miss";
     RestoreType[RestoreType["Partial"] = 1] = "Partial";
     RestoreType[RestoreType["Full"] = 2] = "Full";
 })(RestoreType = exports.RestoreType || (exports.RestoreType = {}));
+var State;
+(function (State) {
+    State["RestoredKey"] = "RestoredKey";
+    State["PrimaryKey"] = "PrimaryKey";
+    State["CacheHandlers"] = "CacheHandlers";
+})(State || (State = {}));
 class CacheHandler {
     async getKey(version) {
         throw new Error('Not implemented');
@@ -56289,8 +56349,8 @@ class CacheHandler {
         return this.getKey(version);
     }
     async getKeyForSave(version) {
-        core.debug(`PrimaryKey: ${state.readPrimaryKey(this)}`);
-        return state.readPrimaryKey(this) || this.getKey(version);
+        core.debug(`PrimaryKey: ${this.readPrimaryKey()}`);
+        return this.readPrimaryKey() || this.getKey(version);
     }
     async getRestoreKeys(version) {
         return [];
@@ -56299,6 +56359,29 @@ class CacheHandler {
         return false;
     }
     async setup() { }
+    getScopedStateKey(name) {
+        return `${this.constructor.name}-${name}`;
+    }
+    saveRestoredKey(value) {
+        settings_1.state.setString(this.getScopedStateKey(State.RestoredKey), value);
+    }
+    savePrimaryKey(value) {
+        settings_1.state.setString(this.getScopedStateKey(State.PrimaryKey), value);
+    }
+    addHandler() {
+        const handlers = this.readHandlers();
+        handlers.push(this.constructor.name);
+        settings_1.state.setString(State.CacheHandlers, handlers.join(','));
+    }
+    readRestoredKey() {
+        return settings_1.state.getString(this.getScopedStateKey(State.RestoredKey));
+    }
+    readPrimaryKey() {
+        return settings_1.state.getString(this.getScopedStateKey(State.PrimaryKey));
+    }
+    readHandlers() {
+        return settings_1.state.getString(State.CacheHandlers).split(',');
+    }
     getStorageProvider(options) {
         const name = (options === null || options === void 0 ? void 0 : options.provider) || 'hosted';
         const provider = registry_1.providers.getFirst(name);
@@ -56311,7 +56394,7 @@ class CacheHandler {
     async saveCache(options) {
         const paths = await this.getPaths();
         const key = await this.getKeyForSave(options === null || options === void 0 ? void 0 : options.version);
-        const restoredKey = state.readRestoredKey(this);
+        const restoredKey = this.readRestoredKey();
         if (key === restoredKey) {
             core.info(`Cache hit on primary key '${key}', skip saving cache`);
         }
@@ -56328,11 +56411,11 @@ class CacheHandler {
         const storageProvider = this.getStorageProvider(options);
         core.info(`Calling restoreCache('${paths}', '${key}', [${restoreKeys.map((s) => `'${s}'`).join(', ')}])`);
         const restoredKey = await storageProvider.restoreCache(paths, key, restoreKeys);
-        state.savePrimaryKey(this, key);
-        state.addHandler(this);
+        this.savePrimaryKey(key);
+        this.addHandler();
         if (restoredKey) {
             core.info(`Restored cache with key '${restoredKey}'`);
-            state.saveRestoredKey(this, restoredKey);
+            this.saveRestoredKey(restoredKey);
         }
         return {
             type: restoredKey ? (key === restoredKey ? RestoreType.Full : RestoreType.Partial) : RestoreType.Miss,
@@ -56450,9 +56533,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const registry_1 = __webpack_require__(822);
 const expressions_1 = __webpack_require__(134);
 const handler_1 = __webpack_require__(895);
+const settings_1 = __webpack_require__(25);
 class PipEnv extends handler_1.CacheHandler {
     getPythonVersion() {
-        return process.env['PYTHON_VERSION'] || 'undef';
+        return settings_1.env.getString('PYTHON_VERSION', { defaultValue: 'undefined' });
     }
     async getPaths() {
         return ['~/.local/share/virtualenvs'];

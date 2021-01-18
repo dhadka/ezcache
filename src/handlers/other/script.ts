@@ -5,6 +5,7 @@ import * as execa from 'execa'
 import { handlers } from '../../registry'
 import { runner, hashFiles } from '../../expressions'
 import { CacheHandler, ICacheOptions, IRestoreResult, RestoreType } from '../../handler'
+import { inputs } from '../../settings'
 
 /**
  * Create caches based on an install script.  To use this cache type:
@@ -27,13 +28,7 @@ class InstallScriptCache extends CacheHandler {
   }
 
   private getScript(): string {
-    const script = core.getInput('script')
-
-    if (!script) {
-      throw Error(`Missing required input 'script'`)
-    }
-
-    return script
+    return inputs.getString('script', { required: true })
   }
 
   async getKey(version?: string): Promise<string> {
