@@ -22,7 +22,9 @@
     },
     "homepage": "https://github.com/dhadka/ezcache#readme",
     "devDependencies": {
+        "@types/execa": "^2.0.0",
         "@types/jest": "^26.0.20",
+        "@types/recursive-readdir": "^2.2.0",
         "@zeit/ncc": "^0.22.3",
         "jest": "^26.6.3",
         "prettier": "^2.2.1",
@@ -35,7 +37,6 @@
         "@actions/cache": "^1.0.5",
         "@actions/core": "^1.2.6",
         "@actions/github": "^4.0.0",
-        "@types/recursive-readdir": "^2.2.0",
         "execa": "^4.1.0",
         "native-promise-pool": "^3.16.0",
         "recursive-readdir": "^2.2.2"
