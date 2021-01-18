@@ -6,6 +6,7 @@ import * as crypto from 'crypto'
 import { handlers } from '../../registry'
 import { runner } from '../../expressions'
 import { CacheHandler, ICacheOptions, IRestoreResult, RestoreType } from '../../handler'
+import { inputs } from '../../settings'
 
 /**
  * Installs and caches powershell modules.
@@ -27,12 +28,7 @@ class Powershell extends CacheHandler {
   }
 
   getModules(): string[] {
-    const modules = core.getInput('modules')
-
-    if (!modules) {
-      throw Error('Missing input: modules')
-    }
-
+    const modules = inputs.getString('modules', { required: true })
     return modules.split(/\s*,\s*|\s+/).sort()
   }
 

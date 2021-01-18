@@ -2,7 +2,7 @@ import * as core from '@actions/core'
 import { handlers } from '../../registry'
 import { runner } from '../../expressions'
 import { CacheHandler } from '../../handler'
-import * as state from '../../state'
+import { env } from '../../settings'
 
 /**
  * Creates a new cache when an environment variable changes.  This works by
@@ -23,9 +23,9 @@ class EnvCache extends CacheHandler {
   }
 
   async getKeyForSave(version?: string): Promise<string> {
-    const restoredKey = state.readRestoredKey(this)
+    const restoredKey = this.readRestoredKey()
 
-    if (process.env['UPDATE_CACHE']?.toLowerCase() === 'true' || !restoredKey || restoredKey === '') {
+    if (env.getBoolean('UPDATE_CACHE') || !restoredKey || restoredKey === '') {
       return `${runner.os}-${version}-env-${Date.now()}`
     } else {
       return restoredKey

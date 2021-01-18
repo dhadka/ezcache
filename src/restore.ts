@@ -2,14 +2,15 @@ import * as core from '@actions/core'
 import { handlers } from './registry'
 import { RestoreType } from './handler'
 import { combineRestoreType } from './utils'
+import { inputs } from './settings'
 
 require('./handlers/all')
 require('./providers/all')
 
 async function run() {
-  let type = core.getInput('type')
-  let version = core.getInput('version')
-  let provider = core.getInput('provider')
+  let type = inputs.getString('type')
+  let version = inputs.getString('version')
+  let provider = inputs.getString('provider')
   let results = []
 
   for (const handler of await handlers.getAll(type)) {

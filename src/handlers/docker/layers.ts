@@ -27,7 +27,7 @@ import * as cache from '@actions/cache'
 import { handlers } from '../../registry'
 import { runner } from '../../expressions'
 import { CacheHandler, ICacheOptions, IRestoreResult, RestoreType } from '../../handler'
-import * as state from '../../state'
+import { state } from '../../settings'
 import * as execa from 'execa'
 import * as path from 'path'
 import * as fs from 'fs'
@@ -397,9 +397,9 @@ class DockerLayers extends CacheHandler {
   async saveCache(options?: ICacheOptions): Promise<void> {
     const key = await this.getKey(options?.version)
 
-    const restoredKey = state.readRestoredKey(this)
-    const alreadyExistingImages: string[] = JSON.parse(core.getState(`already-existing-images`))
-    const restoredImages: string[] = JSON.parse(core.getState(`restored-images`))
+    const restoredKey = this.readRestoredKey()
+    const alreadyExistingImages: string[] = JSON.parse(state.getString(`already-existing-images`, { required: true }))
+    const restoredImages: string[] = JSON.parse(state.getString(`restored-images`, { required: true }))
 
     const imageDetector = new ImageDetector()
     if (await imageDetector.checkIfImageHasAdded(restoredImages)) {
@@ -414,7 +414,6 @@ class DockerLayers extends CacheHandler {
     }
 
     const layerCache = new LayerCache(imagesToSave)
-    //layerCache.concurrency = parseInt(core.getInput(`concurrency`, { required: true }), 10)
 
     await layerCache.store(key)
     await layerCache.cleanUp()
@@ -428,19 +427,18 @@ class DockerLayers extends CacheHandler {
     const alreadyExistingImages = await imageDetector.getExistingImages()
 
     const layerCache = new LayerCache([])
-    //layerCache.concurrency = parseInt(core.getInput(`concurrency`, { required: true }), 10)
     const restoredKey = await layerCache.restore(key, restoreKeys)
     await layerCache.cleanUp()
 
-    core.saveState(`already-existing-images`, JSON.stringify(alreadyExistingImages))
-    core.saveState(`restored-images`, JSON.stringify(await imageDetector.getImagesShouldSave(alreadyExistingImages)))
+    state.setString(`already-existing-images`, JSON.stringify(alreadyExistingImages))
+    state.setString(`restored-images`, JSON.stringify(await imageDetector.getImagesShouldSave(alreadyExistingImages)))
 
-    state.savePrimaryKey(this, key)
-    state.addHandler(this)
+    this.savePrimaryKey(key)
+    this.addHandler()
 
     if (restoredKey) {
       core.info(`Restored cache with key '${restoredKey}'`)
-      state.saveRestoredKey(this, restoredKey)
+      this.saveRestoredKey(restoredKey)
     }
 
     return {

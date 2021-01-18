@@ -9,6 +9,7 @@ import { providers } from '../registry'
 import { StorageProvider } from '../provider'
 import { runner } from '../expressions'
 import { concatenateKeys } from '../utils'
+import { env } from '../settings'
 
 /**
  * Stores cache content on the local file system.  This is useful for self-hosted runners and
@@ -38,15 +39,32 @@ import { concatenateKeys } from '../utils'
  *
  * Future work:
  *   1. Can a repo owner or name contain invalid characters on an OS?
- *   2. Override root folder, eviction settings, with env vars
+ *   2. What is the fastest way to save/restore?
+ *      - Copying directories using fs
+ *      - Calling native methods (e.g., cp -R src/ dst/)
+ *      - Creating / extracting tar
  */
 export class LocalStorageProvider extends StorageProvider {
+  cacheRoot: string
+  evictionFrequency: number
+  maxAge: number
+  disableNativeCopy: boolean
+
+  constructor() {
+    super()
+
+    this.cacheRoot = env.getString('LOCAL_CACHE_PATH', { defaultValue: path.join(os.homedir(), '.RunnerCache') })
+    this.evictionFrequency = env.getInt('LOCAL_CACHE_EVICTION_FREQUENCY', { defaultValue: 1, minValue: 1 })
+    this.maxAge = env.getInt('LOCAL_CACHE_MAX_AGE', { defaultValue: 1, minValue: 1 })
+    this.disableNativeCopy = env.getBoolean('LOCAL_CACHE_DISABLE_NATIVE')
+  }
+
   private getRepo(): IRepo {
     return { owner: github.context.repo.owner, name: github.context.repo.repo }
   }
 
   private getCacheRoot(): string {
-    return process.env['LOCAL_CACHE_PATH'] || path.join(os.homedir(), '.RunnerCache')
+    return this.cacheRoot
   }
 
   private getRepoFolder(repo: IRepo): string {
@@ -198,7 +216,7 @@ export class LocalStorageProvider extends StorageProvider {
   }
 
   private async copyFolder(source: string, target: string): Promise<void> {
-    if (process.env['CACHE_DISABLE_NATIVE'] === 'true') {
+    if (this.disableNativeCopy) {
       this.copyFolderInternal(source, target)
     } else {
       await this.copyFolderNative(source, target)
@@ -249,11 +267,11 @@ export class LocalStorageProvider extends StorageProvider {
   }
 
   private shouldRunEviction(repo: IRepo): boolean {
-    return this.getLastEvicted(repo) < this.daysInPast(1)
+    return this.getLastEvicted(repo) < this.daysInPast(this.evictionFrequency)
   }
 
   private shouldEvictKey(key: IKey): boolean {
-    return this.getLastAccessed(key) < this.daysInPast(7)
+    return this.getLastAccessed(key) < this.daysInPast(this.maxAge)
   }
 
   private shouldEvictUncommittedKey(key: IKey): boolean {
@@ -283,7 +301,7 @@ export class LocalStorageProvider extends StorageProvider {
   private evictKey(key: IKey): void {
     // It's technically possible for a machine to have multiple runners where a job
     // tries to restore a cache that is being evicted.  However, given that we only
-    // evict after a cache has been unused for 7 days, this is very unlikely.
+    // evict after a cache has been unused for 7 days, this is extremely unlikely.
     fs.rmSync(this.getCommittedPath(key), { force: true })
     fs.rmSync(this.getKeyFolder(key), { recursive: true, force: true })
   }

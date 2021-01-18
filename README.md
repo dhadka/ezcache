@@ -211,7 +211,7 @@ used by BuildX:
 
 ## Handling Cache Misses
 
-Caches misses should be expected and handled by the workflow.  There are two types of caches misses:
+Cache misses should be expected and handled by the workflow.  There are two types of cache misses:
 
 1. A **miss** where no matching cache was found
 2. A **partial hit** where some of the cache contents are restored

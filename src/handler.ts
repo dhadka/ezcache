@@ -1,7 +1,7 @@
 import * as core from '@actions/core'
 import { providers } from './registry'
 import { StorageProvider } from './provider'
-import * as state from './state'
+import { state } from './settings'
 
 export interface ICacheOptions {
   version?: string
@@ -19,6 +19,12 @@ export interface IRestoreResult {
   restoredKey: string | undefined
 }
 
+enum State {
+  RestoredKey = 'RestoredKey',
+  PrimaryKey = 'PrimaryKey',
+  CacheHandlers = 'CacheHandlers',
+}
+
 export abstract class CacheHandler {
   abstract getPaths(): Promise<string[]>
 
@@ -31,8 +37,8 @@ export abstract class CacheHandler {
   }
 
   async getKeyForSave(version?: string): Promise<string> {
-    core.debug(`PrimaryKey: ${state.readPrimaryKey(this)}`)
-    return state.readPrimaryKey(this) || this.getKey(version)
+    core.debug(`PrimaryKey: ${this.readPrimaryKey()}`)
+    return this.readPrimaryKey() || this.getKey(version)
   }
 
   async getRestoreKeys(version?: string): Promise<string[]> {
@@ -44,6 +50,36 @@ export abstract class CacheHandler {
   }
 
   async setup(): Promise<void> {}
+
+  private getScopedStateKey(name: string) {
+    return `${this.constructor.name}-${name}`
+  }
+
+  protected saveRestoredKey(value: string) {
+    state.setString(this.getScopedStateKey(State.RestoredKey), value)
+  }
+
+  protected savePrimaryKey(value: string) {
+    state.setString(this.getScopedStateKey(State.PrimaryKey), value)
+  }
+
+  protected addHandler() {
+    const handlers = this.readHandlers()
+    handlers.push(this.constructor.name)
+    state.setString(State.CacheHandlers, handlers.join(','))
+  }
+
+  protected readRestoredKey(): string {
+    return state.getString(this.getScopedStateKey(State.RestoredKey))
+  }
+
+  protected readPrimaryKey(): string {
+    return state.getString(this.getScopedStateKey(State.PrimaryKey))
+  }
+
+  protected readHandlers(): string[] {
+    return state.getString(State.CacheHandlers).split(',')
+  }
 
   getStorageProvider(options?: ICacheOptions): StorageProvider {
     const name = options?.provider || 'hosted'
@@ -60,7 +96,7 @@ export abstract class CacheHandler {
   async saveCache(options?: ICacheOptions): Promise<void> {
     const paths = await this.getPaths()
     const key = await this.getKeyForSave(options?.version)
-    const restoredKey = state.readRestoredKey(this)
+    const restoredKey = this.readRestoredKey()
 
     if (key === restoredKey) {
       core.info(`Cache hit on primary key '${key}', skip saving cache`)
@@ -82,12 +118,12 @@ export abstract class CacheHandler {
 
     const restoredKey = await storageProvider.restoreCache(paths, key, restoreKeys)
 
-    state.savePrimaryKey(this, key)
-    state.addHandler(this)
+    this.savePrimaryKey(key)
+    this.addHandler()
 
     if (restoredKey) {
       core.info(`Restored cache with key '${restoredKey}'`)
-      state.saveRestoredKey(this, restoredKey)
+      this.saveRestoredKey(restoredKey)
     }
 
     return {

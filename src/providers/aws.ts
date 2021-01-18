@@ -8,6 +8,7 @@ import * as execa from 'execa'
 import { providers } from '../registry'
 import { StorageProvider } from '../provider'
 import { concatenateKeys } from '../utils'
+import { env } from '../settings'
 
 /**
  * Stores cache content to an AWS S3 bucket.  The bucket is specified using the
@@ -17,18 +18,16 @@ import { concatenateKeys } from '../utils'
  *   s3://<bucket_name>/<owner>/<repo>/<key>
  *
  * This uses the AWS CLI, which must be installed on the runner.  The original plan
- * was to use the AWS-SDK JavaScript library, but it add 6 MBs of dependencies to
+ * was to use the AWS-SDK JavaScript library, but it adds 6 MBs of dependencies to
  * this action, nearly quadrupling its size.
  */
 class AwsStorageProvider extends StorageProvider {
-  bucketName: string | undefined
-  endpoint: string | undefined
+  private getBucketName(): string {
+    return env.getString('AWS_BUCKET_NAME', { required: true })
+  }
 
-  constructor() {
-    super()
-
-    this.bucketName = process.env['AWS_BUCKET_NAME']
-    this.endpoint = process.env['AWS_ENDPOINT']
+  private getEndpoint(): string {
+    return env.getString('AWS_ENDPOINT')
   }
 
   private getStoragePrefix(): string {
@@ -41,10 +40,10 @@ class AwsStorageProvider extends StorageProvider {
 
   private async list(): Promise<IEntry[]> {
     core.info(`Listing keys for ${this.getStoragePrefix()}`)
-    const args = ['s3', 'ls', `s3://${this.bucketName}/${this.getStoragePrefix()}/`]
+    const args = ['s3', 'ls', `s3://${this.getBucketName()}/${this.getStoragePrefix()}/`]
 
-    if (this.endpoint) {
-      args.unshift('--endpoint-url', this.endpoint)
+    if (this.getEndpoint()) {
+      args.unshift('--endpoint-url', this.getEndpoint())
     }
 
     const output = await execa('aws', args)
@@ -61,24 +60,16 @@ class AwsStorageProvider extends StorageProvider {
       })
   }
 
-  private validateBucketName() {
-    if (!this.bucketName) {
-      throw Error('Missing bucket name, must set environment variable AWS_BUCKET_NAME')
-    }
-  }
-
   private async restore(key: string): Promise<boolean> {
-    this.validateBucketName()
-
     const compressionMethod = await utils.getCompressionMethod()
     const archiveFolder = await utils.createTempDirectory()
     const archivePath = path.join(archiveFolder, utils.getCacheFileName(compressionMethod))
 
     core.info(`Restoring cache from ${this.getStorageKey(key)}`)
-    const args = ['s3', 'cp', `s3://${this.bucketName}/${this.getStorageKey(key)}`, archivePath]
+    const args = ['s3', 'cp', `s3://${this.getBucketName()}/${this.getStorageKey(key)}`, archivePath]
 
-    if (this.endpoint) {
-      args.unshift('--endpoint-url', this.endpoint)
+    if (this.getEndpoint()) {
+      args.unshift('--endpoint-url', this.getEndpoint())
     }
 
     const subprocess = execa('aws', args, {
@@ -132,10 +123,10 @@ class AwsStorageProvider extends StorageProvider {
 
     try {
       core.info(`Saving cache to ${this.getStorageKey(key)}`)
-      const args = ['s3', 'cp', archivePath, `s3://${this.bucketName}/${this.getStorageKey(key)}`]
+      const args = ['s3', 'cp', archivePath, `s3://${this.getBucketName()}/${this.getStorageKey(key)}`]
 
-      if (this.endpoint) {
-        args.unshift('--endpoint-url', this.endpoint)
+      if (this.getEndpoint()) {
+        args.unshift('--endpoint-url', this.getEndpoint())
       }
 
       await execa('aws', args, {
