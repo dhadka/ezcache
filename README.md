@@ -17,9 +17,17 @@ management tools.  Here's a few simple examples:
      with:
        type: npm
    ```
+
+3. Separate save and restore steps for even more control:
+
+   ```
+   - uses: dhadka/ezcache-restore@master
+   ...
+   - uses: dhadka/ezcache-save@master
+   ```
    
-3. Use a different [backend storage provider](#storage-providers).  Local storage works great on self-hosted
-runners and GitHub Enterprise Server!
+4. Different [backend storage providers](#storage-providers), including local and AWS S3.  These
+   work great on self-hosted runners and GitHub Enterprise Server!
 
    ```
    - uses: dhadka/ezcache@master
