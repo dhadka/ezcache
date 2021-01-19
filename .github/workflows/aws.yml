@@ -57,7 +57,7 @@ jobs:
     runs-on: ubuntu-latest
     services:
       minio:
-        image: bitnami/bitnami-docker-minio
+        image: bitnami/minio:latest
         ports:
           - 9000:9000
         env:
