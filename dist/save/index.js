@@ -54782,17 +54782,38 @@ class AwsStorageProvider extends provider_1.StorageProvider {
     getStorageKey(key) {
         return `${this.getStoragePrefix()}/${key}`;
     }
-    async list() {
-        core.info(`Listing keys for ${this.getStoragePrefix()}`);
-        const args = ['s3', 'ls', `s3://${this.getBucketName()}/${this.getStoragePrefix()}/`];
+    invokeS3(command, args, capture = false) {
+        const expandedArgs = ['s3', command, ...args];
         if (this.getEndpoint()) {
-            args.unshift('--endpoint-url', this.getEndpoint());
+            expandedArgs.unshift('--endpoint-url', this.getEndpoint());
         }
-        const output = await execa('aws', args);
+        return execa('aws', expandedArgs, capture ? {} : { stdout: 'inherit', stderr: 'inherit' });
+    }
+    async list() {
+        let output = '';
+        try {
+            core.info(`Listing keys for ${this.getStoragePrefix()}`);
+            output = (await this.invokeS3('ls', [`s3://${this.getBucketName()}/${this.getStoragePrefix()}/`], true)).stdout;
+        }
+        catch (e) {
+            const execaError = e;
+            if (execaError) {
+                if (execaError.stderr.indexOf('NoSuchBucket') >= 0) {
+                    core.info(`Bucket ${this.getBucketName()} not found, creating it now...`);
+                    await this.invokeS3('mb', [`s3://${this.getBucketName()}`]);
+                }
+                else {
+                    core.error(e);
+                }
+            }
+            else {
+                core.error(e);
+            }
+        }
         // Each line in output contains four columns:
         //   <date> <time> <size> <object_name>
         // Lines with prefixes contain a different number of columns, which we exclude.
-        return output.stdout
+        return output
             .split('\n')
             .map((s) => s.split(/\s+/, 4))
             .filter((a) => a.length == 4)
@@ -54804,17 +54825,9 @@ class AwsStorageProvider extends provider_1.StorageProvider {
         const compressionMethod = await utils.getCompressionMethod();
         const archiveFolder = await utils.createTempDirectory();
         const archivePath = path.join(archiveFolder, utils.getCacheFileName(compressionMethod));
-        core.info(`Restoring cache from ${this.getStorageKey(key)}`);
-        const args = ['s3', 'cp', `s3://${this.getBucketName()}/${this.getStorageKey(key)}`, archivePath];
-        if (this.getEndpoint()) {
-            args.unshift('--endpoint-url', this.getEndpoint());
-        }
-        const subprocess = execa('aws', args, {
-            stdout: 'inherit',
-            stderr: 'inherit',
-        });
         try {
-            await subprocess;
+            core.info(`Restoring cache from ${this.getStorageKey(key)}`);
+            await this.invokeS3('cp', [`s3://${this.getBucketName()}/${this.getStorageKey(key)}`, archivePath]);
         }
         catch (e) {
             core.error(e);
@@ -54851,14 +54864,7 @@ class AwsStorageProvider extends provider_1.StorageProvider {
         await tar.createTar(archiveFolder, resolvedPaths, compressionMethod);
         try {
             core.info(`Saving cache to ${this.getStorageKey(key)}`);
-            const args = ['s3', 'cp', archivePath, `s3://${this.getBucketName()}/${this.getStorageKey(key)}`];
-            if (this.getEndpoint()) {
-                args.unshift('--endpoint-url', this.getEndpoint());
-            }
-            await execa('aws', args, {
-                stdout: 'inherit',
-                stderr: 'inherit',
-            });
+            await this.invokeS3('cp', [archivePath, `s3://${this.getBucketName()}/${this.getStorageKey(key)}`]);
         }
         catch (e) {
             core.error(e);
