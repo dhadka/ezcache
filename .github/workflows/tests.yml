@@ -3,8 +3,18 @@ name: Tests
 on:
   push:
     branches: [ master ]
+    paths-ignore:
+      - README.md
+      - LICENSE
+      - .gitignore
+      - .prettierrc 
   pull_request:
     branches: [ master ]
+    paths-ignore:
+      - README.md
+      - LICENSE
+      - .gitignore
+      - .prettierrc 
 
 jobs:
 
