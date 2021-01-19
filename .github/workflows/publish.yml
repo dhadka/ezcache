@@ -41,8 +41,8 @@ jobs:
           sed -i -e "/post:/d" -e "/post-if:/d" -e "s/main:.*/main: 'dist\/index.js'/g" ezcache-restore/action.yml 
           sed -i -e "/post:/d" -e "/post-if:/d" -e "s/main:.*/main: 'dist\/index.js'/g" ezcache-save/action.yml
 
-          sed -i -e "s/name:.*/name: 'Easy Cache - Restore Step'/g" ezcache-restore/action.yml
-          sed -i -e "s/name:.*/name: 'Easy Cache - Save Step'/g" ezcache-save/action.yml
+          sed -i -e "s/name:.*/name: 'ezcache-restore'/g" ezcache-restore/action.yml
+          sed -i -e "s/name:.*/name: 'ezcache-save'/g" ezcache-save/action.yml
 
       - name: Prepare test cache
         run: |
