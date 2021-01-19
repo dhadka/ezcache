@@ -1,5 +1,7 @@
 # ezcache
 
+![Tests](https://github.com/dhadka/ezcache/workflows/Tests/badge.svg) ![Publish Actions](https://github.com/dhadka/ezcache/workflows/Publish%20Actions/badge.svg)
+
 Caching made easy.  Based on the [GitHub Actions Cache](http://github.com/actions/cache), this action simplifies
 the process of setting up the cache by providing predefined configurations for different languages and package
 management tools.  Here's a few simple examples:
