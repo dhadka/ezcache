@@ -55,20 +55,13 @@ jobs:
 
   save-minio-cache:
     runs-on: ubuntu-latest
-    services:
-      minio:
-        image: bitnami/minio:latest
-        ports:
-          - 9000:9000
-        env:
-          MINIO_ACCESS_KEY: ${{ secrets.MINIO_ACCESS_KEY }}
-          MINIO_SECRET_KEY: ${{ secrets.MINIO_SECRET_KEY }}
-        volumes:
-          - ${{ github.workspace }}/data:/data
-        options: --name=minio
- 
+
     steps:
       - uses: actions/checkout@v2
+      - name: Start docker container
+        run: |
+          docker pull minio/minio:latest
+          docker run -d --name minio -p 9000:9000 -e "MINIO_ROOT_USER=${{ secrets.MINIO_ACCESS_KEY }}" -e "MINIO_ROOT_PASSWORD=${{ secrets.MINIO_SECRET_KEY }}" -v $HOME/data:/data minio/minio:latest server /data
       - name: Cache npm
         uses: ./
         with:
@@ -78,7 +71,7 @@ jobs:
         env: 
           AWS_ACCESS_KEY_ID: ${{ secrets.MINIO_ACCESS_KEY }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.MINIO_SECRET_KEY }}
-          AWS_ENDPOINT: http://localhost:9000
+          AWS_ENDPOINT: http://127.0.0.1:9000
           AWS_BUCKET_NAME: ${{ secrets.BUCKET_NAME }}
           AWS_REGION: us-east-1
       - name: Install dependencies
