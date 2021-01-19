@@ -57,12 +57,12 @@ jobs:
     runs-on: ubuntu-latest
     services:
       minio:
-        image: minio/minio
+        image: bitnami/bitnami-docker-minio
         ports:
           - 9000:9000
         env:
-          MINIO_ROOT_USER: ${{ secrets.MINIO_ACCESS_KEY }}
-          MINIO_ROOT_PASSWORD: ${{ secrets.MINIO_SECRET_KEY }}
+          MINIO_ACCESS_KEY: ${{ secrets.MINIO_ACCESS_KEY }}
+          MINIO_SECRET_KEY: ${{ secrets.MINIO_SECRET_KEY }}
         volumes:
           - ${{ github.workspace }}/data:/data
         options: --name=minio
