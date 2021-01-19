@@ -62,6 +62,7 @@ jobs:
         run: |
           docker pull minio/minio:latest
           docker run -d --name minio -p 9000:9000 -e "MINIO_ROOT_USER=${{ secrets.MINIO_ACCESS_KEY }}" -e "MINIO_ROOT_PASSWORD=${{ secrets.MINIO_SECRET_KEY }}" -v $HOME/data:/data minio/minio:latest server /data
+          sleep 1
       - name: Cache npm
         uses: ./
         with:
