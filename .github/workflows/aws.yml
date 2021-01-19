@@ -53,3 +53,24 @@ jobs:
         run: |
           npm ci
 
+  save-minio-cache:
+    runs-on: ubuntu-latest
+    services:
+      minio:
+        image: fclairamb/minio-github-actions
+        ports:
+          - 9000:9000
+    steps:
+      - uses: actions/checkout@v2
+      - name: Cache npm
+        uses: ./
+        with:
+          type: npm
+          version: ${{ github.run_id }}
+          provider: s3
+        env: 
+          AWS_ENDPOINT: https://localhost:9000
+          AWS_BUCKET_NAME: ${{ secrets.BUCKET_NAME }}
+      - name: Install dependencies
+        run: |
+          npm ci
