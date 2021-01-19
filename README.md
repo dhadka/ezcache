@@ -143,9 +143,9 @@ Creates a cache that is updated only when the `UPDATE_CACHE` environment variabl
     path: ~/path/to/cache
 - name: Install dependencies
   run: |
-    MY_VERSION=$(foo --version)
-    LATEST_VERSION=$(...get latest version number...)
-    if [[ MY_VERSION != LATEST_VERSION ]]; then
+    INSTALLED_VERSION=...
+    LATEST_VERSION=...
+    if [[ INSTALLED_VERSION != LATEST_VERSION ]]; then
       ...install new version...
       echo "UPDATE_CACHE=true" >> $GITHUB_ENV
     fi
