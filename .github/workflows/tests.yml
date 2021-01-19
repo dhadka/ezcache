@@ -1,10 +1,20 @@
-name: Hosted Tests
+name: Tests
 
 on:
   push:
     branches: [ master ]
+    paths-ignore:
+      - README.md
+      - LICENSE
+      - .gitignore
+      - .prettierrc 
   pull_request:
     branches: [ master ]
+    paths-ignore:
+      - README.md
+      - LICENSE
+      - .gitignore
+      - .prettierrc 
 
 jobs:
 
@@ -47,6 +57,45 @@ jobs:
           path: ~/.npm
       - name: Install dependencies
         run: npm ci
+
+  # ======================================================================
+  # Auto
+  # ======================================================================
+
+  save-auto:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Auto cache
+        uses: ./
+        with:
+          type: auto
+          verson: ${{ github.run_id }}
+      - name: Install dependencies
+        run: npm ci
+
+  # ======================================================================
+  # Daily Cache
+  # ======================================================================
+
+  test-daily:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Daily cache
+        uses: ./
+        with:
+          type: daily
+          path: nodejs
+      - name: Checkout node source code
+        uses: actions/checkout@v2
+        with:
+          repository: nodejs/node
+          path: nodejs
+
+  # ======================================================================
+  # Diff Cache
+  # ======================================================================
 
   save-diff:
     runs-on: ubuntu-latest
@@ -108,32 +157,9 @@ jobs:
             exit -1
           fi
 
-  save-auto:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Auto cache
-        uses: ./
-        with:
-          type: auto
-          verson: ${{ github.run_id }}
-      - name: Install dependencies
-        run: npm ci
-
-  test-daily:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Daily cache
-        uses: ./
-        with:
-          type: daily
-          path: nodejs
-      - name: Checkout node source code
-        uses: actions/checkout@v2
-        with:
-          repository: nodejs/node
-          path: nodejs
+  # ======================================================================
+  # Env Cache
+  # ======================================================================
 
   save-env:
     runs-on: ubuntu-latest
@@ -223,6 +249,10 @@ jobs:
             exit -1
           fi
 
+  # ======================================================================
+  # Powershell Cache
+  # ======================================================================
+
   save-powershell:
     runs-on: windows-latest
     steps:
@@ -253,6 +283,10 @@ jobs:
       - name: Show installed modules
         shell: pwsh
         run: ls ~\Documents\WindowsPowerShell\Modules
+
+  # ======================================================================
+  # Script Cache
+  # ======================================================================
     
   save-script:
     runs-on: ubuntu-latest
@@ -292,6 +326,10 @@ jobs:
         run: |
           echo "Restore failed!"
           exit -1
+
+  # ======================================================================
+  # Language Tests
+  # ======================================================================
           
   save:
     runs-on: ubuntu-latest
@@ -385,4 +423,233 @@ jobs:
         run: |
           cd dev
           ${{ matrix.script }}
+
+  # ======================================================================
+  # Local Storage Provider
+  # ======================================================================
         
+  save-local-cache:
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v2
+      - name: Cache npm
+        uses: ./
+        with:
+          type: npm
+          version: ${{ github.run_id }}
+          provider: local
+      - name: Install dependencies
+        run: |
+          npm ci
+          
+  restore-local-cache:
+    runs-on: self-hosted
+    needs: save-local-cache
+    steps:
+      - uses: actions/checkout@v2
+      - name: Cache npm
+        id: cache
+        uses: ./
+        with:
+          type: npm
+          version: ${{ github.run_id }}
+          provider: local
+      - name: Verify restore worked
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          echo "Restore failed!"
+          exit -1
+      - name: Install dependencies
+        run: |
+          npm ci
+
+  # ======================================================================
+  # S3 Storage Provider
+  # ======================================================================
+
+  save-aws-cache:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Cache npm
+        uses: ./
+        with:
+          type: npm
+          version: ${{ github.run_id }}
+          provider: aws
+        env: 
+          AWS_ACCESS_KEY_ID: ${{ secrets.ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.SECRET_ACCESS_KEY }}
+          AWS_BUCKET_NAME: ${{ secrets.BUCKET_NAME }}
+          AWS_REGION: us-east-1
+      - name: Install dependencies
+        run: |
+          npm ci
+
+  restore-aws-cache:
+    runs-on: ubuntu-latest
+    needs: save-aws-cache
+    steps:
+      - uses: actions/checkout@v2
+      - name: Cache npm
+        id: cache
+        uses: ./
+        with:
+          type: npm
+          version: ${{ github.run_id }}
+          provider: aws
+        env: 
+          AWS_ACCESS_KEY_ID: ${{ secrets.ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.SECRET_ACCESS_KEY }}
+          AWS_BUCKET_NAME: ${{ secrets.BUCKET_NAME }}
+          AWS_REGION: us-east-1
+      - name: Verify restore worked
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          echo "Restore failed!"
+          exit -1
+      - name: Install dependencies
+        run: |
+          npm ci
+
+  save-minio-cache:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Start docker container
+        run: |
+          docker pull minio/minio:latest
+          docker run -d --name minio -p 9000:9000 -e "MINIO_ROOT_USER=${{ secrets.MINIO_ACCESS_KEY }}" -e "MINIO_ROOT_PASSWORD=${{ secrets.MINIO_SECRET_KEY }}" -v $HOME/data:/data minio/minio:latest server /data
+          sleep 1
+      - name: Cache npm
+        uses: ./
+        with:
+          type: npm
+          version: ${{ github.run_id }}
+          provider: s3
+        env: 
+          AWS_ACCESS_KEY_ID: ${{ secrets.MINIO_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.MINIO_SECRET_KEY }}
+          AWS_ENDPOINT: http://127.0.0.1:9000
+          AWS_BUCKET_NAME: ${{ secrets.BUCKET_NAME }}
+          AWS_REGION: us-east-1
+      - name: Install dependencies
+        run: |
+          npm ci
+
+  # ======================================================================
+  # Docker Caches
+  # ======================================================================
+
+  save-layers:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        
+      - uses: actions/checkout@v2
+        with:
+          repository: kstaken/dockerfile-examples
+          path: dockerfile-examples
+
+      - name: Cache docker layers
+        uses: ./
+        with:
+          type: layers
+          version: ${{ github.run_id }}
+
+      - name: Build docker images
+        run: |
+          cd dockerfile-examples/apache
+          docker build --tag apache:dev .
+          
+  restore-layers:
+    runs-on: ubuntu-latest
+    needs: save-layers
+    steps:
+      - uses: actions/checkout@v2
+        
+      - uses: actions/checkout@v2
+        with:
+          repository: kstaken/dockerfile-examples
+          path: dockerfile-examples
+
+      - name: Cache docker layers
+        uses: ./
+        with:
+          type: layers
+          version: ${{ github.run_id }}
+
+      - name: Build docker images
+        run: |
+          cd dockerfile-examples/apache
+          docker build --tag apache:dev .
+
+  save-buildx:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        
+      - uses: actions/checkout@v2
+        with:
+          repository: kstaken/dockerfile-examples
+          path: dockerfile-examples
+
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v1
+        with:
+          version: latest
+
+      - name: Cache Buildx
+        uses: ./
+        with:
+          type: buildx
+          path: /tmp/.buildx-cache
+          version: ${{ github.run_id }}
+
+      - name: Docker Buildx (build)
+        run: |
+          docker buildx build \
+            --cache-from "type=local,src=/tmp/.buildx-cache" \
+            --cache-to "type=local,dest=/tmp/.buildx-cache" \
+            --platform linux/386 \
+            --output "type=image,push=false" \
+            --tag apache:dev \
+            --file ./dockerfile-examples/apache/Dockerfile \
+            ./
+
+  restore-buildx:
+    runs-on: ubuntu-latest
+    needs: save-buildx
+    steps:
+      - uses: actions/checkout@v2
+        
+      - uses: actions/checkout@v2
+        with:
+          repository: kstaken/dockerfile-examples
+          path: dockerfile-examples
+
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v1
+        with:
+          version: latest
+
+      - name: Cache Buildx
+        uses: ./
+        with:
+          type: buildx
+          path: /tmp/.buildx-cache
+          version: ${{ github.run_id }}
+
+      - name: Docker Buildx (build)
+        run: |
+          docker buildx build \
+            --cache-from "type=local,src=/tmp/.buildx-cache" \
+            --cache-to "type=local,dest=/tmp/.buildx-cache" \
+            --platform linux/386 \
+            --output "type=image,push=false" \
+            --tag apache:dev \
+            --file ./dockerfile-examples/apache/Dockerfile \
+            ./

@@ -1,5 +1,7 @@
 # ezcache
 
+![Tests](https://github.com/dhadka/ezcache/workflows/Tests/badge.svg) ![Publish Actions](https://github.com/dhadka/ezcache/workflows/Publish%20Actions/badge.svg)
+
 Caching made easy.  Based on the [GitHub Actions Cache](http://github.com/actions/cache), this action simplifies
 the process of setting up the cache by providing predefined configurations for different languages and package
 management tools.  Here's a few simple examples:
@@ -143,9 +145,9 @@ Creates a cache that is updated only when the `UPDATE_CACHE` environment variabl
     path: ~/path/to/cache
 - name: Install dependencies
   run: |
-    MY_VERSION=$(foo --version)
-    LATEST_VERSION=$(...get latest version number...)
-    if [[ MY_VERSION != LATEST_VERSION ]]; then
+    INSTALLED_VERSION=...
+    LATEST_VERSION=...
+    if [[ INSTALLED_VERSION != LATEST_VERSION ]]; then
       ...install new version...
       echo "UPDATE_CACHE=true" >> $GITHUB_ENV
     fi

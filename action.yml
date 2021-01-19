@@ -1,5 +1,5 @@
-name: 'ezcache'
-description: ''
+name: 'Easy Cache'
+description: 'Simplifies the creation of GitHub Actions caches and adds support for local and AWS S3 storage.'
 inputs:
   type:
     description: 'The type of cache to create'
