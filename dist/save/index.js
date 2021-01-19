@@ -54785,9 +54785,9 @@ class AwsStorageProvider extends provider_1.StorageProvider {
     invokeS3(command, args, capture = false) {
         const expandedArgs = ['s3', command, ...args];
         if (this.getEndpoint()) {
-            args.unshift('--endpoint-url', this.getEndpoint());
+            expandedArgs.unshift('--endpoint-url', this.getEndpoint());
         }
-        return execa('aws', args, capture ? {} : { stdout: 'inherit', stderr: 'inherit' });
+        return execa('aws', expandedArgs, capture ? {} : { stdout: 'inherit', stderr: 'inherit' });
     }
     async list() {
         let output = '';

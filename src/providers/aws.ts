@@ -42,10 +42,10 @@ class AwsStorageProvider extends StorageProvider {
     const expandedArgs = ['s3', command, ...args]
 
     if (this.getEndpoint()) {
-      args.unshift('--endpoint-url', this.getEndpoint())
+      expandedArgs.unshift('--endpoint-url', this.getEndpoint())
     }
 
-    return execa('aws', args, capture ? {} : { stdout: 'inherit', stderr: 'inherit' })
+    return execa('aws', expandedArgs, capture ? {} : { stdout: 'inherit', stderr: 'inherit' })
   }
 
   private async list(): Promise<IEntry[]> {
