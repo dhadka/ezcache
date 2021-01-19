@@ -225,34 +225,25 @@ jobs:
           type: diff
           path: ~/.local
       - name: Add .local to PATH
-        run: echo "$HOME/.local/bin" >> $GITHUB_PATH
+        run: |
+          mkdir -p "$HOME/.local/bin"
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
       - name: Setup .local binaries
         run: |
           set -e
           INSTALLED_VERSION=""
 
-          sudo apt update
-          sudo apt install hxnormalize pup
-
-          if command -v parallel; then
-            INSTALLED_VERSION=$(parallel --version | head -1 | cut -d ' ' -f3)
+          if command -v pup; then
+            INSTALLED_VERSION="v$(pup --version)"
           fi
           
-          LATEST_VERSION=$(curl -fsSL https://ftp.gnu.org/gnu/parallel | hxnormalize | pup 'a[href]' 'text{}' | grep 'parallel-' | grep -v 'latest' | cut -d '-' -f2 | cut -d '.' -f1 | sort -r | head -1)
+          LATEST_URL=$(curl -s https://api.github.com/repos/ericchiang/pup/releases/latest | jq -r ".assets | .[] | .browser_download_url" | grep "linux_amd64" | head -1)
+          LATEST_VERSION=$(echo $LATEST_URL | cut -d '/' -f 8)
 
           if [[ INSTALLED_VERSION != LATEST_VERSION ]]; then
-            mkdir -p parallel && pushd parallel
-
-            wget -q -t5 -O "parallel.tar.bz2" "http://ftp.gnu.org/gnu/parallel/parallel-$LATEST_VERSION.tar.gz2"
-            tar -xjf "parallel.tar.bz2"
-
-            pushd "parallel-$LATEST_VERSION"
-
-            ./configure --prefix="$HOME/.local"
-            make
-            make install
-
-            popd && popd
+            wget -q -t5 -O "pup_latest.zip" "$LATEST_URL"
+            unzip -d "$HOME/.local/bin" "pup_latest.zip"
+            rm "pup_latest.zip"
             echo "UPDATE_CACHE=true" >> $GITHUB_ENV
           fi
 
