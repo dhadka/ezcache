@@ -57,15 +57,15 @@ jobs:
     runs-on: ubuntu-latest
     services:
       minio:
-        image: lazybit/minio
+        image: minio/minio
         ports:
           - 9000:9000
         env:
-          MINIO_ACCESS_KEY: ${{ secrets.MINIO_ACCESS_KEY }}
-          MINIO_SECRET_KEY: ${{ secrets.MINIO_SECRET_KEY }}
+          MINIO_ROOT_USER: ${{ secrets.MINIO_ACCESS_KEY }}
+          MINIO_ROOT_PASSWORD: ${{ secrets.MINIO_SECRET_KEY }}
         volumes:
           - ${{ github.workspace }}/data:/data
-        options: --name=minio --health-cmd "curl http://localhost:9000/minio/health/live"
+        options: --name=minio
  
     steps:
       - uses: actions/checkout@v2
@@ -76,8 +76,11 @@ jobs:
           version: ${{ github.run_id }}
           provider: s3
         env: 
+          AWS_ACCESS_KEY_ID: ${{ secrets.MINIO_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.MINIO_SECRET_KEY }}
           AWS_ENDPOINT: http://localhost:9000
           AWS_BUCKET_NAME: ${{ secrets.BUCKET_NAME }}
+          AWS_REGION: us-east-1
       - name: Install dependencies
         run: |
           npm ci
