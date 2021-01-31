@@ -30,11 +30,11 @@ This provides a security boundary but also leads to caching inefficiencies.
 None of these alternative storage providers implement branch scoping.  Insead, caches are scoped to the
 repo.  As a result, all branches in a repo have access to and can share caches.  To ensure the integrity
 of your caches, you should require that all contributions from untrusted sources come from forks.
-Please also be aware of similar security concerns when using [self-hosted runners with public repos](https://docs.github.com/en/actions/hosting-your-own-runners/about-self-hosted-runners#self-hosted-runner-security-with-public-repositories).
 
-If using a self-hosted runner, take all necessary steps to protect and restrict access to the host machine.
+Please also be aware of all security concerns when using [self-hosted runners with public repos](https://docs.github.com/en/actions/hosting-your-own-runners/about-self-hosted-runners#self-hosted-runner-security-with-public-repositories).
+For example, take all necessary steps to protect and restrict access to the host machine.
 Secrets used to connect to storage accounts are sent to and used by the runner.  These secrets could
-be accessed by users with access to the host machine.
+be obtained by users with access to the host machine.
 
 ## Additional Info
 

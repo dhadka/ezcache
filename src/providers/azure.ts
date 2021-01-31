@@ -43,7 +43,7 @@ class AzureStorageProvider extends StorageProvider {
   }
 
   private invokeAz(command: 'list', args: string[], capture: boolean = false): execa.ExecaChildProcess<string> {
-    const expandedArgs = ['az', 'storage', 'blob', command, ...this.getConnectionArgs(), ...args]
+    const expandedArgs = ['storage', 'blob', command, ...this.getConnectionArgs(), ...args]
 
     return execa('az', expandedArgs, capture ? {} : { stdout: 'inherit', stderr: 'inherit' })
   }
@@ -56,6 +56,7 @@ class AzureStorageProvider extends StorageProvider {
       output = (await this.invokeAz('list', [], true)).stdout
     } catch (e) {
       const execaError = e as execa.ExecaError
+      core.error(e)
 
       if (execaError) {
         if (execaError.stderr.indexOf('ContainerNotFound') >= 0) {

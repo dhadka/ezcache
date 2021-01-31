@@ -1800,7 +1800,7 @@ class AzureStorageProvider extends provider_1.StorageProvider {
         return args;
     }
     invokeAz(command, args, capture = false) {
-        const expandedArgs = ['az', 'storage', 'blob', command, ...this.getConnectionArgs(), ...args];
+        const expandedArgs = ['storage', 'blob', command, ...this.getConnectionArgs(), ...args];
         return execa('az', expandedArgs, capture ? {} : { stdout: 'inherit', stderr: 'inherit' });
     }
     async list() {
@@ -1811,6 +1811,7 @@ class AzureStorageProvider extends provider_1.StorageProvider {
         }
         catch (e) {
             const execaError = e;
+            core.error(e);
             if (execaError) {
                 if (execaError.stderr.indexOf('ContainerNotFound') >= 0) {
                     core.info(`Container not found, creating it now...`);
