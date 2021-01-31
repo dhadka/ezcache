@@ -310,7 +310,7 @@ on self-hosted runners) to save and restore cache content to an Azure storage ac
     provider: azure
   env:
     SAS_TOKEN: ${{ secrets.SAS_TOKEN }}
-    STORAGE_ACCOUNT: ${{ secrets.STORAGE_ACCOUNT }}
+    ACCOUNT_NAME: ${{ secrets.ACCOUNT_NAME }}
     CONTAINER_NAME: cache
 ```
 

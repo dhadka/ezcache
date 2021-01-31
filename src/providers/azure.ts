@@ -2,7 +2,6 @@ import * as tar from '@actions/cache/lib/internal/tar'
 import * as utils from '@actions/cache/lib/internal/cacheUtils'
 import * as core from '@actions/core'
 import * as github from '@actions/github'
-import * as process from 'process'
 import * as path from 'path'
 import * as execa from 'execa'
 import { providers } from '../registry'
@@ -14,7 +13,7 @@ import { env } from '../settings'
  * Stores cache content in an Azure blob container.  This uses the Azure CLI (az) for all
  * of the storage operations.  Each cache is stored as a compressed tar to the path
  * 
- *   https://<storage_account>.blob.core.windows.net/<container_name>/<owner>/<repo>/<key>
+ *   https://<account_name>.blob.core.windows.net/<container_name>/<owner>/<repo>/<key>
  */
 class AzureStorageProvider extends StorageProvider {
   private getStoragePrefix(): string {
@@ -101,12 +100,12 @@ class AzureStorageProvider extends StorageProvider {
     const archivePath = path.join(archiveFolder, utils.getCacheFileName(compressionMethod))
 
     try {
-      core.info(`Restoring cache from ${this.getStorageKey(key)}`)
+      core.info(`Restoring cache from ${key}`)
       await this.invokeBlob('download', [
         '--container-name',
         this.getContainerName(),
         '--name',
-        this.getStorageKey(key),
+        key,
         '--file',
         archivePath,
       ])

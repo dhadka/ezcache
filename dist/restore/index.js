@@ -1779,7 +1779,14 @@ const utils_1 = __webpack_require__(163);
 const settings_1 = __webpack_require__(25);
 /**
  * Stores cache content in an Azure blob container.  This uses the Azure CLI (az) for all
- * of the storage operations.
+ * of the storage operations.  Each cache is stored as a compressed tar to the path
+ *
+ *   https://<account_name>.blob.core.windows.net/<container_name>/<owner>/<repo>/<key>
+ *
+ * Configure using the following environment variables:
+ *   ACCOUNT_NAME - The storage account name
+ *   CONTAINER_NAME - The container name
+ *
  */
 class AzureStorageProvider extends provider_1.StorageProvider {
     getStoragePrefix() {
@@ -1841,12 +1848,12 @@ class AzureStorageProvider extends provider_1.StorageProvider {
         const archiveFolder = await utils.createTempDirectory();
         const archivePath = path.join(archiveFolder, utils.getCacheFileName(compressionMethod));
         try {
-            core.info(`Restoring cache from ${this.getStorageKey(key)}`);
+            core.info(`Restoring cache from ${key}`);
             await this.invokeBlob('download', [
                 '--container-name',
                 this.getContainerName(),
                 '--name',
-                this.getStorageKey(key),
+                key,
                 '--file',
                 archivePath,
             ]);
