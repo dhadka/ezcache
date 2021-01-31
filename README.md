@@ -28,7 +28,7 @@ management tools.  Here's a few simple examples:
    - uses: dhadka/ezcache-save@master
    ```
    
-4. Different [backend storage providers](#storage-providers), including hosted, local and AWS S3.  Use local
+4. Different [backend storage providers](#storage-providers), including hosted, local, Azure, and AWS S3.  Use local
    or S3 to cache content of self-hosted runners and GitHub Enterprise Server!
 
    ```
@@ -253,7 +253,15 @@ If the cache is ever corrupted, you can "clear" the cache by quickly changing th
 ## Storage Providers
 
 By default, `hosted` storage is used which is backed by the GitHub Actions Cache servers.  As such, the same
-[usage limits and eviction policy](https://docs.github.com/en/free-pro-team@latest/actions/guides/caching-dependencies-to-speed-up-workflows#usage-limits-and-eviction-policy) applies.  The following alternatives can be used:
+[usage limits and eviction policy](https://docs.github.com/en/free-pro-team@latest/actions/guides/caching-dependencies-to-speed-up-workflows#usage-limits-and-eviction-policy) applies.  You can also use one of these
+alternative storage providers.
+
+** 
+
+1. Hosted enforces [branch scoping](https://docs.github.com/en/actions/guides/caching-dependencies-to-speed-up-workflows#restrictions-for-accessing-a-cache), meaning caches can only be shared
+   between key 
+   is not supported.  All branches in a repo can read and write to the same collection of caches.  
+   
 
 ### `local`
 
@@ -288,6 +296,28 @@ To use with an S3 compatible provider, such as Minio, set the AWS_ENDPOINT env v
 
 NOTE: There is no eviction logic built into the AWS S3 storage provider.  Instead, you must set up
 an [object lifecycle management policy](https://docs.aws.amazon.com/AmazonS3/latest/dev/object-lifecycle-mgmt.html)
+to evict old content.
+
+### `azure`
+
+Uses the Azure CLI (`az`) that is installed on hosted runners (or [needs to be installed](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli))
+on self-hosted runners) to save and restore cache content to an Azure storage account.
+
+```
+- uses: dhadka/ezcache@master
+  with:
+    type: npm
+    provider: azure
+  env:
+    SAS_TOKEN: ${{ secrets.SAS_TOKEN }}
+    ACCOUNT_NAME: ${{ secrets.ACCOUNT_NAME }}
+    CONTAINER_NAME: cache
+```
+
+This supports authentication with a `SAS_TOKEN`, `CONNECTION_STRING`, or `ACCOUNT_KEY`.
+
+NOTE: There is no eviction logic built into the Azure Blob storage provider.  Instead, you must set up an
+[lifecycle management policy](https://docs.microsoft.com/en-us/azure/storage/blobs/storage-lifecycle-management-concepts?tabs=azure-portal)
 to evict old content.
 
 # Explicit Save and Restore Steps

@@ -1761,7 +1761,158 @@ registry_1.handlers.add('cargo', new Cargo());
 
 /***/ }),
 /* 66 */,
-/* 67 */,
+/* 67 */
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const tar = __webpack_require__(434);
+const utils = __webpack_require__(15);
+const core = __webpack_require__(470);
+const github = __webpack_require__(469);
+const path = __webpack_require__(622);
+const execa = __webpack_require__(955);
+const registry_1 = __webpack_require__(822);
+const provider_1 = __webpack_require__(880);
+const utils_1 = __webpack_require__(163);
+const settings_1 = __webpack_require__(25);
+/**
+ * Stores cache content in an Azure blob container.  This uses the Azure CLI (az) for all
+ * of the storage operations.  Each cache is stored as a compressed tar to the path
+ *
+ *   https://<account_name>.blob.core.windows.net/<container_name>/<owner>/<repo>/<key>
+ */
+class AzureStorageProvider extends provider_1.StorageProvider {
+    getStoragePrefix() {
+        return `${github.context.repo.owner}/${github.context.repo.repo}`;
+    }
+    getStorageKey(key) {
+        return `${this.getStoragePrefix()}/${key}`;
+    }
+    getContainerName() {
+        return settings_1.env.getString('CONTAINER_NAME', { required: true });
+    }
+    getConnectionArgs() {
+        const sasToken = settings_1.env.getString('SAS_TOKEN');
+        const connectionString = settings_1.env.getString('CONNECTION_STRING');
+        const accountKey = settings_1.env.getString('ACCOUNT_KEY');
+        let args = [];
+        args.push('--account-name', settings_1.env.getString('ACCOUNT_NAME', { required: true }));
+        if (sasToken) {
+            args.push('--sas-token', sasToken);
+        }
+        if (connectionString) {
+            args.push('--connection-string', connectionString);
+        }
+        if (accountKey) {
+            args.push('--account-key', accountKey);
+        }
+        return args;
+    }
+    invokeContainer(command, args, capture = false) {
+        return this.invokeAz(['storage', 'container', command, ...args], capture);
+    }
+    invokeBlob(command, args, capture = false) {
+        return this.invokeAz(['storage', 'blob', command, ...args], capture);
+    }
+    invokeAz(args, capture = false) {
+        return execa('az', [...args, ...this.getConnectionArgs()], capture ? {} : { stdout: 'inherit', stderr: 'inherit' });
+    }
+    async list() {
+        let output = '[]';
+        const containerName = this.getContainerName();
+        const storagePrefix = this.getStoragePrefix();
+        try {
+            core.info(`Listing keys for ${storagePrefix}`);
+            output = (await this.invokeBlob('list', ['--container-name', containerName, '--prefix', storagePrefix], true))
+                .stdout;
+        }
+        catch (e) {
+            const execaError = e;
+            if (execaError && execaError.stderr && execaError.stderr.indexOf('ContainerNotFound') >= 0) {
+                core.info(`Container ${containerName} not found, creating it now...`);
+                await this.invokeContainer('create', ['--name', containerName]);
+            }
+            else {
+                core.error(e);
+            }
+        }
+        // remove the '<owner>/<repo>/' portion of the name
+        const result = JSON.parse(output);
+        for (const blob of result) {
+            blob.name = blob.name.substring(storagePrefix.length + 1);
+        }
+        return result;
+    }
+    async restore(key) {
+        const compressionMethod = await utils.getCompressionMethod();
+        const archiveFolder = await utils.createTempDirectory();
+        const archivePath = path.join(archiveFolder, utils.getCacheFileName(compressionMethod));
+        try {
+            core.info(`Restoring cache from ${this.getStorageKey(key)}`);
+            await this.invokeBlob('download', [
+                '--container-name',
+                this.getContainerName(),
+                '--name',
+                this.getStorageKey(key),
+                '--file',
+                archivePath,
+            ]);
+        }
+        catch (e) {
+            core.error(e);
+            return false;
+        }
+        await tar.extractTar(archivePath, compressionMethod);
+        return true;
+    }
+    async restoreCache(paths, primaryKey, restoreKeys) {
+        const searchKeys = utils_1.concatenateKeys(primaryKey, restoreKeys);
+        const content = await this.list();
+        for (const searchKey of searchKeys) {
+            const matches = content.filter((c) => c.name.startsWith(searchKey));
+            if (matches.length > 0) {
+                // Exact match
+                if (matches.some((m) => m.name === searchKey)) {
+                    if (await this.restore(searchKey)) {
+                        return searchKey;
+                    }
+                }
+                // Prefix match - select most recently created entry
+                matches.sort((a, b) => b.properties.creationTime.getTime() - a.properties.creationTime.getTime());
+                if (await this.restore(matches[0].name)) {
+                    return matches[0].name;
+                }
+            }
+        }
+    }
+    async saveCache(paths, key) {
+        const resolvedPaths = await utils.resolvePaths(paths);
+        const compressionMethod = await utils.getCompressionMethod();
+        const archiveFolder = await utils.createTempDirectory();
+        const archivePath = path.join(archiveFolder, utils.getCacheFileName(compressionMethod));
+        await tar.createTar(archiveFolder, resolvedPaths, compressionMethod);
+        try {
+            core.info(`Saving cache to ${this.getStorageKey(key)}`);
+            await this.invokeBlob('upload', [
+                '--container-name',
+                this.getContainerName(),
+                '--name',
+                this.getStorageKey(key),
+                '--file',
+                archivePath,
+            ]);
+        }
+        catch (e) {
+            core.error(e);
+        }
+    }
+}
+registry_1.providers.add('azure', new AzureStorageProvider());
+
+
+/***/ }),
 /* 68 */,
 /* 69 */,
 /* 70 */
@@ -50103,6 +50254,7 @@ exports.defaultSetter = defaultSetter;
 __webpack_require__(285);
 __webpack_require__(643);
 __webpack_require__(874);
+__webpack_require__(67);
 
 
 /***/ }),
@@ -54797,14 +54949,9 @@ class AwsStorageProvider extends provider_1.StorageProvider {
         }
         catch (e) {
             const execaError = e;
-            if (execaError) {
-                if (execaError.stderr.indexOf('NoSuchBucket') >= 0) {
-                    core.info(`Bucket ${this.getBucketName()} not found, creating it now...`);
-                    await this.invokeS3('mb', [`s3://${this.getBucketName()}`]);
-                }
-                else {
-                    core.error(e);
-                }
+            if (execaError && execaError.stderr && execaError.stderr.indexOf('NoSuchBucket') >= 0) {
+                core.info(`Bucket ${this.getBucketName()} not found, creating it now...`);
+                await this.invokeS3('mb', [`s3://${this.getBucketName()}`]);
             }
             else {
                 core.error(e);

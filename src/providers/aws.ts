@@ -38,7 +38,11 @@ class AwsStorageProvider extends StorageProvider {
     return `${this.getStoragePrefix()}/${key}`
   }
 
-  private invokeS3(command: 'ls' | 'mb' | 'cp', args: string[], capture: boolean = false): execa.ExecaChildProcess<string> {
+  private invokeS3(
+    command: 'ls' | 'mb' | 'cp',
+    args: string[],
+    capture: boolean = false,
+  ): execa.ExecaChildProcess<string> {
     const expandedArgs = ['s3', command, ...args]
 
     if (this.getEndpoint()) {
@@ -57,13 +61,9 @@ class AwsStorageProvider extends StorageProvider {
     } catch (e) {
       const execaError = e as execa.ExecaError
 
-      if (execaError) {
-        if (execaError.stderr.indexOf('NoSuchBucket') >= 0) {
-          core.info(`Bucket ${this.getBucketName()} not found, creating it now...`)
-          await this.invokeS3('mb', [`s3://${this.getBucketName()}`])
-        } else {
-          core.error(e)
-        }
+      if (execaError && execaError.stderr && execaError.stderr.indexOf('NoSuchBucket') >= 0) {
+        core.info(`Bucket ${this.getBucketName()} not found, creating it now...`)
+        await this.invokeS3('mb', [`s3://${this.getBucketName()}`])
       } else {
         core.error(e)
       }
@@ -88,7 +88,7 @@ class AwsStorageProvider extends StorageProvider {
 
     try {
       core.info(`Restoring cache from ${this.getStorageKey(key)}`)
-      await this.invokeS3('cp', [ `s3://${this.getBucketName()}/${this.getStorageKey(key)}`, archivePath])
+      await this.invokeS3('cp', [`s3://${this.getBucketName()}/${this.getStorageKey(key)}`, archivePath])
     } catch (e) {
       core.error(e)
       return false
