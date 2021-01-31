@@ -29,7 +29,6 @@ class AzureStorageProvider extends StorageProvider {
     let args = []
 
     args.push('--account-name', env.getString('ACCOUNT_NAME', { required: true }))
-    args.push('--container-name', env.getString('CONTAINER_NAME', { required: true }))
 
     if (sasToken) {
       args.push('--sas-token', sasToken)
@@ -42,41 +41,37 @@ class AzureStorageProvider extends StorageProvider {
     return args
   }
 
-  private invokeAz(command: 'list', args: string[], capture: boolean = false): execa.ExecaChildProcess<string> {
-    const expandedArgs = ['storage', 'blob', command, ...this.getConnectionArgs(), ...args]
-
-    return execa('az', expandedArgs, capture ? {} : { stdout: 'inherit', stderr: 'inherit' })
+  private invokeContainer(command: 'create', args: string[], capture: boolean = false): execa.ExecaChildProcess<string> {
+    return this.invokeAz(['storage', 'container', command, ...args], capture)
   }
 
-  private async list(): Promise<IEntry[]> {
-    let output: string = ''
+  private invokeBlob(command: 'list', args: string[], capture: boolean = false): execa.ExecaChildProcess<string> {
+    return this.invokeAz(['storage', 'blob', command, ...args], capture)
+  }
+
+  private invokeAz(args: string[], capture: boolean = false): execa.ExecaChildProcess<string> {
+    return execa('az', [...args, ...this.getConnectionArgs()], capture ? {} : { stdout: 'inherit', stderr: 'inherit' })
+  }
+
+  private async list(): Promise<IBlob[]> {
+    let output: string = '[]'
+    const containerName = env.getString('CONTAINER_NAME', { required: true })
 
     try {
       core.info(`Listing keys for ${this.getStoragePrefix()}`)
-      output = (await this.invokeAz('list', [], true)).stdout
+      output = (await this.invokeBlob('list', ['--container-name', containerName], true)).stdout
     } catch (e) {
       const execaError = e as execa.ExecaError
 
       if (execaError && execaError.stderr && execaError.stderr.indexOf('ContainerNotFound') >= 0) {
         core.info(`Container not found, creating it now...`)
-        //await this.invokeAzCopy('make', [`https://${this.getStorageAccountName()}.blob.core.windows.net/${this.getContainerName()}/${this.getSasToken()}`])
+        await this.invokeContainer('create', ['--name', containerName])
       } else {
         core.error(e)
       }
     }
 
-    // Each line in output contains four columns:
-    //   <date> <time> <size> <object_name>
-    // Lines with prefixes contain a different number of columns, which we exclude.
-    // return output
-    //   .split('\n')
-    //   .map((s) => s.startsWith("INFO: ") ? s.substring(0, 6) : s)
-    //   .map((s) => s.split(/;/, 2))
-    //   .filter((a) => a.length == 2)
-    //   .map<IEntry>((a) => {
-    //     return { key: a[3], size: parseInt(a[2]), created: new Date(`${a[0]} ${a[1]}`) }
-    //   })
-    return []
+    return JSON.parse(output)
   }
 
   private async restore(key: string): Promise<boolean> {
@@ -99,6 +94,10 @@ class AzureStorageProvider extends StorageProvider {
   async restoreCache(paths: string[], primaryKey: string, restoreKeys?: string[]): Promise<string | undefined> {
     const searchKeys = concatenateKeys(primaryKey, restoreKeys)
     const content = await this.list()
+
+    for (const blob of content) {
+      core.info(`Blob: ${blob.name}, Created: ${blob.creationTime}, Size: ${blob.properties.contentLength}`)
+    }
 
     // for (const searchKey of searchKeys) {
     //   const matches = content.filter((c) => c.key.startsWith(searchKey))
@@ -140,10 +139,14 @@ class AzureStorageProvider extends StorageProvider {
   }
 }
 
-interface IEntry {
-  key: string
-  size: number
-  created: Date
+interface IBlob {
+  name: string
+  creationTime: Date
+  properties: IProperties
+}
+
+interface IProperties {
+  contentLength: number
 }
 
 providers.add('azure', new AzureStorageProvider())
