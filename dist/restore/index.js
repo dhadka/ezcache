@@ -1807,7 +1807,7 @@ class AzureStorageProvider extends provider_1.StorageProvider {
         let output = '';
         try {
             core.info(`Listing keys for ${this.getStoragePrefix()}`);
-            output = (await this.invokeAz('list', [])).stdout;
+            output = (await this.invokeAz('list', [], true)).stdout;
         }
         catch (e) {
             const execaError = e;

@@ -8,13 +8,15 @@ eviction policy.  While hosted storage should work for most users, it has some l
    across different operating systems and software versions.
 
 2. Hosted caching uses [branch scoping](https://docs.github.com/en/actions/guides/caching-dependencies-to-speed-up-workflows#restrictions-for-accessing-a-cache)
-   to restrict how caches can be shared.  Furthermore, hosted caching can only be used in workflows triggered
-   by events including a `GITHUB_REF` (i.e., associated with a specific git ref).
+   to restrict how caches can be shared.
+   
+3. Hosted caching can only be used in workflows triggered by events including a `GITHUB_REF`
+   (i.e., associated with a specific git ref).
 
-3. Self-hosted runners may experience slower upload and download speeds due to increased distances between
+4. Self-hosted runners may experience slower upload and download speeds due to increased distances between
    the runner and the GitHub Actions cache servers.
 
-4. Caching is currently not supported on GitHub Enterprise Server.
+5. Caching is currently not supported on GitHub Enterprise Server.
 
 These alternative storage providers remove most if not all of these limitations.
 
@@ -29,6 +31,10 @@ None of these alternative storage providers implement branch scoping.  Insead, c
 repo.  As a result, all branches in a repo have access to and can share caches.  To ensure the integrity
 of your caches, you should require that all contributions from untrusted sources come from forks.
 Please also be aware of similar security concerns when using [self-hosted runners with public repos](https://docs.github.com/en/actions/hosting-your-own-runners/about-self-hosted-runners#self-hosted-runner-security-with-public-repositories).
+
+If using a self-hosted runner, take all necessary steps to protect and restrict access to the host machine.
+Secrets used to connect to storage accounts are sent to and used by the runner.  These secrets could
+be accessed by users with access to the host machine.
 
 ## Additional Info
 

@@ -53,7 +53,7 @@ class AzureStorageProvider extends StorageProvider {
 
     try {
       core.info(`Listing keys for ${this.getStoragePrefix()}`)
-      output = (await this.invokeAz('list', [])).stdout
+      output = (await this.invokeAz('list', [], true)).stdout
     } catch (e) {
       const execaError = e as execa.ExecaError
 
@@ -68,8 +68,6 @@ class AzureStorageProvider extends StorageProvider {
         core.error(e)
       }
     }
-
-
 
     // Each line in output contains four columns:
     //   <date> <time> <size> <object_name>
