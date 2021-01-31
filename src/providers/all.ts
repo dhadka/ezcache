@@ -2,3 +2,4 @@
 require('./hosted')
 require('./local')
 require('./aws')
+require('./azure')

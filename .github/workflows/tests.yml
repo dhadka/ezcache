@@ -539,6 +539,54 @@ jobs:
           npm ci
 
   # ======================================================================
+  # Azure Storage Provider
+  # ======================================================================
+
+  save-azure-cache:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Cache npm
+        uses: ./
+        with:
+          type: npm
+          version: ${{ github.run_id }}
+          provider: azure
+        env: 
+          SAS_TOKEN: ${{ secrets.SAS_TOKEN }}
+          STORAGE_ACCOUNT: ${{ secrets.STORAGE_ACCOUNT }}
+          CONTIANER_NAME: cache
+      - name: Install dependencies
+        run: |
+          npm ci
+
+  restore-azure-cache:
+    runs-on: ubuntu-latest
+    needs: save-azure-cache
+    steps:
+      - uses: actions/checkout@v2
+      - name: Cache npm
+        uses: ./
+        with:
+          type: npm
+          version: ${{ github.run_id }}
+          provider: azure
+        env: 
+          SAS_TOKEN: ${{ secrets.SAS_TOKEN }}
+          STORAGE_ACCOUNT: ${{ secrets.STORAGE_ACCOUNT }}
+          CONTIANER_NAME: cache
+      - name: Verify restore worked
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          echo "Restore failed!"
+          exit -1
+      - name: Install dependencies
+        run: |
+          npm ci
+
+
+
+  # ======================================================================
   # Docker Caches
   # ======================================================================
 
