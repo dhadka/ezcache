@@ -12,7 +12,7 @@ import { env } from '../settings'
 /**
  * Stores cache content in an Azure blob container.  This uses the Azure CLI (az) for all
  * of the storage operations.  Each cache is stored as a compressed tar to the path
- * 
+ *
  *   https://<account_name>.blob.core.windows.net/<container_name>/<owner>/<repo>/<key>
  */
 class AzureStorageProvider extends StorageProvider {
@@ -74,12 +74,12 @@ class AzureStorageProvider extends StorageProvider {
   private async list(): Promise<IBlob[]> {
     let output: string = '[]'
     const containerName = this.getContainerName()
+    const storagePrefix = this.getStoragePrefix()
 
     try {
-      core.info(`Listing keys for ${this.getStoragePrefix()}`)
-      output = (
-        await this.invokeBlob('list', ['--container-name', containerName, '--prefix', this.getStoragePrefix()], true)
-      ).stdout
+      core.info(`Listing keys for ${storagePrefix}`)
+      output = (await this.invokeBlob('list', ['--container-name', containerName, '--prefix', storagePrefix], true))
+        .stdout
     } catch (e) {
       const execaError = e as execa.ExecaError
 
@@ -91,7 +91,14 @@ class AzureStorageProvider extends StorageProvider {
       }
     }
 
-    return JSON.parse(output)
+    // remove the '<owner>/<repo>/' portion of the name
+    const result: IBlob[] = JSON.parse(output)
+
+    for (const blob of result) {
+      blob.name = blob.name.substring(storagePrefix.length + 1)
+    }
+
+    return result
   }
 
   private async restore(key: string): Promise<boolean> {
@@ -100,12 +107,12 @@ class AzureStorageProvider extends StorageProvider {
     const archivePath = path.join(archiveFolder, utils.getCacheFileName(compressionMethod))
 
     try {
-      core.info(`Restoring cache from ${key}`)
+      core.info(`Restoring cache from ${this.getStorageKey(key)}`)
       await this.invokeBlob('download', [
         '--container-name',
         this.getContainerName(),
         '--name',
-        key,
+        this.getStorageKey(key),
         '--file',
         archivePath,
       ])

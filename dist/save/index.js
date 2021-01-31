@@ -1822,9 +1822,11 @@ class AzureStorageProvider extends provider_1.StorageProvider {
     async list() {
         let output = '[]';
         const containerName = this.getContainerName();
+        const storagePrefix = this.getStoragePrefix();
         try {
-            core.info(`Listing keys for ${this.getStoragePrefix()}`);
-            output = (await this.invokeBlob('list', ['--container-name', containerName, '--prefix', this.getStoragePrefix()], true)).stdout;
+            core.info(`Listing keys for ${storagePrefix}`);
+            output = (await this.invokeBlob('list', ['--container-name', containerName, '--prefix', storagePrefix], true))
+                .stdout;
         }
         catch (e) {
             const execaError = e;
@@ -1836,19 +1838,24 @@ class AzureStorageProvider extends provider_1.StorageProvider {
                 core.error(e);
             }
         }
-        return JSON.parse(output);
+        // remove the '<owner>/<repo>/' portion of the name
+        const result = JSON.parse(output);
+        for (const blob of result) {
+            blob.name = blob.name.substring(storagePrefix.length + 1);
+        }
+        return result;
     }
     async restore(key) {
         const compressionMethod = await utils.getCompressionMethod();
         const archiveFolder = await utils.createTempDirectory();
         const archivePath = path.join(archiveFolder, utils.getCacheFileName(compressionMethod));
         try {
-            core.info(`Restoring cache from ${key}`);
+            core.info(`Restoring cache from ${this.getStorageKey(key)}`);
             await this.invokeBlob('download', [
                 '--container-name',
                 this.getContainerName(),
                 '--name',
-                key,
+                this.getStorageKey(key),
                 '--file',
                 archivePath,
             ]);

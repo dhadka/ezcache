@@ -28,7 +28,7 @@ management tools.  Here's a few simple examples:
    - uses: dhadka/ezcache-save@master
    ```
    
-4. Different [backend storage providers](#storage-providers), including hosted, local and AWS S3.  Use local
+4. Different [backend storage providers](#storage-providers), including hosted, local, Azure, and AWS S3.  Use local
    or S3 to cache content of self-hosted runners and GitHub Enterprise Server!
 
    ```
