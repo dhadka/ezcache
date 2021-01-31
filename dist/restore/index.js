@@ -1886,7 +1886,6 @@ class AzureStorageProvider extends provider_1.StorageProvider {
                 }
             }
         }
-        return undefined;
     }
     async saveCache(paths, key) {
         const resolvedPaths = await utils.resolvePaths(paths);

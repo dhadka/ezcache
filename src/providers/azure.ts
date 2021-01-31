@@ -148,8 +148,6 @@ class AzureStorageProvider extends StorageProvider {
         }
       }
     }
-
-    return undefined
   }
 
   async saveCache(paths: string[], key: string): Promise<void> {

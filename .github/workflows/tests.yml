@@ -566,6 +566,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Cache npm
+        id: cache
         uses: ./
         with:
           type: npm
