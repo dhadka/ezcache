@@ -56,15 +56,10 @@ class AzureStorageProvider extends StorageProvider {
       output = (await this.invokeAz('list', [], true)).stdout
     } catch (e) {
       const execaError = e as execa.ExecaError
-      core.error(e)
 
-      if (execaError) {
-        if (execaError.stderr.indexOf('ContainerNotFound') >= 0) {
-          core.info(`Container not found, creating it now...`)
-          //await this.invokeAzCopy('make', [`https://${this.getStorageAccountName()}.blob.core.windows.net/${this.getContainerName()}/${this.getSasToken()}`])
-        } else {
-          core.error(e)
-        }
+      if (execaError && execaError.stderr && execaError.stderr.indexOf('ContainerNotFound') >= 0) {
+        core.info(`Container not found, creating it now...`)
+        //await this.invokeAzCopy('make', [`https://${this.getStorageAccountName()}.blob.core.windows.net/${this.getContainerName()}/${this.getSasToken()}`])
       } else {
         core.error(e)
       }

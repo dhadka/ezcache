@@ -1811,15 +1811,9 @@ class AzureStorageProvider extends provider_1.StorageProvider {
         }
         catch (e) {
             const execaError = e;
-            core.error(e);
-            if (execaError) {
-                if (execaError.stderr.indexOf('ContainerNotFound') >= 0) {
-                    core.info(`Container not found, creating it now...`);
-                    //await this.invokeAzCopy('make', [`https://${this.getStorageAccountName()}.blob.core.windows.net/${this.getContainerName()}/${this.getSasToken()}`])
-                }
-                else {
-                    core.error(e);
-                }
+            if (execaError && execaError.stderr && execaError.stderr.indexOf('ContainerNotFound') >= 0) {
+                core.info(`Container not found, creating it now...`);
+                //await this.invokeAzCopy('make', [`https://${this.getStorageAccountName()}.blob.core.windows.net/${this.getContainerName()}/${this.getSasToken()}`])
             }
             else {
                 core.error(e);
@@ -54927,14 +54921,9 @@ class AwsStorageProvider extends provider_1.StorageProvider {
         }
         catch (e) {
             const execaError = e;
-            if (execaError) {
-                if (execaError.stderr.indexOf('NoSuchBucket') >= 0) {
-                    core.info(`Bucket ${this.getBucketName()} not found, creating it now...`);
-                    await this.invokeS3('mb', [`s3://${this.getBucketName()}`]);
-                }
-                else {
-                    core.error(e);
-                }
+            if (execaError && execaError.stderr && execaError.stderr.indexOf('NoSuchBucket') >= 0) {
+                core.info(`Bucket ${this.getBucketName()} not found, creating it now...`);
+                await this.invokeS3('mb', [`s3://${this.getBucketName()}`]);
             }
             else {
                 core.error(e);

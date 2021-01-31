@@ -57,13 +57,9 @@ class AwsStorageProvider extends StorageProvider {
     } catch (e) {
       const execaError = e as execa.ExecaError
 
-      if (execaError) {
-        if (execaError.stderr.indexOf('NoSuchBucket') >= 0) {
-          core.info(`Bucket ${this.getBucketName()} not found, creating it now...`)
-          await this.invokeS3('mb', [`s3://${this.getBucketName()}`])
-        } else {
-          core.error(e)
-        }
+      if (execaError && execaError.stderr && execaError.stderr.indexOf('NoSuchBucket') >= 0) {
+        core.info(`Bucket ${this.getBucketName()} not found, creating it now...`)
+        await this.invokeS3('mb', [`s3://${this.getBucketName()}`])
       } else {
         core.error(e)
       }
