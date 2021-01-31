@@ -12,7 +12,9 @@ import { env } from '../settings'
 
 /**
  * Stores cache content in an Azure blob container.  This uses the Azure CLI (az) for all
- * of the storage operations.
+ * of the storage operations.  Each cache is stored as a compressed tar to the path
+ * 
+ *   https://<storage_account>.blob.core.windows.net/<container_name>/<owner>/<repo>/<key>
  */
 class AzureStorageProvider extends StorageProvider {
   private getStoragePrefix(): string {
@@ -23,9 +25,14 @@ class AzureStorageProvider extends StorageProvider {
     return `${this.getStoragePrefix()}/${key}`
   }
 
+  private getContainerName(): string {
+    return env.getString('CONTAINER_NAME', { required: true })
+  }
+
   private getConnectionArgs(): string[] {
     const sasToken = env.getString('SAS_TOKEN')
     const connectionString = env.getString('CONNECTION_STRING')
+    const accountKey = env.getString('ACCOUNT_KEY')
     let args = []
 
     args.push('--account-name', env.getString('ACCOUNT_NAME', { required: true }))
@@ -33,19 +40,31 @@ class AzureStorageProvider extends StorageProvider {
     if (sasToken) {
       args.push('--sas-token', sasToken)
     }
-    
+
     if (connectionString) {
       args.push('--connection-string', connectionString)
+    }
+
+    if (accountKey) {
+      args.push('--account-key', accountKey)
     }
 
     return args
   }
 
-  private invokeContainer(command: 'create', args: string[], capture: boolean = false): execa.ExecaChildProcess<string> {
+  private invokeContainer(
+    command: 'create',
+    args: string[],
+    capture: boolean = false,
+  ): execa.ExecaChildProcess<string> {
     return this.invokeAz(['storage', 'container', command, ...args], capture)
   }
 
-  private invokeBlob(command: 'list', args: string[], capture: boolean = false): execa.ExecaChildProcess<string> {
+  private invokeBlob(
+    command: 'list' | 'download' | 'upload',
+    args: string[],
+    capture: boolean = false,
+  ): execa.ExecaChildProcess<string> {
     return this.invokeAz(['storage', 'blob', command, ...args], capture)
   }
 
@@ -55,16 +74,18 @@ class AzureStorageProvider extends StorageProvider {
 
   private async list(): Promise<IBlob[]> {
     let output: string = '[]'
-    const containerName = env.getString('CONTAINER_NAME', { required: true })
+    const containerName = this.getContainerName()
 
     try {
       core.info(`Listing keys for ${this.getStoragePrefix()}`)
-      output = (await this.invokeBlob('list', ['--container-name', containerName], true)).stdout
+      output = (
+        await this.invokeBlob('list', ['--container-name', containerName, '--prefix', this.getStoragePrefix()], true)
+      ).stdout
     } catch (e) {
       const execaError = e as execa.ExecaError
 
       if (execaError && execaError.stderr && execaError.stderr.indexOf('ContainerNotFound') >= 0) {
-        core.info(`Container not found, creating it now...`)
+        core.info(`Container ${containerName} not found, creating it now...`)
         await this.invokeContainer('create', ['--name', containerName])
       } else {
         core.error(e)
@@ -75,67 +96,77 @@ class AzureStorageProvider extends StorageProvider {
   }
 
   private async restore(key: string): Promise<boolean> {
-    // const compressionMethod = await utils.getCompressionMethod()
-    // const archiveFolder = await utils.createTempDirectory()
-    // const archivePath = path.join(archiveFolder, utils.getCacheFileName(compressionMethod))
+    const compressionMethod = await utils.getCompressionMethod()
+    const archiveFolder = await utils.createTempDirectory()
+    const archivePath = path.join(archiveFolder, utils.getCacheFileName(compressionMethod))
 
-    // try {
-    //   core.info(`Restoring cache from ${this.getStorageKey(key)}`)
-    //   await this.invokeS3('cp', [ `s3://${this.getBucketName()}/${this.getStorageKey(key)}`, archivePath])
-    // } catch (e) {
-    //   core.error(e)
-    //   return false
-    // }
+    try {
+      core.info(`Restoring cache from ${this.getStorageKey(key)}`)
+      await this.invokeBlob('download', [
+        '--container-name',
+        this.getContainerName(),
+        '--name',
+        this.getStorageKey(key),
+        '--file',
+        archivePath,
+      ])
+    } catch (e) {
+      core.error(e)
+      return false
+    }
 
-    // await tar.extractTar(archivePath, compressionMethod)
-    return false
+    await tar.extractTar(archivePath, compressionMethod)
+    return true
   }
 
   async restoreCache(paths: string[], primaryKey: string, restoreKeys?: string[]): Promise<string | undefined> {
     const searchKeys = concatenateKeys(primaryKey, restoreKeys)
     const content = await this.list()
 
-    for (const blob of content) {
-      core.info(`Blob: ${blob.name}, Created: ${blob.properties.creationTime}, Size: ${blob.properties.contentLength}`)
+    for (const searchKey of searchKeys) {
+      const matches = content.filter((c) => c.name.startsWith(searchKey))
+
+      if (matches.length > 0) {
+        // Exact match
+        if (matches.some((m) => m.name === searchKey)) {
+          if (await this.restore(searchKey)) {
+            return searchKey
+          }
+        }
+
+        // Prefix match - select most recently created entry
+        matches.sort((a, b) => b.properties.creationTime.getTime() - a.properties.creationTime.getTime())
+
+        if (await this.restore(matches[0].name)) {
+          return matches[0].name
+        }
+      }
     }
-
-    // for (const searchKey of searchKeys) {
-    //   const matches = content.filter((c) => c.key.startsWith(searchKey))
-
-    //   if (matches.length > 0) {
-    //     // Exact match
-    //     if (matches.some((m) => m.key === searchKey)) {
-    //       if (await this.restore(searchKey)) {
-    //         return searchKey
-    //       }
-    //     }
-
-    //     // Prefix match - select most recently created entry
-    //     matches.sort((a, b) => b.created.getTime() - a.created.getTime())
-
-    //     if (await this.restore(matches[0].key)) {
-    //       return matches[0].key
-    //     }
-    //   }
-    // }
 
     return undefined
   }
 
   async saveCache(paths: string[], key: string): Promise<void> {
-    // const resolvedPaths = await utils.resolvePaths(paths)
-    // const compressionMethod = await utils.getCompressionMethod()
-    // const archiveFolder = await utils.createTempDirectory()
-    // const archivePath = path.join(archiveFolder, utils.getCacheFileName(compressionMethod))
+    const resolvedPaths = await utils.resolvePaths(paths)
+    const compressionMethod = await utils.getCompressionMethod()
+    const archiveFolder = await utils.createTempDirectory()
+    const archivePath = path.join(archiveFolder, utils.getCacheFileName(compressionMethod))
 
-    // await tar.createTar(archiveFolder, resolvedPaths, compressionMethod)
+    await tar.createTar(archiveFolder, resolvedPaths, compressionMethod)
 
-    // try {
-    //   core.info(`Saving cache to ${this.getStorageKey(key)}`)
-    //   await this.invokeS3('cp', [archivePath, `s3://${this.getBucketName()}/${this.getStorageKey(key)}`])
-    // } catch (e) {
-    //   core.error(e)
-    // }
+    try {
+      core.info(`Saving cache to ${this.getStorageKey(key)}`)
+      await this.invokeBlob('upload', [
+        '--container-name',
+        this.getContainerName(),
+        '--name',
+        this.getStorageKey(key),
+        '--file',
+        archivePath,
+      ])
+    } catch (e) {
+      core.error(e)
+    }
   }
 }
 

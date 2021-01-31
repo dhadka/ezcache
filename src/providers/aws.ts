@@ -38,7 +38,11 @@ class AwsStorageProvider extends StorageProvider {
     return `${this.getStoragePrefix()}/${key}`
   }
 
-  private invokeS3(command: 'ls' | 'mb' | 'cp', args: string[], capture: boolean = false): execa.ExecaChildProcess<string> {
+  private invokeS3(
+    command: 'ls' | 'mb' | 'cp',
+    args: string[],
+    capture: boolean = false,
+  ): execa.ExecaChildProcess<string> {
     const expandedArgs = ['s3', command, ...args]
 
     if (this.getEndpoint()) {
@@ -84,7 +88,7 @@ class AwsStorageProvider extends StorageProvider {
 
     try {
       core.info(`Restoring cache from ${this.getStorageKey(key)}`)
-      await this.invokeS3('cp', [ `s3://${this.getBucketName()}/${this.getStorageKey(key)}`, archivePath])
+      await this.invokeS3('cp', [`s3://${this.getBucketName()}/${this.getStorageKey(key)}`, archivePath])
     } catch (e) {
       core.error(e)
       return false
