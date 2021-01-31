@@ -1844,7 +1844,7 @@ class AzureStorageProvider extends provider_1.StorageProvider {
         const searchKeys = utils_1.concatenateKeys(primaryKey, restoreKeys);
         const content = await this.list();
         for (const blob of content) {
-            core.info(`Blob: ${blob.name}, Created: ${blob.creationTime}, Size: ${blob.properties.contentLength}`);
+            core.info(`Blob: ${blob.name}, Created: ${blob.properties.creationTime}, Size: ${blob.properties.contentLength}`);
         }
         // for (const searchKey of searchKeys) {
         //   const matches = content.filter((c) => c.key.startsWith(searchKey))

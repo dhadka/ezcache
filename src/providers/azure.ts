@@ -96,7 +96,7 @@ class AzureStorageProvider extends StorageProvider {
     const content = await this.list()
 
     for (const blob of content) {
-      core.info(`Blob: ${blob.name}, Created: ${blob.creationTime}, Size: ${blob.properties.contentLength}`)
+      core.info(`Blob: ${blob.name}, Created: ${blob.properties.creationTime}, Size: ${blob.properties.contentLength}`)
     }
 
     // for (const searchKey of searchKeys) {
@@ -141,12 +141,12 @@ class AzureStorageProvider extends StorageProvider {
 
 interface IBlob {
   name: string
-  creationTime: Date
   properties: IProperties
 }
 
 interface IProperties {
   contentLength: number
+  creationTime: Date
 }
 
 providers.add('azure', new AzureStorageProvider())
