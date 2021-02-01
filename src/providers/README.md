@@ -38,7 +38,7 @@ be obtained by users with access to the host machine.
 
 ## Additional Info and Known Issues
 
-Please see below for additional information specific to each blob provider.
+Refer below for additional information specific to each cache provider.
 
 ### Local Provider
 
