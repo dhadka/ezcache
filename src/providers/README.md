@@ -36,9 +36,30 @@ For example, take all necessary steps to protect and restrict access to the host
 Secrets used to connect to storage accounts are sent to and used by the runner.  These secrets could
 be obtained by users with access to the host machine.
 
-## Additional Info
+## Additional Info and Known Issues
 
-Please refer to the source code documentation for more information about each provider.  For example, some
-providers, such as AWS S3 and Azure Blob storage, do not provide any eviction mechanism and instead require
-you to configure a lifecycle management policy.  You are responsible for all costs associated with operating
-the storage provider.
+Please see below for additional information specific to each blob provider.
+
+### Local Provider
+
+1. Cached content is only accessible by the local machine.  Therefore, if you have multiple self-hosted runners,
+   each will need to populate its local cache.
+
+2. Furthermore, workflows that share cache content between jobs will not work if there are multiple
+   self-hosted runners, as each job could be picked up by a different runner.
+
+### Azure Provider
+
+1. The Azure provider requires the Azure CLI (`az`) to be installed.
+
+2. Unfortunately, while we do offer this provider, our experience shows some of the operations required
+   for caching, such as listing existing blobs, are incredibly slow.  We have observed the list operation
+   taking upwards of 10 seconds.  This could substantially limit any benefit from caching.
+
+3. Eviction is not supported.  Instead, configure a lifecycle management policy to clean up old content.
+
+### Amazon S3 Provider
+
+1. The Amazon S3 provider requires the Amazon CLI to be installed.
+
+2. Eviction is not supported.  Instead, configure a lifecycle management policy to clean up old content.
