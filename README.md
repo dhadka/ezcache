@@ -82,7 +82,8 @@ automatically install them during a cache miss.
 
 ## General-Purpose Caches
 
-ezcache also supports a number of general-purpose cache types designed to store a user-defined path.
+ezcache also supports a number of general-purpose cache types.  Each will store one or more paths.  Put
+each path on a separate line.
 
 ### daily
 
