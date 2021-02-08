@@ -75,6 +75,7 @@ class AzureStorageProvider extends StorageProvider {
     let output: string = '[]'
     const containerName = this.getContainerName()
     const storagePrefix = this.getStoragePrefix()
+    let startTime = Date.now()
 
     try {
       core.info(`Listing keys for ${storagePrefix}`)
@@ -91,6 +92,9 @@ class AzureStorageProvider extends StorageProvider {
       }
     }
 
+    core.info(`List took ${Date.now() - startTime} ms`)
+    startTime = Date.now()
+
     // remove the '<owner>/<repo>/' portion of the name
     const result: IBlob[] = JSON.parse(output)
 
@@ -98,6 +102,7 @@ class AzureStorageProvider extends StorageProvider {
       blob.name = blob.name.substring(storagePrefix.length + 1)
     }
 
+    core.info(`Parse took ${Date.now() - startTime} ms`)
     return result
   }
 
@@ -130,6 +135,7 @@ class AzureStorageProvider extends StorageProvider {
     const content = await this.list()
 
     for (const searchKey of searchKeys) {
+      core.info(`Checking for match with key ${searchKey}`)
       const matches = content.filter((c) => c.name.startsWith(searchKey))
 
       if (matches.length > 0) {

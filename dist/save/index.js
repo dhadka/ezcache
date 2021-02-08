@@ -1823,6 +1823,7 @@ class AzureStorageProvider extends provider_1.StorageProvider {
         let output = '[]';
         const containerName = this.getContainerName();
         const storagePrefix = this.getStoragePrefix();
+        let startTime = Date.now();
         try {
             core.info(`Listing keys for ${storagePrefix}`);
             output = (await this.invokeBlob('list', ['--container-name', containerName, '--prefix', storagePrefix], true))
@@ -1838,11 +1839,14 @@ class AzureStorageProvider extends provider_1.StorageProvider {
                 core.error(e);
             }
         }
+        core.info(`List took ${Date.now() - startTime} ms`);
+        startTime = Date.now();
         // remove the '<owner>/<repo>/' portion of the name
         const result = JSON.parse(output);
         for (const blob of result) {
             blob.name = blob.name.substring(storagePrefix.length + 1);
         }
+        core.info(`Parse took ${Date.now() - startTime} ms`);
         return result;
     }
     async restore(key) {
@@ -1871,6 +1875,7 @@ class AzureStorageProvider extends provider_1.StorageProvider {
         const searchKeys = utils_1.concatenateKeys(primaryKey, restoreKeys);
         const content = await this.list();
         for (const searchKey of searchKeys) {
+            core.info(`Checking for match with key ${searchKey}`);
             const matches = content.filter((c) => c.name.startsWith(searchKey));
             if (matches.length > 0) {
                 // Exact match
