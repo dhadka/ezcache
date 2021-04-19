@@ -8,7 +8,7 @@ class Mix extends CacheHandler {
   }
 
   async getKey(version?: string): Promise<string> {
-    return `${runner.os}-${version}-mix-${await hashFiles('mix.lock')}`
+    return `${runner.os}-${version}-mix-${await hashFiles('**/mix.lock')}`
   }
 
   async getRestoreKeys(version?: string): Promise<string[]> {
@@ -16,7 +16,7 @@ class Mix extends CacheHandler {
   }
 
   async shouldCache(): Promise<boolean> {
-    return await matches('mix.lock')
+    return await matches('**/mix.lock')
   }
 }
 
