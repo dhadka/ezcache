@@ -428,40 +428,40 @@ jobs:
   # Local Storage Provider
   # ======================================================================
         
-  save-local-cache:
-    runs-on: self-hosted
-    steps:
-      - uses: actions/checkout@v2
-      - name: Cache npm
-        uses: ./
-        with:
-          type: npm
-          version: ${{ github.run_id }}
-          provider: local
-      - name: Install dependencies
-        run: |
-          npm ci
+  #save-local-cache:
+  #  runs-on: self-hosted
+  #  steps:
+  #    - uses: actions/checkout@v2
+  #    - name: Cache npm
+  #      uses: ./
+  #      with:
+  #        type: npm
+  #        version: ${{ github.run_id }}
+  #        provider: local
+  #    - name: Install dependencies
+  #      run: |
+  #        npm ci
           
-  restore-local-cache:
-    runs-on: self-hosted
-    needs: save-local-cache
-    steps:
-      - uses: actions/checkout@v2
-      - name: Cache npm
-        id: cache
-        uses: ./
-        with:
-          type: npm
-          version: ${{ github.run_id }}
-          provider: local
-      - name: Verify restore worked
-        if: steps.cache.outputs.cache-hit != 'true'
-        run: |
-          echo "Restore failed!"
-          exit -1
-      - name: Install dependencies
-        run: |
-          npm ci
+  #restore-local-cache:
+  #  runs-on: self-hosted
+  #  needs: save-local-cache
+  #  steps:
+  #    - uses: actions/checkout@v2
+  #    - name: Cache npm
+  #      id: cache
+  #      uses: ./
+  #      with:
+  #        type: npm
+  #        version: ${{ github.run_id }}
+  #        provider: local
+  #    - name: Verify restore worked
+  #      if: steps.cache.outputs.cache-hit != 'true'
+  #      run: |
+  #        echo "Restore failed!"
+  #        exit -1
+  #    - name: Install dependencies
+  #      run: |
+  #        npm ci
 
   # ======================================================================
   # S3 Storage Provider
