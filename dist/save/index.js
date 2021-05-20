@@ -59163,13 +59163,13 @@ class Mix extends handler_1.CacheHandler {
         return ['deps', '_build'];
     }
     async getKey(version) {
-        return `${expressions_1.runner.os}-${version}-mix-${await expressions_1.hashFiles('mix.lock')}`;
+        return `${expressions_1.runner.os}-${version}-mix-${await expressions_1.hashFiles('**/mix.lock')}`;
     }
     async getRestoreKeys(version) {
         return [`${expressions_1.runner.os}-${version}-mix-`];
     }
     async shouldCache() {
-        return await expressions_1.matches('mix.lock');
+        return await expressions_1.matches('**/mix.lock');
     }
 }
 registry_1.handlers.add('mix', new Mix());
