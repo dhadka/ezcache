@@ -260,8 +260,11 @@ information and known issues.
 
 ### `local`
 
-Stores caches on the local file system.  Please note that caches can only be shared between jobs on the same machine.
-Therefore, avoid using when multiple self-hosted runners are registered or on hosted runners.
+Stores caches on the local file system.  Because of this, jobs can only save to and restore caches created on the 
+machine processing the job.
+
+:warning: Using the local cache to pass data between jobs might not work if there are multiple runners, as each job can run
+on a different machine.  Local storage will also not work on hosted runners. :warning:
 
 ```
 - uses: dhadka/ezcache@master
