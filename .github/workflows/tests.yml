@@ -344,11 +344,11 @@ jobs:
             script: |
               cd java-project
               mvn package
-          - type: gradle
-            repo: pkainulainen/gradle-examples
-            script: |
-              cd dependency-management
-              gradle clean build
+          #- type: gradle
+          #  repo: pkainulainen/gradle-examples
+          #  script: |
+          #    cd dependency-management
+          #    gradle clean build
           - type: npm
             repo: contentful/the-example-app.nodejs
             script: npm ci
