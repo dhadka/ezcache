@@ -280,9 +280,9 @@ jobs:
         shell: pwsh
         if: steps.cache.outputs.cache-hit != 'true'
         run: Write-Error "Restore failed!"
-      - name: Show installed modules
-        shell: pwsh
-        run: ls ~\Documents\WindowsPowerShell\Modules
+      #- name: Show installed modules
+      #  shell: pwsh
+      #  run: ls ~\Documents\WindowsPowerShell\Modules
 
   # ======================================================================
   # Script Cache
@@ -388,11 +388,11 @@ jobs:
             script: |
               cd java-project
               mvn package
-          - type: gradle
-            repo: pkainulainen/gradle-examples
-            script: |
-              cd dependency-management
-              gradle clean build
+          #- type: gradle
+          #  repo: pkainulainen/gradle-examples
+          #  script: |
+          #    cd dependency-management
+          #    gradle clean build
           - type: npm
             repo: contentful/the-example-app.nodejs
             script: npm ci
