@@ -70,7 +70,7 @@ jobs:
         uses: ./
         with:
           type: auto
-          verson: ${{ github.run_id }}
+          version: ${{ github.run_id }}
       - name: Install dependencies
         run: npm ci
 
