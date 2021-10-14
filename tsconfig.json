@@ -3,7 +3,8 @@
         "target": "es2019",
         "module": "commonjs",
         "outDir": "./lib",
-        "strict": true
+        "strict": true,
+        "useUnknownInCatchVariables": false
     },
     "include": ["src"],
     "exclude": ["node_modules", "**/__tests__/*"]
