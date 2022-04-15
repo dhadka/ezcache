@@ -433,7 +433,7 @@ jobs:
   # ======================================================================
 
   save-aws-cache:
-    if: env.SKIP_TESTS != 'true'
+    if: ${{ env.SKIP_TESTS != 'true' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -509,7 +509,7 @@ jobs:
   # ======================================================================
 
   save-azure-cache:
-    if: env.SKIP_TESTS != 'true'
+    if: ${{ env.SKIP_TESTS != 'true' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -557,7 +557,7 @@ jobs:
   # ======================================================================
 
   save-layers:
-    if: env.SKIP_TESTS != 'true'
+    if: ${{ env.SKIP_TESTS != 'true' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -601,7 +601,7 @@ jobs:
           docker build --tag apache:dev .
 
   save-buildx:
-    if: env.SKIP_TESTS != 'true'
+    if: ${{ env.SKIP_TESTS != 'true' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
