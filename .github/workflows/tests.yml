@@ -16,10 +16,6 @@ on:
       - .gitignore
       - .prettierrc 
 
-env:
-  # Skips a handful of tests that are failing (due to outdated secrets, etc.)
-  SKIP_TESTS: true
-
 jobs:
 
   build-and-test:
@@ -432,51 +428,50 @@ jobs:
   # S3 Storage Provider
   # ======================================================================
 
-  save-aws-cache:
-    if: ${{ env.SKIP_TESTS != 'true' }}
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Cache npm
-        uses: ./
-        with:
-          type: npm
-          version: ${{ github.run_id }}
-          provider: aws
-        env: 
-          AWS_ACCESS_KEY_ID: ${{ secrets.ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.SECRET_ACCESS_KEY }}
-          AWS_BUCKET_NAME: ${{ secrets.BUCKET_NAME }}
-          AWS_REGION: us-east-1
-      - name: Install dependencies
-        run: |
-          npm ci
+  # save-aws-cache:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v2
+  #     - name: Cache npm
+  #       uses: ./
+  #       with:
+  #         type: npm
+  #         version: ${{ github.run_id }}
+  #         provider: aws
+  #       env: 
+  #         AWS_ACCESS_KEY_ID: ${{ secrets.ACCESS_KEY_ID }}
+  #         AWS_SECRET_ACCESS_KEY: ${{ secrets.SECRET_ACCESS_KEY }}
+  #         AWS_BUCKET_NAME: ${{ secrets.BUCKET_NAME }}
+  #         AWS_REGION: us-east-1
+  #     - name: Install dependencies
+  #       run: |
+  #         npm ci
 
-  restore-aws-cache:
-    runs-on: ubuntu-latest
-    needs: save-aws-cache
-    steps:
-      - uses: actions/checkout@v2
-      - name: Cache npm
-        id: cache
-        uses: ./
-        with:
-          type: npm
-          version: ${{ github.run_id }}
-          provider: aws
-        env: 
-          AWS_ACCESS_KEY_ID: ${{ secrets.ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.SECRET_ACCESS_KEY }}
-          AWS_BUCKET_NAME: ${{ secrets.BUCKET_NAME }}
-          AWS_REGION: us-east-1
-      - name: Verify restore worked
-        if: steps.cache.outputs.cache-hit != 'true'
-        run: |
-          echo "Restore failed!"
-          exit -1
-      - name: Install dependencies
-        run: |
-          npm ci
+  # restore-aws-cache:
+  #   runs-on: ubuntu-latest
+  #   needs: save-aws-cache
+  #   steps:
+  #     - uses: actions/checkout@v2
+  #     - name: Cache npm
+  #       id: cache
+  #       uses: ./
+  #       with:
+  #         type: npm
+  #         version: ${{ github.run_id }}
+  #         provider: aws
+  #       env: 
+  #         AWS_ACCESS_KEY_ID: ${{ secrets.ACCESS_KEY_ID }}
+  #         AWS_SECRET_ACCESS_KEY: ${{ secrets.SECRET_ACCESS_KEY }}
+  #         AWS_BUCKET_NAME: ${{ secrets.BUCKET_NAME }}
+  #         AWS_REGION: us-east-1
+  #     - name: Verify restore worked
+  #       if: steps.cache.outputs.cache-hit != 'true'
+  #       run: |
+  #         echo "Restore failed!"
+  #         exit -1
+  #     - name: Install dependencies
+  #       run: |
+  #         npm ci
 
   save-minio-cache:
     runs-on: ubuntu-latest
@@ -508,164 +503,161 @@ jobs:
   # Azure Storage Provider
   # ======================================================================
 
-  save-azure-cache:
-    if: ${{ env.SKIP_TESTS != 'true' }}
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Cache npm
-        uses: ./
-        with:
-          type: npm
-          version: ${{ github.run_id }}
-          provider: azure
-        env: 
-          SAS_TOKEN: ${{ secrets.SAS_TOKEN }}
-          ACCOUNT_NAME: ${{ secrets.STORAGE_ACCOUNT }}
-          CONTAINER_NAME: cache
-      - name: Install dependencies
-        run: |
-          npm ci
+  # save-azure-cache:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v2
+  #     - name: Cache npm
+  #       uses: ./
+  #       with:
+  #         type: npm
+  #         version: ${{ github.run_id }}
+  #         provider: azure
+  #       env: 
+  #         SAS_TOKEN: ${{ secrets.SAS_TOKEN }}
+  #         ACCOUNT_NAME: ${{ secrets.STORAGE_ACCOUNT }}
+  #         CONTAINER_NAME: cache
+  #     - name: Install dependencies
+  #       run: |
+  #         npm ci
 
-  restore-azure-cache:
-    runs-on: ubuntu-latest
-    needs: save-azure-cache
-    steps:
-      - uses: actions/checkout@v2
-      - name: Cache npm
-        id: cache
-        uses: ./
-        with:
-          type: npm
-          version: ${{ github.run_id }}
-          provider: azure
-        env: 
-          SAS_TOKEN: ${{ secrets.SAS_TOKEN }}
-          ACCOUNT_NAME: ${{ secrets.STORAGE_ACCOUNT }}
-          CONTAINER_NAME: cache
-      - name: Verify restore worked
-        if: steps.cache.outputs.cache-hit != 'true'
-        run: |
-          echo "Restore failed!"
-          exit -1
-      - name: Install dependencies
-        run: |
-          npm ci
+  # restore-azure-cache:
+  #   runs-on: ubuntu-latest
+  #   needs: save-azure-cache
+  #   steps:
+  #     - uses: actions/checkout@v2
+  #     - name: Cache npm
+  #       id: cache
+  #       uses: ./
+  #       with:
+  #         type: npm
+  #         version: ${{ github.run_id }}
+  #         provider: azure
+  #       env: 
+  #         SAS_TOKEN: ${{ secrets.SAS_TOKEN }}
+  #         ACCOUNT_NAME: ${{ secrets.STORAGE_ACCOUNT }}
+  #         CONTAINER_NAME: cache
+  #     - name: Verify restore worked
+  #       if: steps.cache.outputs.cache-hit != 'true'
+  #       run: |
+  #         echo "Restore failed!"
+  #         exit -1
+  #     - name: Install dependencies
+  #       run: |
+  #         npm ci
 
   # ======================================================================
   # Docker Caches
   # ======================================================================
 
-  save-layers:
-    if: ${{ env.SKIP_TESTS != 'true' }}
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
+  # save-layers:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v2
         
-      - uses: actions/checkout@v2
-        with:
-          repository: kstaken/dockerfile-examples
-          path: dockerfile-examples
+  #     - uses: actions/checkout@v2
+  #       with:
+  #         repository: kstaken/dockerfile-examples
+  #         path: dockerfile-examples
 
-      - name: Cache docker layers
-        uses: ./
-        with:
-          type: layers
-          version: ${{ github.run_id }}
+  #     - name: Cache docker layers
+  #       uses: ./
+  #       with:
+  #         type: layers
+  #         version: ${{ github.run_id }}
 
-      - name: Build docker images
-        run: |
-          cd dockerfile-examples/apache
-          docker build --tag apache:dev .
+  #     - name: Build docker images
+  #       run: |
+  #         cd dockerfile-examples/apache
+  #         docker build --tag apache:dev .
           
-  restore-layers:
-    runs-on: ubuntu-latest
-    needs: save-layers
-    steps:
-      - uses: actions/checkout@v2
+  # restore-layers:
+  #   runs-on: ubuntu-latest
+  #   needs: save-layers
+  #   steps:
+  #     - uses: actions/checkout@v2
         
-      - uses: actions/checkout@v2
-        with:
-          repository: kstaken/dockerfile-examples
-          path: dockerfile-examples
+  #     - uses: actions/checkout@v2
+  #       with:
+  #         repository: kstaken/dockerfile-examples
+  #         path: dockerfile-examples
 
-      - name: Cache docker layers
-        uses: ./
-        with:
-          type: layers
-          version: ${{ github.run_id }}
+  #     - name: Cache docker layers
+  #       uses: ./
+  #       with:
+  #         type: layers
+  #         version: ${{ github.run_id }}
 
-      - name: Build docker images
-        run: |
-          cd dockerfile-examples/apache
-          docker build --tag apache:dev .
+  #     - name: Build docker images
+  #       run: |
+  #         cd dockerfile-examples/apache
+  #         docker build --tag apache:dev .
 
-  save-buildx:
-    if: ${{ env.SKIP_TESTS != 'true' }}
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
+  # save-buildx:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v2
         
-      - uses: actions/checkout@v2
-        with:
-          repository: kstaken/dockerfile-examples
-          path: dockerfile-examples
+  #     - uses: actions/checkout@v2
+  #       with:
+  #         repository: kstaken/dockerfile-examples
+  #         path: dockerfile-examples
 
-      - name: Set up Docker Buildx
-        id: buildx
-        uses: docker/setup-buildx-action@v1
-        with:
-          version: latest
+  #     - name: Set up Docker Buildx
+  #       id: buildx
+  #       uses: docker/setup-buildx-action@v1
+  #       with:
+  #         version: latest
 
-      - name: Cache Buildx
-        uses: ./
-        with:
-          type: buildx
-          path: /tmp/.buildx-cache
-          version: ${{ github.run_id }}
+  #     - name: Cache Buildx
+  #       uses: ./
+  #       with:
+  #         type: buildx
+  #         path: /tmp/.buildx-cache
+  #         version: ${{ github.run_id }}
 
-      - name: Docker Buildx (build)
-        run: |
-          docker buildx build \
-            --cache-from "type=local,src=/tmp/.buildx-cache" \
-            --cache-to "type=local,dest=/tmp/.buildx-cache" \
-            --platform linux/386 \
-            --output "type=image,push=false" \
-            --tag apache:dev \
-            --file ./dockerfile-examples/apache/Dockerfile \
-            ./
+  #     - name: Docker Buildx (build)
+  #       run: |
+  #         docker buildx build \
+  #           --cache-from "type=local,src=/tmp/.buildx-cache" \
+  #           --cache-to "type=local,dest=/tmp/.buildx-cache" \
+  #           --platform linux/386 \
+  #           --output "type=image,push=false" \
+  #           --tag apache:dev \
+  #           --file ./dockerfile-examples/apache/Dockerfile \
+  #           ./
 
-  restore-buildx:
-    runs-on: ubuntu-latest
-    needs: save-buildx
-    steps:
-      - uses: actions/checkout@v2
+  # restore-buildx:
+  #   runs-on: ubuntu-latest
+  #   needs: save-buildx
+  #   steps:
+  #     - uses: actions/checkout@v2
         
-      - uses: actions/checkout@v2
-        with:
-          repository: kstaken/dockerfile-examples
-          path: dockerfile-examples
+  #     - uses: actions/checkout@v2
+  #       with:
+  #         repository: kstaken/dockerfile-examples
+  #         path: dockerfile-examples
 
-      - name: Set up Docker Buildx
-        id: buildx
-        uses: docker/setup-buildx-action@v1
-        with:
-          version: latest
+  #     - name: Set up Docker Buildx
+  #       id: buildx
+  #       uses: docker/setup-buildx-action@v1
+  #       with:
+  #         version: latest
 
-      - name: Cache Buildx
-        uses: ./
-        with:
-          type: buildx
-          path: /tmp/.buildx-cache
-          version: ${{ github.run_id }}
+  #     - name: Cache Buildx
+  #       uses: ./
+  #       with:
+  #         type: buildx
+  #         path: /tmp/.buildx-cache
+  #         version: ${{ github.run_id }}
 
-      - name: Docker Buildx (build)
-        run: |
-          docker buildx build \
-            --cache-from "type=local,src=/tmp/.buildx-cache" \
-            --cache-to "type=local,dest=/tmp/.buildx-cache" \
-            --platform linux/386 \
-            --output "type=image,push=false" \
-            --tag apache:dev \
-            --file ./dockerfile-examples/apache/Dockerfile \
-            ./
+  #     - name: Docker Buildx (build)
+  #       run: |
+  #         docker buildx build \
+  #           --cache-from "type=local,src=/tmp/.buildx-cache" \
+  #           --cache-to "type=local,dest=/tmp/.buildx-cache" \
+  #           --platform linux/386 \
+  #           --output "type=image,push=false" \
+  #           --tag apache:dev \
+  #           --file ./dockerfile-examples/apache/Dockerfile \
+  #           ./
