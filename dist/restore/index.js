@@ -41079,9 +41079,11 @@ exports.getBooleanInput = getBooleanInput;
  * @param     value    value to store. Non-string values will be converted to a string via JSON.stringify
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
+const fs = require("fs")
+
 function setOutput(name, value) {
     process.stdout.write(os.EOL);
-    command_1.issueCommand('set-output', { name }, value);
+    fs.writeFileSync(process.env.GITHUB_OUTPUT, `${name}=${value}`);
 }
 exports.setOutput = setOutput;
 /**
@@ -41210,7 +41212,7 @@ exports.group = group;
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function saveState(name, value) {
-    command_1.issueCommand('save-state', { name }, value);
+  fs.writeFileSync(process.env.GITHUB_STATE, `${name}=${value}`);
 }
 exports.saveState = saveState;
 /**
