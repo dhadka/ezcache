@@ -41084,7 +41084,6 @@ const fs = require("fs")
 function setOutput(name, value) {
     process.stdout.write(os.EOL);
     fs.writeFileSync(process.env.GITHUB_OUTPUT, `${name}=${value}`);
-    //    command_1.issueCommand('set-output', { name }, value);
 }
 exports.setOutput = setOutput;
 /**
@@ -41213,7 +41212,8 @@ exports.group = group;
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function saveState(name, value) {
-    command_1.issueCommand('save-state', { name }, value);
+  fs.writeFileSync(process.env.GITHUB_STATE, `${key}=${value}`);
+  //    command_1.issueCommand('save-state', { name }, value);
 }
 exports.saveState = saveState;
 /**
