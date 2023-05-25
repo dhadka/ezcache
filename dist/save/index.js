@@ -41166,7 +41166,6 @@ exports.group = group;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function saveState(name, value) {
   fs.writeFileSync(process.env.GITHUB_STATE, `${name}=${value}`);
-  //    command_1.issueCommand('save-state', { name }, value);
 }
 exports.saveState = saveState;
 /**
