@@ -41032,7 +41032,6 @@ exports.getBooleanInput = getBooleanInput;
  * @param     value    value to store. Non-string values will be converted to a string via JSON.stringify
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const os = require("os")
 const fs = require("fs")
 
 function setOutput(name, value) {
